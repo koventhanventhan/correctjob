@@ -43,6 +43,17 @@ namespace HireConnect.API.Controllers
             return Ok(company);
         }
 
+        [HttpGet("my-company")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> GetMyCompany()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
+            
+            if (company == null) return NotFound();
+            return Ok(company);
+        }
+
         [HttpPost]
         [Authorize(Roles = "Employer")]
         public async Task<IActionResult> CreateCompany([FromBody] CompanyDto model)

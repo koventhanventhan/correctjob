@@ -5,23 +5,40 @@ import api from '@/services/api';
 import Link from 'next/link';
 import { Briefcase, Users, FileText, Activity } from 'lucide-react';
 
-export default function EmployerDashboard() {
-    const { user } = useAuthStore();
+import { useRouter } from 'next/navigation';
 
-    // In a real app, these would be specific endpoints like /api/employer/stats and /api/employer/jobs
-    // For MVP, we'll fetch jobs and compute stats on client (or just mock stats if no endpoint exists)
+export default function EmployerDashboard() {
+    const { user, isInitializing } = useAuthStore();
+    const router = useRouter();
+
     const { data: jobs, isLoading } = useQuery({
         queryKey: ['my-jobs'],
         queryFn: async () => {
-            // Admin endpoint returns all jobs, employer endpoint should just be jobs for their company
-            // Since we didn't make a specific "my-jobs" endpoint, we use the public one and filter
-            // Assuming the API returns the company info. This is a shortcut for MVP.
-            const res = await api.get('/jobs');
-            return res.data.data.filter((j: any) => j.company?.employerId === user?.id);
+            const res = await api.get('/jobs/my-jobs?pageSize=50');
+            return res.data.data;
         }
     });
 
-    if (!user) return null;
+    const { data: stats } = useQuery({
+        queryKey: ['employer-stats'],
+        queryFn: async () => {
+            const res = await api.get('/applications/employer-stats');
+            return res.data;
+        }
+    });
+
+    if (isInitializing) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    if (!user || user.role !== 'Employer') {
+        router.push('/login');
+        return null;
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -68,7 +85,7 @@ export default function EmployerDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Total Applications</p>
-                                <p className="text-2xl font-bold text-gray-900 mt-1">24</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.totalApplications || 0}</p>
                             </div>
                             <div className="h-10 w-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
                                 <FileText className="h-5 w-5" />
@@ -80,7 +97,7 @@ export default function EmployerDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Shortlisted</p>
-                                <p className="text-2xl font-bold text-gray-900 mt-1">8</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.interviewing || 0}</p>
                             </div>
                             <div className="h-10 w-10 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center">
                                 <Users className="h-5 w-5" />

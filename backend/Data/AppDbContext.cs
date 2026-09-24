@@ -21,7 +21,7 @@ namespace HireConnect.API.Data
         public DbSet<SavedJob> SavedJobs { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Report> Reports { get; set; }
-
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder); // Important for Identity

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
 import { Briefcase, FileText, CheckCircle, Clock } from 'lucide-react';
+import { calculateProfileCompletion } from '@/utils/profile';
 
 export default function SeekerDashboard() {
     const { user } = useAuthStore();
@@ -12,6 +13,14 @@ export default function SeekerDashboard() {
         queryKey: ['my-applications'],
         queryFn: async () => {
             const res = await api.get('/applications/my-applications');
+            return res.data.data;
+        }
+    });
+
+    const { data: profile } = useQuery({
+        queryKey: ['my-profile'],
+        queryFn: async () => {
+            const res = await api.get('/seekerprofiles/me');
             return res.data;
         }
     });
@@ -32,7 +41,7 @@ export default function SeekerDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Profile Completion</p>
-                                <p className="text-2xl font-bold text-gray-900 mt-1">45%</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{calculateProfileCompletion(profile)}%</p>
                             </div>
                             <div className="h-10 w-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
                                 <FileText className="h-5 w-5" />
@@ -40,7 +49,7 @@ export default function SeekerDashboard() {
                         </div>
                         <div className="mt-4">
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-indigo-600 h-2 rounded-full" style={{ width: '45%' }}></div>
+                                <div className="bg-indigo-600 h-2 rounded-full transition-all duration-500" style={{ width: `${calculateProfileCompletion(profile)}%` }}></div>
                             </div>
                         </div>
                     </div>

@@ -19,24 +19,56 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpGet("users")]
-        public async Task<IActionResult> GetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetUsers([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var users = await _context.Users
+            var query = _context.Users.AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(u => u.FullName.Contains(search) || u.Email.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var users = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(u => new { u.Id, u.FullName, u.Email, u.IsActive })
+                .Select(u => new 
+                { 
+                    u.Id, 
+                    u.FullName, 
+                    u.Email, 
+                    u.IsActive,
+                    Role = _context.UserRoles
+                        .Where(ur => ur.UserId == u.Id)
+                        .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                        .FirstOrDefault() ?? "JobSeeker"
+                })
                 .ToListAsync();
-            return Ok(users);
+
+            return Ok(new { data = users, totalCount });
         }
 
         [HttpGet("jobs")]
-        public async Task<IActionResult> GetJobs([FromQuery] string? status)
+        public async Task<IActionResult> GetJobs([FromQuery] string? search, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             var query = _context.Jobs.Include(j => j.Company).AsQueryable();
-            if (!string.IsNullOrEmpty(status)) query = query.Where(j => j.Status == status);
+            
+            if (!string.IsNullOrEmpty(status)) 
+                query = query.Where(j => j.Status == status);
 
-            var jobs = await query.OrderByDescending(j => j.CreatedAt).ToListAsync();
-            return Ok(jobs);
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(j => j.Title.Contains(search) || j.Company.CompanyName.Contains(search));
+
+            var totalCount = await query.CountAsync();
+
+            var jobs = await query
+                .OrderByDescending(j => j.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new { data = jobs, totalCount });
         }
 
         [HttpPatch("jobs/{id}/approve")]
@@ -49,6 +81,23 @@ namespace HireConnect.API.Controllers
             job.Status = status; 
             await _context.SaveChangesAsync();
             return Ok(job);
+        }
+
+        [HttpGet("companies")]
+        public async Task<IActionResult> GetCompanies([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var query = _context.Companies.Include(c => c.Employer).AsQueryable();
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(c => c.CompanyName.Contains(search));
+
+            var totalCount = await query.CountAsync();
+            var companies = await query
+                .OrderByDescending(c => c.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new { data = companies, totalCount });
         }
 
         [HttpPatch("companies/{id}/approve")]

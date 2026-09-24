@@ -23,19 +23,28 @@ namespace HireConnect.API.Controllers
             [FromQuery] string? keyword = null, [FromQuery] string? location = null, 
             [FromQuery] int? category = null, [FromQuery] decimal? minSalary = null, 
             [FromQuery] decimal? maxSalary = null, [FromQuery] int? experience = null, 
-            [FromQuery] string? jobType = null, [FromQuery] bool? remote = null)
+            [FromQuery] string? jobType = null, [FromQuery] bool? remote = null,
+            [FromQuery] int? companyId = null)
         {
             var query = _context.Jobs
                 .Include(j => j.Company)
                 .Include(j => j.Category)
                 .AsQueryable();
 
-            // Only show published jobs from approved companies to public
-            var isEmployerOrAdmin = User.IsInRole("Employer") || User.IsInRole("Admin");
+            var isAdmin = User.IsInRole("Admin");
+            var isEmployer = User.IsInRole("Employer");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             
-            if (!isEmployerOrAdmin)
+            if (!isAdmin)
             {
-                query = query.Where(j => j.Status == "Published" && j.Company.IsApproved);
+                if (isEmployer)
+                {
+                    query = query.Where(j => (j.Status == "Published" && j.Company.IsApproved) || j.Company.EmployerId == userId);
+                }
+                else
+                {
+                    query = query.Where(j => j.Status == "Published" && j.Company.IsApproved);
+                }
             }
 
             // Filters
@@ -66,6 +75,10 @@ namespace HireConnect.API.Controllers
             if (!string.IsNullOrEmpty(jobType))
             {
                 query = query.Where(j => j.JobType == jobType);
+            }
+            if (companyId.HasValue)
+            {
+                query = query.Where(j => j.CompanyId == companyId.Value);
             }
 
             var totalCount = await query.CountAsync();
@@ -102,13 +115,53 @@ namespace HireConnect.API.Controllers
 
             if (job == null) return NotFound();
 
-            var isEmployerOrAdmin = User.IsInRole("Employer") || User.IsInRole("Admin");
-            if (!isEmployerOrAdmin && (job.Status != "Published" || !job.Company.IsApproved))
+            var isAdmin = User.IsInRole("Admin");
+            var isEmployer = User.IsInRole("Employer");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!isAdmin)
             {
-                return Forbid(); // Public can only view published jobs
+                bool isOwnJob = isEmployer && job.Company.EmployerId == userId;
+                if (!isOwnJob && (job.Status != "Published" || !job.Company.IsApproved))
+                {
+                    return Forbid();
+                }
             }
 
             return Ok(job);
+        }
+
+        [HttpGet("my-jobs")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> GetMyJobs([FromQuery] int page = 1, [FromQuery] int pageSize = 12)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var query = _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category)
+                .Where(j => j.Company.EmployerId == userId)
+                .AsQueryable();
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var jobs = await query
+                .OrderByDescending(j => j.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new
+            {
+                data = jobs,
+                pagination = new
+                {
+                    totalCount,
+                    totalPages,
+                    currentPage = page,
+                    pageSize
+                }
+            });
         }
 
         [HttpPost]

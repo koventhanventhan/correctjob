@@ -1,6 +1,9 @@
+using HireConnect.API.Data;
 using HireConnect.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -15,12 +18,14 @@ namespace HireConnect.API.Controllers
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
         private readonly IConfiguration _configuration;
+        private readonly AppDbContext _context;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration, AppDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
+            _context = context;
         }
 
         [HttpPost("register")]
@@ -69,13 +74,20 @@ namespace HireConnect.API.Controllers
             var token = CreateToken(authClaims);
             var refreshToken = GenerateRefreshToken();
 
-            // Store refresh token logic here (in real app, save to DB)
+            var refreshTokenEntity = new RefreshToken
+            {
+                Token = refreshToken,
+                UserId = user.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(int.Parse(_configuration["Jwt:RefreshExpireDays"]!))
+            };
+            _context.RefreshTokens.Add(refreshTokenEntity);
+            await _context.SaveChangesAsync();
 
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
-                Expires = DateTime.UtcNow.AddDays(int.Parse(_configuration["Jwt:RefreshExpireDays"]!)),
+                Expires = refreshTokenEntity.ExpiresAt,
                 SameSite = SameSiteMode.Strict
             };
             Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
@@ -89,30 +101,51 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpPost("refresh-token")]
-        public IActionResult RefreshToken()
+        public async Task<IActionResult> RefreshToken()
         {
             var refreshToken = Request.Cookies["refreshToken"];
             if (string.IsNullOrEmpty(refreshToken)) return Unauthorized(new { message = "No refresh token found" });
 
-            // In a real application, you would validate the refresh token against the database here.
-            // For MVP, we will issue a new JWT if ANY refresh token is present (simplified).
-            
-            // Re-generate a mock auth claim list based on dummy user since we didn't validate it.
-            // Normally you'd find the user associated with this refresh token in DB.
+            var tokenEntity = await _context.RefreshTokens
+                .Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+
+            if (tokenEntity == null || tokenEntity.IsRevoked || tokenEntity.ExpiresAt < DateTime.UtcNow || !tokenEntity.User.IsActive)
+            {
+                Response.Cookies.Delete("refreshToken");
+                return Unauthorized(new { message = "Invalid refresh token" });
+            }
+
+            tokenEntity.IsRevoked = true;
+
+            var roles = await _userManager.GetRolesAsync(tokenEntity.User);
+            var userRole = roles.FirstOrDefault() ?? "JobSeeker";
+
             var authClaims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, "user"),
-                new Claim(ClaimTypes.Role, "JobSeeker")
+                new Claim(ClaimTypes.Name, tokenEntity.User.UserName!),
+                new Claim(ClaimTypes.NameIdentifier, tokenEntity.User.Id),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.Role, userRole)
             };
 
             var newToken = CreateToken(authClaims);
             var newRefreshToken = GenerateRefreshToken();
 
+            var newRefreshTokenEntity = new RefreshToken
+            {
+                Token = newRefreshToken,
+                UserId = tokenEntity.UserId,
+                ExpiresAt = DateTime.UtcNow.AddDays(int.Parse(_configuration["Jwt:RefreshExpireDays"]!))
+            };
+            _context.RefreshTokens.Add(newRefreshTokenEntity);
+            await _context.SaveChangesAsync();
+
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
-                Expires = DateTime.UtcNow.AddDays(int.Parse(_configuration["Jwt:RefreshExpireDays"]!)),
+                Expires = newRefreshTokenEntity.ExpiresAt,
                 SameSite = SameSiteMode.Strict
             };
             Response.Cookies.Append("refreshToken", newRefreshToken, cookieOptions);
@@ -121,6 +154,28 @@ namespace HireConnect.API.Controllers
             {
                 token = new JwtSecurityTokenHandler().WriteToken(newToken),
                 expiration = newToken.ValidTo
+            });
+        }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetMe()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !user.IsActive) return Unauthorized();
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var userRole = roles.FirstOrDefault() ?? "JobSeeker";
+
+            return Ok(new
+            {
+                user.Id,
+                user.FullName,
+                user.Email,
+                Role = userRole
             });
         }
 
@@ -144,6 +199,62 @@ namespace HireConnect.API.Controllers
         {
             return Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(64));
         }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId!);
+            if (user == null) return NotFound();
+
+            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            return Ok(new { message = "Password changed successfully" });
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null) return Ok(new { message = "If the email exists, a reset link has been sent." });
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            Console.WriteLine($"[Dev Use Only] Password reset token for {model.Email}: {token}");
+            
+            return Ok(new { message = "If the email exists, a reset link has been sent." });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null) return BadRequest("Invalid request.");
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            return Ok(new { message = "Password reset successfully." });
+        }
+    }
+
+    public class ChangePasswordDto
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordDto
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 
     public class RegisterDto

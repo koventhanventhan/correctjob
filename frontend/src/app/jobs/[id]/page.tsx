@@ -22,6 +22,31 @@ export default function JobDetailsPage() {
         }
     });
 
+    const { data: saveStatus, refetch: refetchSaveStatus } = useQuery({
+        queryKey: ['job-saved-status', id],
+        queryFn: async () => {
+            if (user?.role !== 'JobSeeker') return { isSaved: false };
+            const res = await api.get(`/savedjobs/check/${id}`);
+            return res.data;
+        },
+        enabled: !!user && user.role === 'JobSeeker'
+    });
+
+    const isSaved = saveStatus?.isSaved || false;
+
+    const toggleSaveMutation = useMutation({
+        mutationFn: async () => {
+            if (isSaved) {
+                await api.delete(`/savedjobs/${id}`);
+            } else {
+                await api.post(`/savedjobs/${id}`);
+            }
+        },
+        onSuccess: () => {
+            refetchSaveStatus();
+        }
+    });
+
     const applyMutation = useMutation({
         mutationFn: async () => {
             const formData = new FormData();
@@ -77,8 +102,19 @@ export default function JobDetailsPage() {
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-3">
-                            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
-                                <Bookmark className="h-4 w-4" /> Save
+                            <button 
+                                onClick={() => {
+                                    if (!isSeeker) return alert("Please sign in as a Job Seeker to save jobs.");
+                                    toggleSaveMutation.mutate();
+                                }}
+                                disabled={toggleSaveMutation.isPending}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none transition-colors ${
+                                    isSaved 
+                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' 
+                                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                                }`}
+                            >
+                                <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} /> {isSaved ? 'Saved' : 'Save'}
                             </button>
                             <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
                                 <Share2 className="h-4 w-4" /> Share

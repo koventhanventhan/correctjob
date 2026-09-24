@@ -2,39 +2,95 @@
 import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Users, Building, Briefcase, AlertTriangle } from 'lucide-react';
+import { Users, Building, Briefcase, AlertTriangle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
-export default function AdminDashboard() {
-    const { user } = useAuthStore();
-    const [activeTab, setActiveTab] = useState('jobs');
+import { useRouter } from 'next/navigation';
 
-    const { data: jobs, refetch: refetchJobs } = useQuery({
-        queryKey: ['admin-jobs'],
+export default function AdminDashboard() {
+    const { user, isInitializing } = useAuthStore();
+    const router = useRouter();
+    const [activeTab, setActiveTab] = useState('jobs');
+    
+    // Pagination & Search States
+    const [jobsPage, setJobsPage] = useState(1);
+    const [searchJob, setSearchJob] = useState('');
+    const [filterJobStatus, setFilterJobStatus] = useState('');
+    const [usersPage, setUsersPage] = useState(1);
+    const [companiesPage, setCompaniesPage] = useState(1);
+    const [searchUser, setSearchUser] = useState('');
+    const [searchCompany, setSearchCompany] = useState('');
+
+    const { data: jobsData, refetch: refetchJobs } = useQuery({
+        queryKey: ['admin-jobs', jobsPage, searchJob, filterJobStatus],
         queryFn: async () => {
-            const res = await api.get('/admin/jobs');
+            const res = await api.get(`/admin/jobs?page=${jobsPage}&pageSize=10&search=${searchJob}&status=${filterJobStatus}`);
             return res.data;
         }
     });
 
-    const { data: usersData } = useQuery({
-        queryKey: ['admin-users'],
+    const { data: usersData, refetch: refetchUsers } = useQuery({
+        queryKey: ['admin-users', usersPage, searchUser],
         queryFn: async () => {
-            const res = await api.get('/admin/users');
+            const res = await api.get(`/admin/users?page=${usersPage}&pageSize=10&search=${searchUser}`);
+            return res.data;
+        }
+    });
+
+    const { data: companiesData, refetch: refetchCompanies } = useQuery({
+        queryKey: ['admin-companies', companiesPage, searchCompany],
+        queryFn: async () => {
+            const res = await api.get(`/admin/companies?page=${companiesPage}&pageSize=10&search=${searchCompany}`);
             return res.data;
         }
     });
 
     const handleApproveJob = async (id: number) => {
         try {
-            await api.patch(`/admin/jobs/${id}/approve`, "Approved", { headers: { 'Content-Type': 'application/json' }});
+            await api.patch(`/admin/jobs/${id}/approve`, "Published", { headers: { 'Content-Type': 'application/json' }});
             refetchJobs();
         } catch (error) {
             console.error("Failed to approve job");
         }
     };
 
-    if (!user) return null;
+    const handleApproveCompany = async (id: number, isApproved: boolean) => {
+        try {
+            await api.patch(`/admin/companies/${id}/approve`, isApproved, { headers: { 'Content-Type': 'application/json' }});
+            refetchCompanies();
+        } catch (error) {
+            console.error("Failed to update company approval");
+        }
+    };
+
+    const handleToggleUserBlock = async (id: string, currentStatus: boolean) => {
+        try {
+            await api.patch(`/admin/users/${id}/block`, !currentStatus, { headers: { 'Content-Type': 'application/json' }});
+            refetchUsers();
+        } catch (error) {
+            console.error("Failed to block/unblock user");
+        }
+    };
+
+    if (isInitializing) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    if (!user || user.role !== 'Admin') {
+        router.push('/login');
+        return null;
+    }
+
+    const totalJobs = jobsData?.totalCount || 0;
+    const jobs = jobsData?.data || [];
+    const totalUsers = usersData?.totalCount || 0;
+    const totalCompanies = companiesData?.totalCount || 0;
+    const users = usersData?.data || [];
+    const companies = companiesData?.data || [];
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -68,7 +124,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Total Users</p>
-                                <p className="text-2xl font-bold text-gray-900 mt-1">{usersData?.length || 0}</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{totalUsers}</p>
                             </div>
                             <div className="h-10 w-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
                                 <Users className="h-5 w-5" />
@@ -93,46 +149,79 @@ export default function AdminDashboard() {
 
                 {activeTab === 'jobs' && (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                            <h3 className="font-semibold text-gray-900">Job Approvals</h3>
+                        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                            <h3 className="font-semibold text-gray-900">Manage Jobs</h3>
+                            <div className="flex items-center gap-2">
+                                <select 
+                                    className="border rounded p-1 text-sm bg-white"
+                                    value={filterJobStatus}
+                                    onChange={(e) => { setFilterJobStatus(e.target.value); setJobsPage(1); }}
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="Draft">Draft</option>
+                                    <option value="PendingApproval">Pending Approval</option>
+                                    <option value="Approved">Approved</option>
+                                    <option value="Published">Published</option>
+                                </select>
+                                <div className="flex items-center border rounded px-2 bg-white">
+                                    <Search className="w-4 h-4 text-gray-400" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search jobs..." 
+                                        className="p-1 outline-none text-sm"
+                                        value={searchJob}
+                                        onChange={(e) => { setSearchJob(e.target.value); setJobsPage(1); }}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job / Company</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {jobs?.map((job: any) => (
-                                    <tr key={job.id}>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-medium text-gray-900">{job.title}</div>
-                                            <div className="text-sm text-gray-500">{job.company?.companyName || 'Unknown Company'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                job.status === 'Published' || job.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                                'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                                {job.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {job.status !== 'Approved' && job.status !== 'Published' && (
-                                                <button 
-                                                    onClick={() => handleApproveJob(job.id)}
-                                                    className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded"
-                                                >
-                                                    Approve
-                                                </button>
-                                            )}
-                                        </td>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job / Company</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {jobs.map((job: any) => (
+                                        <tr key={job.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="font-medium text-gray-900">{job.title}</div>
+                                                <div className="text-sm text-gray-500">{job.company?.companyName || 'Unknown Company'}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    job.status === 'Published' || job.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                                    'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {job.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                {job.status !== 'Approved' && job.status !== 'Published' && (
+                                                    <button 
+                                                        onClick={() => handleApproveJob(job.id)}
+                                                        className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* Pagination */}
+                        <div className="px-6 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-200">
+                            <span className="text-sm text-gray-500">Total: {totalJobs}</span>
+                            <div className="flex space-x-2">
+                                <button disabled={jobsPage === 1} onClick={() => setJobsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={jobsPage * 10 >= totalJobs} onClick={() => setJobsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><ChevronRight className="w-4 h-4"/></button>
+                            </div>
+                        </div>
                     </div>
                 )}
                 
@@ -140,39 +229,134 @@ export default function AdminDashboard() {
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                             <h3 className="font-semibold text-gray-900">All Users</h3>
+                            <div className="flex items-center border rounded px-2 bg-white">
+                                <Search className="w-4 h-4 text-gray-400" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search users..." 
+                                    className="p-1 outline-none text-sm"
+                                    value={searchUser}
+                                    onChange={(e) => { setSearchUser(e.target.value); setUsersPage(1); }}
+                                />
+                            </div>
                         </div>
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name / Email</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {usersData?.map((u: any) => (
-                                    <tr key={u.id}>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-medium text-gray-900">{u.fullName}</div>
-                                            <div className="text-sm text-gray-500">{u.email}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {u.role}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                            }`}>
-                                                {u.isActive ? 'Active' : 'Blocked'}
-                                            </span>
-                                        </td>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name / Email</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {users.map((u: any) => (
+                                        <tr key={u.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="font-medium text-gray-900">{u.fullName}</div>
+                                                <div className="text-sm text-gray-500">{u.email}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {u.role}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                    {u.isActive ? 'Active' : 'Blocked'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button 
+                                                    onClick={() => handleToggleUserBlock(u.id, u.isActive)}
+                                                    className={`${u.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                                                >
+                                                    {u.isActive ? 'Block' : 'Unblock'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* Pagination */}
+                        <div className="px-6 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-200">
+                            <span className="text-sm text-gray-500">Total: {totalUsers}</span>
+                            <div className="flex space-x-2">
+                                <button disabled={usersPage === 1} onClick={() => setUsersPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={usersPage * 10 >= totalUsers} onClick={() => setUsersPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><ChevronRight className="w-4 h-4"/></button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
+                {activeTab === 'companies' && (
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                            <h3 className="font-semibold text-gray-900">Manage Employers</h3>
+                            <div className="flex items-center border rounded px-2 bg-white">
+                                <Search className="w-4 h-4 text-gray-400" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search companies..." 
+                                    className="p-1 outline-none text-sm"
+                                    value={searchCompany}
+                                    onChange={(e) => { setSearchCompany(e.target.value); setCompaniesPage(1); }}
+                                />
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employer Details</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {companies.map((c: any) => (
+                                        <tr key={c.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="font-medium text-gray-900">{c.companyName}</div>
+                                                <div className="text-sm text-gray-500">{c.location}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {c.employer?.fullName}<br/>
+                                                <span className="text-xs">{c.employer?.email}</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    c.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {c.isApproved ? 'Approved' : 'Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button 
+                                                    onClick={() => handleApproveCompany(c.id, !c.isApproved)}
+                                                    className={`${c.isApproved ? 'text-red-600 hover:text-red-900' : 'text-indigo-600 hover:text-indigo-900'}`}
+                                                >
+                                                    {c.isApproved ? 'Revoke Approval' : 'Approve'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* Pagination */}
+                        <div className="px-6 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-200">
+                            <span className="text-sm text-gray-500">Total: {totalCompanies}</span>
+                            <div className="flex space-x-2">
+                                <button disabled={companiesPage === 1} onClick={() => setCompaniesPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={companiesPage * 10 >= totalCompanies} onClick={() => setCompaniesPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><ChevronRight className="w-4 h-4"/></button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

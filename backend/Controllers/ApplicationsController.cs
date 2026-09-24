@@ -29,7 +29,7 @@ namespace HireConnect.API.Controllers
             var seeker = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
             if (seeker == null) return BadRequest("Please complete your profile first.");
 
-            var job = await _context.Jobs.FindAsync(model.JobId);
+            var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == model.JobId);
             if (job == null || job.Status != "Published") return NotFound("Job not found or not open for applications.");
 
             // File upload
@@ -49,6 +49,15 @@ namespace HireConnect.API.Controllers
             };
 
             _context.Applications.Add(application);
+
+            var notification = new Notification
+            {
+                UserId = job.Company.EmployerId,
+                Title = "New Job Application",
+                Message = $"A new application has been submitted for your job: {job.Title}."
+            };
+            _context.Notifications.Add(notification);
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Application submitted successfully", applicationId = application.Id });
@@ -64,13 +73,14 @@ namespace HireConnect.API.Controllers
                 .ThenInclude(j => j.Company)
                 .Where(a => a.Seeker.UserId == userId);
 
+            var totalCount = await query.CountAsync();
             var applications = await query
                 .OrderByDescending(a => a.AppliedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(applications);
+            return Ok(new { data = applications, totalCount });
         }
 
         [HttpGet("job/{jobId}")]
@@ -92,6 +102,31 @@ namespace HireConnect.API.Controllers
             return Ok(applications);
         }
 
+        [HttpGet("employer-stats")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> GetEmployerStats()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
+            if (company == null) return Ok(new { TotalApplications = 0, NewApplications = 0, Interviewing = 0 });
+
+            var stats = await _context.Applications
+                .Where(a => a.Job.CompanyId == company.Id)
+                .GroupBy(a => 1)
+                .Select(g => new
+                {
+                    TotalApplications = g.Count(),
+                    NewApplications = g.Count(a => a.Status == "Applied"),
+                    Interviewing = g.Count(a => a.Status == "Shortlisted" || a.Status == "Interview Scheduled")
+                })
+                .FirstOrDefaultAsync();
+
+            if (stats == null) return Ok(new { TotalApplications = 0, NewApplications = 0, Interviewing = 0 });
+            
+            return Ok(stats);
+        }
+
         [HttpPatch("{id}/status")]
         [Authorize(Roles = "Employer")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStatusDto model)
@@ -101,6 +136,7 @@ namespace HireConnect.API.Controllers
             var application = await _context.Applications
                 .Include(a => a.Job)
                 .ThenInclude(j => j.Company)
+                .Include(a => a.Seeker)
                 .FirstOrDefaultAsync(a => a.Id == id);
 
             if (application == null) return NotFound();
@@ -113,6 +149,14 @@ namespace HireConnect.API.Controllers
                 application.InterviewDate = model.InterviewDate;
 
             application.UpdatedAt = DateTime.UtcNow;
+
+            var notification = new Notification
+            {
+                UserId = application.Seeker.UserId,
+                Title = "Application Status Updated",
+                Message = $"Your application for {application.Job.Title} at {application.Job.Company.CompanyName} has been updated to: {model.Status}."
+            };
+            _context.Notifications.Add(notification);
 
             await _context.SaveChangesAsync();
             return Ok(application);
