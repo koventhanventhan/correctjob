@@ -33,6 +33,10 @@ namespace HireConnect.API.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            var allowedRoles = new[] { "JobSeeker", "Employer" };
+            if (!allowedRoles.Contains(model.Role))
+                return BadRequest(new { message = "Invalid role." });
+
             var user = new User
             {
                 UserName = model.Email,
