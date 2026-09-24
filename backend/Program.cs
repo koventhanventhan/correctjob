@@ -9,7 +9,11 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -17,6 +21,9 @@ builder.Services.AddSwaggerGen();
 
 // File Storage
 builder.Services.AddScoped<HireConnect.API.Services.IFileStorageService, HireConnect.API.Services.LocalFileStorageService>();
+
+// Background Services
+builder.Services.AddHostedService<HireConnect.API.Services.JobAlertBackgroundService>();
 
 // Configure Database
 builder.Services.AddDbContext<AppDbContext>(options =>

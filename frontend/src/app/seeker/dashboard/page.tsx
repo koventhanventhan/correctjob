@@ -3,7 +3,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { Briefcase, FileText, CheckCircle, Clock } from 'lucide-react';
+import { Briefcase, FileText, CheckCircle, Clock, Bell } from 'lucide-react';
 import { calculateProfileCompletion } from '@/utils/profile';
 
 export default function SeekerDashboard() {
@@ -78,6 +78,20 @@ export default function SeekerDashboard() {
                                 <CheckCircle className="h-5 w-5" />
                             </div>
                         </div>
+                    </div>
+                    
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-indigo-300 transition-colors cursor-pointer group">
+                        <Link href="/seeker/job-alerts" className="block">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 group-hover:text-indigo-600">Job Alerts</p>
+                                    <p className="text-sm text-gray-900 mt-1">Manage saved searches</p>
+                                </div>
+                                <div className="h-10 w-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
+                                    <Bell className="h-5 w-5" />
+                                </div>
+                            </div>
+                        </Link>
                     </div>
                 </div>
 

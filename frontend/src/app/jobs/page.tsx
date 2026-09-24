@@ -2,8 +2,10 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { MapPin, Briefcase, Search, Filter } from 'lucide-react';
+import { MapPin, Briefcase, Search, Filter, Bell } from 'lucide-react';
 import { useState } from 'react';
+import { useAuthStore } from '@/store/authStore';
+import { useMutation } from '@tanstack/react-query';
 
 export default function JobsPage() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -21,6 +23,24 @@ export default function JobsPage() {
         e.preventDefault();
         setQuery(searchTerm);
     };
+
+    const { user } = useAuthStore();
+    const [alertMsg, setAlertMsg] = useState('');
+
+    const createAlertMutation = useMutation({
+        mutationFn: async () => {
+            const res = await api.post('/jobalerts', { keyword: query });
+            return res.data;
+        },
+        onSuccess: () => {
+            setAlertMsg('Alert created!');
+            setTimeout(() => setAlertMsg(''), 3000);
+        },
+        onError: () => {
+            setAlertMsg('Failed to create alert.');
+            setTimeout(() => setAlertMsg(''), 3000);
+        }
+    });
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
@@ -40,11 +60,30 @@ export default function JobsPage() {
                                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                             />
                         </div>
-                        <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                        <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 whitespace-nowrap">
                             Search
                         </button>
                     </form>
                 </div>
+
+                {user?.role === 'JobSeeker' && query && (
+                    <div className="mb-6 flex items-center justify-between bg-indigo-50 p-4 rounded-md border border-indigo-100">
+                        <div className="flex items-center text-indigo-800">
+                            <Bell className="w-5 h-5 mr-2 text-indigo-600" />
+                            <span>Get notified when new jobs match <strong>"{query}"</strong></span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            {alertMsg && <span className="text-sm font-medium text-indigo-600">{alertMsg}</span>}
+                            <button
+                                onClick={() => createAlertMutation.mutate()}
+                                disabled={createAlertMutation.isPending}
+                                className="bg-white text-indigo-600 border border-indigo-200 px-4 py-2 rounded-md hover:bg-indigo-50 font-medium text-sm disabled:opacity-50"
+                            >
+                                {createAlertMutation.isPending ? 'Creating...' : 'Create Alert'}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Filters Sidebar */}
