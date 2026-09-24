@@ -20,6 +20,12 @@ try {
 $seekerToken = Login-User $seekerEmail "Password123!"
 $seekerHeaders = @{ Authorization = "Bearer $seekerToken"; "Content-Type" = "application/json" }
 
+# Create Category first
+$cat = Invoke-RestMethod -Uri "$baseUrl/categories" -Method Get | Select-Object -First 1
+if (-not $cat) {
+    $cat = Invoke-RestMethod -Uri "$baseUrl/admin/categories" -Method Post -Headers $adminHeaders -Body (@{ Name = "Tech"; Description = "Tech" } | ConvertTo-Json)
+}
+
 # Create Seeker Profile
 try {
     Invoke-RestMethod -Uri "$baseUrl/seekerprofiles/me" -Method Put -Headers $seekerHeaders -Body (@{ CareerTitle = "Dev"; Bio = "Test"; Experience = "1 yr"; Education = "BS"; Location = "NY" } | ConvertTo-Json)
@@ -29,9 +35,9 @@ try {
 
 # Create Job Alert for Seeker
 try {
-    $alertBody = @{ Keyword = "AlertBot"; Location = "NY" } | ConvertTo-Json
+    $alertBody = @{ Keyword = "AlertBot"; Location = "NY"; JobType = "Full-time"; CategoryId = $cat.id } | ConvertTo-Json
     $alert = Invoke-RestMethod -Uri "$baseUrl/jobalerts" -Method Post -Headers $seekerHeaders -Body $alertBody
-    Write-Host "Created Job Alert with Keyword: AlertBot"
+    Write-Host "Created Job Alert with multiple criteria"
 } catch {
     Write-Host "Failed to create Job Alert: $_"
 }
@@ -54,9 +60,6 @@ try {
 $companies = Invoke-RestMethod -Uri "$baseUrl/admin/companies?search=Alert Corp" -Method Get -Headers $adminHeaders
 $companyId = $companies.data[0].id
 Invoke-RestMethod -Uri "$baseUrl/admin/companies/$companyId/approve" -Method Patch -Headers $adminHeaders -Body ('"Approved"')
-
-# Create Category
-$cat = Invoke-RestMethod -Uri "$baseUrl/admin/categories" -Method Post -Headers $adminHeaders -Body (@{ Name = "Tech"; Description = "Tech" } | ConvertTo-Json)
 
 # Create Job
 $jobBody = @{ Title = "AlertBot Engineer"; Description = "You will work on AlertBot"; Requirements = "None"; Location = "NY"; JobType = "Full-time"; CategoryId = $cat.id; SalaryMin = 10; SalaryMax = 20; ExperienceMin = 0; ExperienceMax = 1 } | ConvertTo-Json
