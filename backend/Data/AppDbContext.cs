@@ -23,6 +23,7 @@ namespace HireConnect.API.Data
         public DbSet<JobAlert> JobAlerts { get; set; }
         public DbSet<Report> Reports { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<CompanyReview> CompanyReviews { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder); // Important for Identity
@@ -96,6 +97,20 @@ namespace HireConnect.API.Data
                 .WithMany()
                 .HasForeignKey(r => r.JobId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // CompanyReview -> Company
+            builder.Entity<CompanyReview>()
+                .HasOne(cr => cr.Company)
+                .WithMany(c => c.Reviews)
+                .HasForeignKey(cr => cr.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // CompanyReview -> SeekerProfile / User
+            builder.Entity<CompanyReview>()
+                .HasOne(cr => cr.Seeker)
+                .WithMany()
+                .HasForeignKey(cr => cr.SeekerId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Seed Data for Categories and Skills
             builder.Entity<Category>().HasData(

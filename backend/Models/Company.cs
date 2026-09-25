@@ -39,5 +39,6 @@ namespace HireConnect.API.Models
         public virtual User Employer { get; set; } = null!;
 
         public virtual ICollection<Job> Jobs { get; set; } = new List<Job>();
+        public virtual ICollection<CompanyReview> Reviews { get; set; } = new List<CompanyReview>();
     }
 }
