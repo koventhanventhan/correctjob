@@ -3,7 +3,7 @@
 A production-quality job portal web application.
 
 ## Tech Stack
-- **Backend**: .NET 8 Web API, Entity Framework Core, SQL Server, ASP.NET Core Identity, JWT Auth.
+- **Backend**: .NET 8 Web API, Entity Framework Core, MySQL, ASP.NET Core Identity, JWT Auth.
 - **Frontend**: Next.js (App Router), React, TypeScript, Tailwind CSS, Zustand, React Hook Form, Zod, TanStack Query.
 
 ## Project Structure
@@ -19,7 +19,7 @@ A production-quality job portal web application.
    ```bash
    dotnet restore
    ```
-3. The application is configured to use `(localdb)\MSSQLLocalDB`. Ensure you have SQL Server LocalDB installed, or change the `DefaultConnection` string in `backend/appsettings.json` to point to your preferred SQL Server instance (e.g., `.\SQLEXPRESS`).
+3. The application is configured to use `MySQL`. Ensure you have MySQL running locally, and the `DefaultConnection` string in `backend/appsettings.json` is correct (e.g., pointing to your root user).
 4. Apply Entity Framework migrations to create the database:
    ```bash
    dotnet ef database update
@@ -29,7 +29,7 @@ A production-quality job portal web application.
    ```bash
    dotnet run
    ```
-   The API will start (usually on `http://localhost:5037` or `https://localhost:7119`).
+   The API will start (usually on `http://localhost:5189` or `https://localhost:7200`).
 
 ### 2. Frontend Setup
 
@@ -38,9 +38,9 @@ A production-quality job portal web application.
    ```bash
    npm install
    ```
-3. Set the API URL. Create a `.env.local` file in `frontend/` (if your backend runs on a different port than `5037`):
+3. Set the API URL. Create a `.env.local` file in `frontend/` (if your backend runs on a different port than `5189`):
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:5037/api
+   NEXT_PUBLIC_API_URL=http://localhost:5189/api
    ```
 4. Start the development server:
    ```bash
