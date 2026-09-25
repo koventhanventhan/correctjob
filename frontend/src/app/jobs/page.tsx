@@ -3,11 +3,11 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
 import { MapPin, Briefcase, Search, Filter, Bell } from 'lucide-react';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
-export default function JobsPage() {
+function JobsContent() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -313,5 +313,13 @@ export default function JobsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function JobsPage() {
+    return (
+        <Suspense fallback={<div className="text-center py-12">Loading...</div>}>
+            <JobsContent />
+        </Suspense>
     );
 }
