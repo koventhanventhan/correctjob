@@ -108,6 +108,8 @@ function JobsContent() {
         }
     });
 
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+
     const hasAnyFilter = currentKeyword || currentLocation || currentCategory || currentJobType || currentMinSalary || currentMaxSalary || currentExperience;
 
     return (
@@ -162,16 +164,22 @@ function JobsContent() {
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Filters Sidebar */}
                     <div className="w-full lg:w-64 flex-shrink-0">
-                        <form onSubmit={applyFilters} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div 
+                                className="flex items-center justify-between mb-4 lg:mb-4 cursor-pointer lg:cursor-default" 
+                                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            >
                                 <div className="flex items-center gap-2">
                                     <Filter className="h-5 w-5 text-gray-500" />
                                     <h2 className="font-semibold text-gray-900">Filters</h2>
                                 </div>
-                                <button type="submit" className="text-sm text-indigo-600 font-medium hover:underline">Apply</button>
+                                <div className="flex items-center gap-2">
+                                    <span className="lg:hidden text-sm text-gray-500">{isFilterOpen ? 'Hide' : 'Show'}</span>
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); applyFilters(e as any); }} className="hidden lg:block text-sm text-indigo-600 font-medium hover:underline">Apply</button>
+                                </div>
                             </div>
                             
-                            <div className="space-y-6">
+                            <form onSubmit={applyFilters} className={`space-y-6 ${isFilterOpen ? 'block' : 'hidden lg:block'}`}>
                                 <div>
                                     <h3 className="text-sm font-medium text-gray-900 mb-2">Location</h3>
                                     <input 
@@ -257,8 +265,8 @@ function JobsContent() {
                                     </div>
                                 </div>
 
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
 
                     {/* Job List */}
