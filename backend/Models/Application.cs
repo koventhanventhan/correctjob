@@ -23,6 +23,11 @@ namespace HireConnect.API.Models
 
         public DateTime? InterviewDate { get; set; }
 
+        public int? MatchScore { get; set; }
+        
+        [Column(TypeName = "text")]
+        public string? MatchExplanation { get; set; }
+
         public DateTime AppliedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

@@ -25,6 +25,8 @@ namespace HireConnect.API.Models
         [MaxLength(255)]
         public string? ResumeUrl { get; set; }
 
+        public string? ResumeText { get; set; }
+
         [MaxLength(255)]
         public string? LinkedInUrl { get; set; }
 

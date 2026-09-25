@@ -61,7 +61,7 @@ Output EXACTLY AND ONLY valid JSON in this format, with no markdown fences, no p
 
                 var requestData = new
                 {
-                    model = "claude-3-5-sonnet-20240620", // Use sonnet 3.5 per instructions (or claude-3-sonnet-20240229)
+                    model = "claude-haiku-4-5-20251001", // Faster and cheaper for 0-100 score + explanation
                     max_tokens = 300,
                     messages = new[]
                     {
