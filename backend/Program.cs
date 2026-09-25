@@ -30,6 +30,11 @@ builder.Services.AddHostedService<HireConnect.API.Services.JobAlertBackgroundSer
 // Payment Services
 builder.Services.AddScoped<IPaymentGatewayService, PayHereGatewayService>();
 
+// Resume Services
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<HireConnect.API.Services.IResumeExtractorService, HireConnect.API.Services.ResumeExtractorService>();
+builder.Services.AddScoped<HireConnect.API.Services.IResumeMatchingService, HireConnect.API.Services.ResumeMatchingService>();
+
 // Configure Database
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(

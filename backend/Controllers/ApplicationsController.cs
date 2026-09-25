@@ -14,11 +14,15 @@ namespace HireConnect.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IFileStorageService _fileStorage;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IResumeExtractorService _extractor;
 
-        public ApplicationsController(AppDbContext context, IFileStorageService fileStorage)
+        public ApplicationsController(AppDbContext context, IFileStorageService fileStorage, IServiceScopeFactory scopeFactory, IResumeExtractorService extractor)
         {
             _context = context;
             _fileStorage = fileStorage;
+            _scopeFactory = scopeFactory;
+            _extractor = extractor;
         }
 
         [HttpPost]
@@ -34,9 +38,20 @@ namespace HireConnect.API.Controllers
 
             // File upload
             string? resumeUrl = seeker.ResumeUrl;
+            string? resumeText = seeker.ResumeText;
+            
             if (model.ResumeFile != null)
             {
                 resumeUrl = await _fileStorage.UploadFileAsync(model.ResumeFile, "resumes");
+                try
+                {
+                    using var stream = model.ResumeFile.OpenReadStream();
+                    resumeText = await _extractor.ExtractTextAsync(stream, model.ResumeFile.ContentType);
+                }
+                catch
+                {
+                    // Fallback to existing or null
+                }
             }
 
             var application = new Application
@@ -59,6 +74,27 @@ namespace HireConnect.API.Controllers
             _context.Notifications.Add(notification);
 
             await _context.SaveChangesAsync();
+            
+            var appId = application.Id;
+            var jobDesc = (job.Description ?? "") + " " + (job.Requirements ?? "") + " " + (job.Responsibilities ?? "");
+
+            // Fire and forget matching
+            _ = Task.Run(async () => 
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var matcher = scope.ServiceProvider.GetRequiredService<IResumeMatchingService>();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                
+                var (score, explanation) = await matcher.MatchAsync(resumeText, jobDesc);
+                
+                var appToUpdate = await db.Applications.FindAsync(appId);
+                if (appToUpdate != null)
+                {
+                    appToUpdate.MatchScore = score;
+                    appToUpdate.MatchExplanation = explanation;
+                    await db.SaveChangesAsync();
+                }
+            });
 
             return Ok(new { message = "Application submitted successfully", applicationId = application.Id });
         }

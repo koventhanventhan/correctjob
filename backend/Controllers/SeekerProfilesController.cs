@@ -14,11 +14,13 @@ namespace HireConnect.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly HireConnect.API.Services.IFileStorageService _fileStorage;
+        private readonly HireConnect.API.Services.IResumeExtractorService _extractor;
 
-        public SeekerProfilesController(AppDbContext context, HireConnect.API.Services.IFileStorageService fileStorage)
+        public SeekerProfilesController(AppDbContext context, HireConnect.API.Services.IFileStorageService fileStorage, HireConnect.API.Services.IResumeExtractorService extractor)
         {
             _context = context;
             _fileStorage = fileStorage;
+            _extractor = extractor;
         }
 
         [HttpGet("me")]
@@ -60,6 +62,7 @@ namespace HireConnect.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(existing);
         }
+        
         [HttpPost("resume")]
         public async Task<IActionResult> UploadResume(IFormFile resumeFile)
         {
@@ -75,6 +78,18 @@ namespace HireConnect.API.Controllers
 
             var resumeUrl = await _fileStorage.UploadFileAsync(resumeFile, "resumes");
             profile.ResumeUrl = resumeUrl;
+            
+            try
+            {
+                using var stream = resumeFile.OpenReadStream();
+                var text = await _extractor.ExtractTextAsync(stream, resumeFile.ContentType);
+                profile.ResumeText = text;
+            }
+            catch
+            {
+                profile.ResumeText = null;
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Resume uploaded successfully", resumeUrl });
