@@ -24,6 +24,8 @@ namespace HireConnect.API.Data
         public DbSet<Report> Reports { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<CompanyReview> CompanyReviews { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder); // Important for Identity
@@ -110,6 +112,20 @@ namespace HireConnect.API.Data
                 .HasOne(cr => cr.Seeker)
                 .WithMany()
                 .HasForeignKey(cr => cr.SeekerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Payment -> Job
+            builder.Entity<Payment>()
+                .HasOne(p => p.Job)
+                .WithMany(j => j.Payments)
+                .HasForeignKey(p => p.JobId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Payment -> Employer (User)
+            builder.Entity<Payment>()
+                .HasOne(p => p.Employer)
+                .WithMany()
+                .HasForeignKey(p => p.EmployerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Seed Data for Categories and Skills

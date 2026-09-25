@@ -41,6 +41,8 @@ namespace HireConnect.API.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public bool IsPaid { get; set; } = false;
+
         [ForeignKey(nameof(CompanyId))]
         public virtual Company Company { get; set; } = null!;
 
@@ -50,5 +52,6 @@ namespace HireConnect.API.Models
         public virtual ICollection<JobSkill> JobSkills { get; set; } = new List<JobSkill>();
         public virtual ICollection<Application> Applications { get; set; } = new List<Application>();
         public virtual ICollection<SavedJob> SavedJobs { get; set; } = new List<SavedJob>();
+        public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }

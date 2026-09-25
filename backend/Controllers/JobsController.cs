@@ -225,6 +225,25 @@ namespace HireConnect.API.Controllers
             return Ok(job);
         }
 
+        [HttpPost("{id}/submit")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> SubmitJobForApproval(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == id);
+            
+            if (job == null) return NotFound();
+            if (job.Company.EmployerId != userId) return Forbid(); // Ownership check
+
+            if (!job.IsPaid) return BadRequest(new { message = "You must pay for this job post before submitting for approval." });
+            if (job.Status != "Draft") return BadRequest(new { message = "Only draft jobs can be submitted." });
+
+            job.Status = "PendingApproval";
+            await _context.SaveChangesAsync();
+
+            return Ok(job);
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Employer,Admin")]
         public async Task<IActionResult> DeleteJob(int id)

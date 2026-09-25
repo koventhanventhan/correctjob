@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using HireConnect.API.Services.Payment;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,9 @@ builder.Services.AddScoped<HireConnect.API.Services.IFileStorageService, HireCon
 
 // Background Services
 builder.Services.AddHostedService<HireConnect.API.Services.JobAlertBackgroundService>();
+
+// Payment Services
+builder.Services.AddScoped<IPaymentGatewayService, PayHereGatewayService>();
 
 // Configure Database
 builder.Services.AddDbContext<AppDbContext>(options =>

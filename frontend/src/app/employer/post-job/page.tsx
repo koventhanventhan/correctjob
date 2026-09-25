@@ -13,6 +13,7 @@ export default function PostJobPage() {
     const [saving, setSaving] = useState(false);
     const [isApproved, setIsApproved] = useState(false);
     const [hasCompany, setHasCompany] = useState(false);
+    const [payHereData, setPayHereData] = useState<any>(null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -71,16 +72,30 @@ export default function PostJobPage() {
                 deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null
             };
 
-            await api.post('/Jobs', payload);
-            alert("Job posted successfully as Draft. You can publish it from Manage Jobs.");
-            router.push('/employer/manage-jobs');
+            const res = await api.post('/Jobs', payload);
+            const newJob = res.data;
+
+            // Generate Payment Order
+            const paymentRes = await api.post('/Payments/create-order', { jobId: newJob.id });
+            const pData = paymentRes.data;
+            
+            // Set PayHere Data, which will trigger form submission via useEffect
+            setPayHereData(pData);
         } catch (error: any) {
             console.error(error);
             alert(error.response?.data?.message || "An error occurred while posting the job.");
-        } finally {
             setSaving(false);
         }
     };
+
+    useEffect(() => {
+        if (payHereData) {
+            const form = document.getElementById('payhere-form') as HTMLFormElement;
+            if (form) {
+                form.submit();
+            }
+        }
+    }, [payHereData]);
 
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
@@ -185,9 +200,30 @@ export default function PostJobPage() {
                 </div>
                 
                 <button disabled={saving} type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded hover:bg-blue-700 disabled:opacity-50 mt-6">
-                    {saving ? 'Posting...' : 'Post Job'}
+                    {saving ? 'Processing...' : 'Pay & Publish (5,000 LKR)'}
                 </button>
             </form>
+
+            {payHereData && (
+                <form id="payhere-form" method="post" action="https://sandbox.payhere.lk/pay/checkout" className="hidden">
+                    <input type="hidden" name="merchant_id" value={payHereData.merchantId} />
+                    <input type="hidden" name="return_url" value={`${window.location.origin}/employer/payment-success?jobId=${payHereData.orderId.split('-')[1]}`} />
+                    <input type="hidden" name="cancel_url" value={`${window.location.origin}/employer/payment-cancelled`} />
+                    <input type="hidden" name="notify_url" value={`${process.env.NEXT_PUBLIC_API_URL}/payments/notify`} />
+                    <input type="hidden" name="order_id" value={payHereData.orderId} />
+                    <input type="hidden" name="items" value="Job Posting Fee" />
+                    <input type="hidden" name="currency" value={payHereData.currency} />
+                    <input type="hidden" name="amount" value={payHereData.amount} />
+                    
+                    <input type="hidden" name="first_name" value={user?.fullName || "Employer"} />
+                    <input type="hidden" name="last_name" value="" />
+                    <input type="hidden" name="email" value={user?.email || "employer@example.com"} />
+                    <input type="hidden" name="phone" value="0771234567" />
+                    <input type="hidden" name="address" value="No.1, Galle Road" />
+                    <input type="hidden" name="city" value="Colombo" />
+                    <input type="hidden" name="country" value="Sri Lanka" />
+                </form>
+            )}
         </div>
     );
 }
