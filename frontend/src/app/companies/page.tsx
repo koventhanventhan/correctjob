@@ -12,7 +12,7 @@ export default function CompaniesPage() {
         queryKey: ['public-companies'],
         queryFn: async () => {
             const res = await api.get('/companies');
-            return res.data;
+            return res.data.data || [];
         }
     });
 
