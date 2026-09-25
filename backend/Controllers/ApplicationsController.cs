@@ -256,6 +256,57 @@ END:VCALENDAR";
             var bytes = System.Text.Encoding.UTF8.GetBytes(icsContent);
             return File(bytes, "text/calendar", $"Interview_{application.Job.Title.Replace(" ", "_")}.ics");
         }
+
+        [HttpGet("{id}/messages")]
+        [Authorize]
+        public async Task<IActionResult> GetMessages(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            
+            var application = await _context.Applications
+                .Include(a => a.Job)
+                .ThenInclude(j => j.Company)
+                .Include(a => a.Seeker)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (application == null) return NotFound();
+
+            bool isSeeker = application.Seeker.UserId == userId;
+            bool isEmployer = application.Job.Company.EmployerId == userId;
+
+            if (!isSeeker && !isEmployer) return Forbid();
+
+            var messages = await _context.Messages
+                .Where(m => m.ApplicationId == id)
+                .OrderBy(m => m.SentAt)
+                .Select(m => new
+                {
+                    m.Id,
+                    m.ApplicationId,
+                    m.SenderId,
+                    SenderName = m.Sender.FullName,
+                    m.Content,
+                    m.SentAt,
+                    m.IsRead
+                })
+                .ToListAsync();
+
+            // Mark unread messages as read
+            var unreadMessages = await _context.Messages
+                .Where(m => m.ApplicationId == id && m.SenderId != userId && !m.IsRead)
+                .ToListAsync();
+
+            if (unreadMessages.Any())
+            {
+                foreach (var msg in unreadMessages)
+                {
+                    msg.IsRead = true;
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(messages);
+        }
     }
 
     public class ApplicationDto

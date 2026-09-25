@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import api from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
-import { Calendar } from 'lucide-react';
+import { Calendar, MessageCircle } from 'lucide-react';
+import Link from 'next/link';
 
 function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) {
     const [status, setStatus] = useState(app.status);
@@ -38,16 +39,25 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                     <h2 className="text-xl font-bold">{app.seeker?.user?.fullName || 'Unknown Applicant'}</h2>
                     <p className="text-gray-600 text-sm">{app.seeker?.user?.email}</p>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                    app.status === 'Applied' ? 'bg-blue-100 text-blue-800' :
-                    app.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
-                    app.status === 'Shortlisted' ? 'bg-indigo-100 text-indigo-800' :
-                    app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
-                    app.status === 'Selected' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                }`}>
-                    {app.status}
-                </span>
+                <div className="flex flex-col items-end gap-2">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                        app.status === 'Applied' ? 'bg-blue-100 text-blue-800' :
+                        app.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
+                        app.status === 'Shortlisted' ? 'bg-indigo-100 text-indigo-800' :
+                        app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
+                        app.status === 'Selected' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                    }`}>
+                        {app.status}
+                    </span>
+                    <Link 
+                        href={`/chat/${app.id}`} 
+                        className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+                    >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Chat
+                    </Link>
+                </div>
             </div>
 
             <p className="text-sm text-gray-500 mb-2">

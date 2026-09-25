@@ -25,6 +25,7 @@ namespace HireConnect.API.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<CompanyReview> CompanyReviews { get; set; }
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<Message> Messages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -126,6 +127,20 @@ namespace HireConnect.API.Data
                 .HasOne(p => p.Employer)
                 .WithMany()
                 .HasForeignKey(p => p.EmployerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Message -> Application
+            builder.Entity<Message>()
+                .HasOne(m => m.Application)
+                .WithMany()
+                .HasForeignKey(m => m.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Message -> User (Sender)
+            builder.Entity<Message>()
+                .HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Seed Data for Categories and Skills

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { Briefcase, ChevronLeft, ChevronRight, Clock, Building } from 'lucide-react';
+import { Briefcase, ChevronLeft, ChevronRight, Clock, Building, MessageCircle } from 'lucide-react';
 
 const statuses = ['Applied', 'Under Review', 'Shortlisted', 'Interview Scheduled', 'Selected', 'Rejected'];
 
@@ -123,7 +123,7 @@ export default function AppliedJobs() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div>
+                                    <div className="flex flex-col items-end gap-2">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                                             app.status === 'Applied' ? 'bg-blue-100 text-blue-800' :
                                             app.status === 'Under Review' ? 'bg-purple-100 text-purple-800' :
@@ -135,6 +135,13 @@ export default function AppliedJobs() {
                                         }`}>
                                             {app.status}
                                         </span>
+                                        <Link 
+                                            href={`/chat/${app.id}`} 
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
+                                        >
+                                            <MessageCircle className="w-3.5 h-3.5" />
+                                            Chat
+                                        </Link>
                                     </div>
                                 </div>
                                 <StatusTimeline currentStatus={app.status} />
