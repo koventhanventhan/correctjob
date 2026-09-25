@@ -142,11 +142,20 @@ namespace HireConnect.API.Controllers
             if (application == null) return NotFound();
             if (application.Job.Company.EmployerId != userId) return Forbid(); // Ownership check
 
+            if (model.Status == "Interview Scheduled" && !model.InterviewDate.HasValue)
+            {
+                return BadRequest(new { message = "Interview date is required when scheduling an interview." });
+            }
+
             application.Status = model.Status;
             if (!string.IsNullOrEmpty(model.EmployerNotes))
                 application.EmployerNotes = model.EmployerNotes;
+            
+            // Only update InterviewDate if it's provided or if status changed to Interview Scheduled
             if (model.InterviewDate.HasValue)
+            {
                 application.InterviewDate = model.InterviewDate;
+            }
 
             application.UpdatedAt = DateTime.UtcNow;
 
@@ -195,6 +204,57 @@ namespace HireConnect.API.Controllers
             }
 
             return PhysicalFile(filePath, contentType, Path.GetFileName(filePath));
+        }
+
+        [HttpGet("{id}/calendar.ics")]
+        [Authorize(Roles = "JobSeeker")]
+        public async Task<IActionResult> DownloadCalendarInvite(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var application = await _context.Applications
+                .Include(a => a.Job)
+                .ThenInclude(j => j.Company)
+                .Include(a => a.Seeker)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (application == null) return NotFound();
+            if (application.Seeker.UserId != userId) return Forbid();
+            if (application.Status != "Interview Scheduled" || !application.InterviewDate.HasValue)
+            {
+                return BadRequest(new { message = "No interview scheduled for this application." });
+            }
+
+            var startTime = application.InterviewDate.Value.ToUniversalTime();
+            var endTime = startTime.AddHours(1); // Default 1 hour duration
+            var dtStamp = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
+            var dtStart = startTime.ToString("yyyyMMddTHHmmssZ");
+            var dtEnd = endTime.ToString("yyyyMMddTHHmmssZ");
+
+            var icsContent = $@"BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//HireConnect//EN
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+DTSTAMP:{dtStamp}
+DTSTART:{dtStart}
+DTEND:{dtEnd}
+SUMMARY:Interview for {application.Job.Title} at {application.Job.Company.CompanyName}
+DESCRIPTION:You have an interview scheduled for the position of {application.Job.Title} at {application.Job.Company.CompanyName}.
+LOCATION:To be decided / Online
+UID:{Guid.NewGuid()}
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Reminder
+END:VALARM
+END:VEVENT
+END:VCALENDAR";
+
+            // Return as a file download
+            var bytes = System.Text.Encoding.UTF8.GetBytes(icsContent);
+            return File(bytes, "text/calendar", $"Interview_{application.Job.Title.Replace(" ", "_")}.ics");
         }
     }
 

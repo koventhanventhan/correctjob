@@ -3,11 +3,28 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { Briefcase, FileText, CheckCircle, Clock, Bell } from 'lucide-react';
+import { Briefcase, FileText, CheckCircle, Clock, Bell, Calendar as CalendarIcon, Download } from 'lucide-react';
 import { calculateProfileCompletion } from '@/utils/profile';
 
 export default function SeekerDashboard() {
     const { user } = useAuthStore();
+
+    const handleDownloadCalendar = async (appId: number, jobTitle: string) => {
+        try {
+            const res = await api.get(`/applications/${appId}/calendar.ics`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Interview_${jobTitle.replace(/\s+/g, '_')}.ics`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Failed to download calendar invite:", error);
+            alert("Failed to download calendar invite.");
+        }
+    };
 
     const { data: applications, isLoading } = useQuery({
         queryKey: ['my-applications'],
@@ -133,13 +150,30 @@ export default function SeekerDashboard() {
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                             app.status === 'Applied' ? 'bg-blue-100 text-blue-800' :
                                             app.status === 'Shortlisted' ? 'bg-yellow-100 text-yellow-800' :
+                                            app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
                                             app.status === 'Selected' ? 'bg-green-100 text-green-800' :
                                             app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
                                             'bg-gray-100 text-gray-800'
                                         }`}>
                                             {app.status}
                                         </span>
-                                        <span className="flex items-center gap-1 text-xs text-gray-500">
+
+                                        {app.status === 'Interview Scheduled' && app.interviewDate && (
+                                            <div className="flex flex-col items-end gap-1 mt-2">
+                                                <span className="flex items-center gap-1 text-sm font-medium text-purple-700 bg-purple-50 px-2 py-1 rounded">
+                                                    <CalendarIcon className="h-4 w-4" /> 
+                                                    {new Date(app.interviewDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                                                </span>
+                                                <button 
+                                                    onClick={() => handleDownloadCalendar(app.id, app.job?.title || 'Job')}
+                                                    className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 hover:underline mt-1 font-medium bg-transparent border-none cursor-pointer"
+                                                >
+                                                    <Download className="h-3 w-3" /> Add to Calendar
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <span className="flex items-center gap-1 text-xs text-gray-500 mt-2">
                                             <Clock className="h-3 w-3" /> Applied on {new Date(app.appliedAt).toLocaleDateString()}
                                         </span>
                                     </div>
