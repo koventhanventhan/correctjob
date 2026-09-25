@@ -73,7 +73,7 @@ Output EXACTLY AND ONLY valid JSON in this format, with no markdown fences, no p
                     }
                 };
 
-                string model = "gemini-1.5-flash"; // Recommended free-tier flash model
+                string model = "gemini-3.8-flash"; // Recommended free-tier flash model (current as of late 2026)
                 string endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
                 
                 var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
