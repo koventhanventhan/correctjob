@@ -29,10 +29,10 @@ namespace HireConnect.API.Services
                 return (0, "Match score unavailable (No readable resume text provided).");
             }
 
-            var apiKey = _config["Anthropic:ApiKey"];
+            var apiKey = _config["Gemini:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                _logger.LogWarning("Anthropic API key is missing. Skipping resume match.");
+                _logger.LogWarning("Gemini API key is missing. Skipping resume match.");
                 return (0, "Match score unavailable (API key missing).");
             }
 
@@ -61,17 +61,22 @@ Output EXACTLY AND ONLY valid JSON in this format, with no markdown fences, no p
 
                 var requestData = new
                 {
-                    model = "claude-haiku-4-5-20251001", // Faster and cheaper for 0-100 score + explanation
-                    max_tokens = 300,
-                    messages = new[]
+                    contents = new[]
                     {
-                        new { role = "user", content = prompt }
+                        new
+                        {
+                            parts = new[]
+                            {
+                                new { text = prompt }
+                            }
+                        }
                     }
                 };
 
-                var request = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages");
-                request.Headers.Add("x-api-key", apiKey);
-                request.Headers.Add("anthropic-version", "2023-06-01");
+                string model = "gemini-1.5-flash"; // Recommended free-tier flash model
+                string endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
+                
+                var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
                 request.Content = new StringContent(JsonSerializer.Serialize(requestData), System.Text.Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.SendAsync(request);
@@ -79,41 +84,48 @@ Output EXACTLY AND ONLY valid JSON in this format, with no markdown fences, no p
                 if (!response.IsSuccessStatusCode)
                 {
                     var err = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Anthropic API returned error: {Status} {Error}", response.StatusCode, err);
+                    _logger.LogError("Gemini API returned error: {Status} {Error}", response.StatusCode, err);
                     return (0, "Match score unavailable (API error).");
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
                 
-                // Parse Anthropic response structure
+                // Parse Gemini response structure: candidates[0].content.parts[0].text
                 using var jsonDoc = JsonDocument.Parse(content);
                 var root = jsonDoc.RootElement;
-                if (root.TryGetProperty("content", out var contentArray) && contentArray.GetArrayLength() > 0)
+                if (root.TryGetProperty("candidates", out var candidatesArray) && candidatesArray.GetArrayLength() > 0)
                 {
-                    var textResponse = contentArray[0].GetProperty("text").GetString();
-                    if (!string.IsNullOrEmpty(textResponse))
+                    var candidate = candidatesArray[0];
+                    if (candidate.TryGetProperty("content", out var contentObj))
                     {
-                        textResponse = textResponse.Trim();
-                        // Strip accidental markdown fences just in case
-                        if (textResponse.StartsWith("```json"))
+                        if (contentObj.TryGetProperty("parts", out var partsArray) && partsArray.GetArrayLength() > 0)
                         {
-                            textResponse = textResponse.Substring(7);
-                        }
-                        if (textResponse.StartsWith("```"))
-                        {
-                            textResponse = textResponse.Substring(3);
-                        }
-                        if (textResponse.EndsWith("```"))
-                        {
-                            textResponse = textResponse.Substring(0, textResponse.Length - 3);
-                        }
+                            var textResponse = partsArray[0].GetProperty("text").GetString();
+                            if (!string.IsNullOrEmpty(textResponse))
+                            {
+                                textResponse = textResponse.Trim();
+                                // Strip accidental markdown fences just in case
+                                if (textResponse.StartsWith("```json"))
+                                {
+                                    textResponse = textResponse.Substring(7);
+                                }
+                                if (textResponse.StartsWith("```"))
+                                {
+                                    textResponse = textResponse.Substring(3);
+                                }
+                                if (textResponse.EndsWith("```"))
+                                {
+                                    textResponse = textResponse.Substring(0, textResponse.Length - 3);
+                                }
 
-                        textResponse = textResponse.Trim();
+                                textResponse = textResponse.Trim();
 
-                        var matchResult = JsonSerializer.Deserialize<MatchResult>(textResponse, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        if (matchResult != null)
-                        {
-                            return (matchResult.Score, matchResult.Explanation ?? "Match score generated.");
+                                var matchResult = JsonSerializer.Deserialize<MatchResult>(textResponse, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                                if (matchResult != null)
+                                {
+                                    return (matchResult.Score, matchResult.Explanation ?? "Match score generated.");
+                                }
+                            }
                         }
                     }
                 }
@@ -122,7 +134,7 @@ Output EXACTLY AND ONLY valid JSON in this format, with no markdown fences, no p
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while calling Anthropic API for resume match.");
+                _logger.LogError(ex, "Error occurred while calling Gemini API for resume match.");
                 return (0, "Match score unavailable (Internal error).");
             }
         }
