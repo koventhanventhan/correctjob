@@ -31,27 +31,27 @@ export default function JobAlertsPage() {
         <div>
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Job Alerts</h1>
+                    <h1 className="text-2xl font-bold text-charcoal">Job Alerts</h1>
                     <p className="text-gray-500 mt-1">Manage your saved searches and get notified of new matches.</p>
                 </div>
-                <Link href="/jobs" className="bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700">
+                <Link href="/jobs" className="bg-orange text-white px-4 py-2 rounded text-sm hover:bg-orange/90">
                     Create New Alert
                 </Link>
             </div>
 
             {alerts?.length === 0 ? (
-                <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-center">
+                <div className="bg-warmwhite p-8 rounded-lg shadow-sm border border-gray-200 text-center">
                     <Bell className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900">No job alerts</h3>
+                    <h3 className="text-lg font-medium text-charcoal">No job alerts</h3>
                     <p className="text-gray-500 mt-1">You haven't set up any job alerts yet.</p>
                 </div>
             ) : (
                 <div className="grid gap-4">
                     {alerts?.map((alert: any) => (
-                        <div key={alert.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div key={alert.id} className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
-                                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                    <Bell className="h-4 w-4 text-indigo-500" />
+                                <h3 className="font-semibold text-charcoal flex items-center gap-2">
+                                    <Bell className="h-4 w-4 text-orange" />
                                     Alert for: "{alert.keyword || 'All Jobs'}"
                                 </h3>
                                 

@@ -33,7 +33,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
     };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div className="bg-warmwhite p-6 rounded-lg shadow-md border border-gray-200">
             <div className="flex justify-between items-start mb-4">
                 <div>
                     <h2 className="text-xl font-bold">{app.seeker?.user?.fullName || 'Unknown Applicant'}</h2>
@@ -41,9 +41,9 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                 </div>
                 <div className="flex flex-col items-end gap-2">
                     <span className={`px-2 py-1 rounded text-xs font-bold ${
-                        app.status === 'Applied' ? 'bg-blue-100 text-blue-800' :
+                        app.status === 'Applied' ? 'bg-peach text-charcoal' :
                         app.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
-                        app.status === 'Shortlisted' ? 'bg-indigo-100 text-indigo-800' :
+                        app.status === 'Shortlisted' ? 'bg-peach text-charcoal' :
                         app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
                         app.status === 'Selected' ? 'bg-green-100 text-green-800' :
                         'bg-red-100 text-red-800'
@@ -52,7 +52,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                     </span>
                     <Link 
                         href={`/chat/${app.id}`} 
-                        className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+                        className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-charcoal bg-peach hover:bg-peach rounded-md transition-colors"
                     >
                         <MessageCircle className="w-3.5 h-3.5" />
                         Chat
@@ -67,18 +67,18 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
             {app.matchScore !== undefined && app.matchScore !== null && (
                 <div className="mb-4">
                     <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${app.matchScore > 75 ? 'bg-green-100 text-green-800' : app.matchScore > 50 ? 'bg-yellow-100 text-yellow-800' : app.matchScore > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${app.matchScore > 75 ? 'bg-green-100 text-green-800' : app.matchScore > 50 ? 'bg-yellow-100 text-yellow-800' : app.matchScore > 0 ? 'bg-red-100 text-red-800' : 'bg-peach text-charcoal'}`}>
                             {app.matchScore > 0 ? `AI Match: ${app.matchScore}%` : 'Match Score Unavailable'}
                         </span>
                     </div>
                     {app.matchExplanation && app.matchScore > 0 && (
-                        <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">{app.matchExplanation}</p>
+                        <p className="text-xs text-gray-600 bg-warmwhite p-2 rounded">{app.matchExplanation}</p>
                     )}
                 </div>
             )}
             
             {app.coverLetter && (
-                <div className="mb-4 bg-gray-50 p-3 rounded text-sm text-gray-700">
+                <div className="mb-4 bg-warmwhite p-3 rounded text-sm text-gray-700">
                     <strong>Cover Letter:</strong>
                     <p className="mt-1 whitespace-pre-wrap">{app.coverLetter}</p>
                 </div>
@@ -88,7 +88,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                 <div className="mb-4">
                     <a href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${app.resumeUrl}`} 
                        target="_blank" rel="noopener noreferrer" 
-                       className="text-blue-600 hover:underline text-sm font-medium">
+                       className="text-orange hover:underline text-sm font-medium">
                         View Resume
                     </a>
                 </div>
@@ -107,7 +107,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                     <select 
                         value={status} 
                         onChange={(e) => setStatus(e.target.value)}
-                        className="w-full border p-2 rounded text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full border p-2 rounded text-sm focus:ring-orange focus:border-orange"
                     >
                         <option value="Applied">Applied</option>
                         <option value="Under Review">Under Review</option>
@@ -124,7 +124,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                                 type="datetime-local" 
                                 value={interviewDate}
                                 onChange={(e) => setInterviewDate(e.target.value)}
-                                className="w-full border p-2 rounded text-sm focus:ring-indigo-500 focus:border-indigo-500" 
+                                className="w-full border p-2 rounded text-sm focus:ring-orange focus:border-orange" 
                             />
                         </div>
                     )}
@@ -132,7 +132,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                     <button 
                         onClick={handleUpdate}
                         disabled={isUpdating || (status === app.status && (!app.interviewDate || interviewDate === app.interviewDate.slice(0, 16)))}
-                        className="w-full bg-indigo-600 text-white py-2 px-4 rounded text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="w-full bg-orange text-white py-2 px-4 rounded text-sm font-medium hover:bg-orange/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {isUpdating ? 'Updating...' : 'Update Application'}
                     </button>
@@ -182,7 +182,7 @@ export default function JobApplicationsPage() {
             <h1 className="text-2xl font-bold mb-6">Job Applications</h1>
             
             {applications.length === 0 ? (
-                <div className="bg-white p-8 rounded-lg shadow text-center">
+                <div className="bg-warmwhite p-8 rounded-lg shadow text-center">
                     <p className="text-gray-500">No applications received yet for this job.</p>
                 </div>
             ) : (

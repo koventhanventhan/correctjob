@@ -34,19 +34,19 @@ export default function SavedJobs() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Saved Jobs</h1>
+                    <h1 className="text-2xl font-bold text-charcoal">Saved Jobs</h1>
                     <p className="text-gray-600">Jobs you've bookmarked for later.</p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {isLoading ? (
                     <div className="p-12 text-center text-gray-500">Loading saved jobs...</div>
                 ) : savedJobs.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">
                         You don't have any saved jobs yet.
                         <div className="mt-4">
-                            <Link href="/jobs" className="text-indigo-600 font-medium hover:underline">Browse Jobs</Link>
+                            <Link href="/jobs" className="text-orange font-medium hover:underline">Browse Jobs</Link>
                         </div>
                     </div>
                 ) : (
@@ -56,10 +56,10 @@ export default function SavedJobs() {
                             if (!job) return null;
                             
                             return (
-                                <div key={saved.id} className="p-6 hover:bg-gray-50 transition-colors">
+                                <div key={saved.id} className="p-6 hover:bg-peach transition-colors">
                                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                         <div className="flex items-start gap-4">
-                                            <div className="h-12 w-12 bg-gray-100 rounded flex items-center justify-center border border-gray-200 shrink-0">
+                                            <div className="h-12 w-12 bg-peach rounded flex items-center justify-center border border-gray-200 shrink-0">
                                                 {job.company?.logoUrl ? (
                                                     <img src={job.company.logoUrl} alt="" className="h-10 w-10 object-contain" />
                                                 ) : (
@@ -67,7 +67,7 @@ export default function SavedJobs() {
                                                 )}
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 hover:text-indigo-600">
+                                                <h3 className="text-lg font-semibold text-charcoal hover:text-orange">
                                                     <Link href={`/jobs/${job.id}`}>{job.title}</Link>
                                                 </h3>
                                                 <div className="mt-1 flex items-center flex-wrap gap-4 text-sm text-gray-500">
@@ -91,7 +91,7 @@ export default function SavedJobs() {
                                         <div className="flex gap-2">
                                             <Link 
                                                 href={`/jobs/${job.id}`}
-                                                className="px-4 py-2 bg-indigo-50 text-indigo-700 font-medium rounded-md hover:bg-indigo-100 transition-colors text-sm"
+                                                className="px-4 py-2 bg-peach text-charcoal font-medium rounded-md hover:bg-peach transition-colors text-sm"
                                             >
                                                 View & Apply
                                             </Link>
@@ -113,7 +113,7 @@ export default function SavedJobs() {
                 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                    <div className="bg-warmwhite px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                         <div className="text-sm text-gray-700">
                             Showing <span className="font-medium">{(page - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(page * pageSize, totalCount)}</span> of <span className="font-medium">{totalCount}</span> saved jobs
                         </div>
@@ -121,14 +121,14 @@ export default function SavedJobs() {
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="p-2 border border-gray-300 rounded-md bg-white text-gray-700 disabled:opacity-50"
+                                className="p-2 border border-gray-300 rounded-md bg-warmwhite text-gray-700 disabled:opacity-50"
                             >
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
-                                className="p-2 border border-gray-300 rounded-md bg-white text-gray-700 disabled:opacity-50"
+                                className="p-2 border border-gray-300 rounded-md bg-warmwhite text-gray-700 disabled:opacity-50"
                             >
                                 <ChevronRight className="w-4 h-4" />
                             </button>

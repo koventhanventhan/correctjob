@@ -8,7 +8,7 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div className="col-span-1 md:col-span-1">
                         <Link href="/" className="flex items-center gap-2 mb-4">
-                            <Briefcase className="h-8 w-8 text-indigo-400" />
+                            <Briefcase className="h-8 w-8 text-orange" />
                             <span className="font-bold text-xl tracking-tight">HireConnect</span>
                         </Link>
                         <p className="text-gray-400 text-sm">

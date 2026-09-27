@@ -98,7 +98,7 @@ export default function EditJobPage() {
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md my-8">
+        <div className="max-w-4xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8">
             <h1 className="text-2xl font-bold mb-6">Edit Job</h1>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -176,7 +176,7 @@ export default function EditJobPage() {
                     </div>
                 </div>
                 
-                <button disabled={saving} type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded hover:bg-blue-700 disabled:opacity-50 mt-6">
+                <button disabled={saving} type="submit" className="w-full bg-orange text-white font-bold py-3 px-4 rounded hover:bg-orange/90 disabled:opacity-50 mt-6">
                     {saving ? 'Updating...' : 'Update Job'}
                 </button>
             </form>

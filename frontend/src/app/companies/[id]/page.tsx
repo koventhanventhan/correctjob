@@ -75,14 +75,14 @@ export default function CompanyDetailsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-warmwhite py-8">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 {/* Header */}
-                <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 mb-6 relative overflow-hidden">
-                    <div className="h-32 bg-indigo-600 absolute top-0 left-0 right-0"></div>
+                <div className="bg-warmwhite p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 mb-6 relative overflow-hidden">
+                    <div className="h-32 bg-orange absolute top-0 left-0 right-0"></div>
                     <div className="relative mt-16 flex flex-col md:flex-row md:items-end gap-6">
-                        <div className="h-32 w-32 bg-white rounded-lg p-2 shadow border border-gray-200 flex items-center justify-center shrink-0">
+                        <div className="h-32 w-32 bg-warmwhite rounded-lg p-2 shadow border border-gray-200 flex items-center justify-center shrink-0">
                             {company.logoUrl ? (
                                 <img src={company.logoUrl} alt={company.companyName} className="h-full w-full object-contain" />
                             ) : (
@@ -91,7 +91,7 @@ export default function CompanyDetailsPage() {
                         </div>
                         <div className="flex-1 pb-2 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                                <h1 className="text-3xl font-display font-bold text-charcoal flex items-center gap-3">
                                     {company.companyName}
                                     {reviewsData?.averageRating > 0 && (
                                         <span className="flex items-center text-lg bg-yellow-50 px-2 py-0.5 rounded border border-yellow-200 text-yellow-700">
@@ -104,7 +104,7 @@ export default function CompanyDetailsPage() {
                                     <span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-gray-400" /> {company.location || 'Location not specified'}</span>
                                     <span className="flex items-center gap-1"><Briefcase className="h-4 w-4 text-gray-400" /> {company.industry || 'Industry not specified'}</span>
                                     {company.website && (
-                                        <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-indigo-600 hover:underline">
+                                        <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-orange hover:underline">
                                             <Globe className="h-4 w-4" /> Website
                                         </a>
                                     )}
@@ -114,7 +114,7 @@ export default function CompanyDetailsPage() {
                             {user?.role === 'JobSeeker' && !showReviewForm && (
                                 <button 
                                     onClick={() => setShowReviewForm(true)}
-                                    className="flex items-center gap-2 bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-md shadow-sm font-medium transition-colors"
+                                    className="flex items-center gap-2 bg-warmwhite border border-peach text-charcoal hover:bg-peach px-4 py-2 rounded-md shadow-sm font-medium transition-colors"
                                 >
                                     <MessageSquare className="w-4 h-4" />
                                     Write a Review
@@ -130,8 +130,8 @@ export default function CompanyDetailsPage() {
                         
                         {/* Write Review Form */}
                         {showReviewForm && (
-                            <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-indigo-200 bg-indigo-50/30">
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">Write a Review for {company.companyName}</h2>
+                            <div className="bg-warmwhite p-6 md:p-8 rounded-lg shadow-sm border border-peach bg-peach/30">
+                                <h2 className="text-xl font-display font-bold text-charcoal mb-4">Write a Review for {company.companyName}</h2>
                                 {reviewError && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">{reviewError}</div>}
                                 
                                 <form onSubmit={(e) => { e.preventDefault(); submitReviewMutation.mutate(); }} className="space-y-4">
@@ -158,7 +158,7 @@ export default function CompanyDetailsPage() {
                                             placeholder="e.g. Great culture but long hours"
                                             value={reviewData.headline}
                                             onChange={e => setReviewData({...reviewData, headline: e.target.value})}
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-orange focus:border-orange"
                                         />
                                     </div>
                                     <div>
@@ -168,21 +168,21 @@ export default function CompanyDetailsPage() {
                                             placeholder="Tell us more about your experience working or interviewing here..."
                                             value={reviewData.description}
                                             onChange={e => setReviewData({...reviewData, description: e.target.value})}
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-orange focus:border-orange"
                                         />
                                     </div>
                                     <div className="flex justify-end gap-3 pt-2">
                                         <button 
                                             type="button" 
                                             onClick={() => { setShowReviewForm(false); setReviewError(''); }}
-                                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-peach"
                                         >
                                             Cancel
                                         </button>
                                         <button 
                                             type="submit" 
                                             disabled={submitReviewMutation.isPending}
-                                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                                            className="px-4 py-2 bg-orange text-white rounded-md hover:bg-orange/90 disabled:opacity-50"
                                         >
                                             {submitReviewMutation.isPending ? 'Submitting...' : 'Submit Review'}
                                         </button>
@@ -191,17 +191,17 @@ export default function CompanyDetailsPage() {
                             </div>
                         )}
 
-                        <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-xl font-bold text-gray-900 border-b pb-2 mb-4">About {company.companyName}</h2>
+                        <div className="bg-warmwhite p-6 md:p-8 rounded-lg shadow-sm border border-gray-200">
+                            <h2 className="text-xl font-display font-bold text-charcoal border-b pb-2 mb-4">About {company.companyName}</h2>
                             <div className="prose max-w-none text-gray-700 whitespace-pre-wrap">
                                 {company.description || 'No description provided by the company.'}
                             </div>
                         </div>
 
                         {/* Reviews Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-gray-900">Company Reviews</h2>
+                        <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-200 bg-warmwhite flex justify-between items-center">
+                                <h2 className="text-lg font-display font-bold text-charcoal">Company Reviews</h2>
                                 {reviewsData?.totalCount !== undefined && (
                                     <span className="text-gray-500 text-sm">{reviewsData.totalCount} {reviewsData.totalCount === 1 ? 'review' : 'reviews'}</span>
                                 )}
@@ -210,7 +210,7 @@ export default function CompanyDetailsPage() {
                             {loadingReviews ? (
                                 <div className="p-8 text-center text-gray-500">Loading reviews...</div>
                             ) : reviews.length === 0 ? (
-                                <div className="p-8 text-center text-gray-500 bg-white">
+                                <div className="p-8 text-center text-gray-500 bg-warmwhite">
                                     No reviews yet. {user?.role === 'JobSeeker' ? 'Be the first to share your experience!' : ''}
                                 </div>
                             ) : (
@@ -222,7 +222,7 @@ export default function CompanyDetailsPage() {
                                                     <div className="flex items-center gap-1 mb-1">
                                                         {renderStars(review.rating)}
                                                     </div>
-                                                    <h3 className="font-bold text-gray-900">{review.headline}</h3>
+                                                    <h3 className="font-bold text-charcoal">{review.headline}</h3>
                                                 </div>
                                                 <div className="text-sm text-gray-500">
                                                     {new Date(review.createdAt).toLocaleDateString()}
@@ -237,10 +237,10 @@ export default function CompanyDetailsPage() {
                         </div>
 
                         {/* Jobs Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-gray-900">Open Positions</h2>
-                                {jobsData?.totalCount && <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">{jobsData.totalCount} Jobs</span>}
+                        <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-200 bg-warmwhite flex justify-between items-center">
+                                <h2 className="text-lg font-display font-bold text-charcoal">Open Positions</h2>
+                                {jobsData?.totalCount && <span className="bg-peach text-charcoal text-xs font-medium px-2.5 py-0.5 rounded-full">{jobsData.totalCount} Jobs</span>}
                             </div>
                             
                             {loadingJobs ? (
@@ -250,8 +250,8 @@ export default function CompanyDetailsPage() {
                             ) : (
                                 <div className="divide-y divide-gray-200">
                                     {jobs.map((job: any) => (
-                                        <div key={job.id} className="p-6 hover:bg-gray-50 transition-colors">
-                                            <h3 className="text-lg font-semibold text-gray-900 hover:text-indigo-600">
+                                        <div key={job.id} className="p-6 hover:bg-peach transition-colors">
+                                            <h3 className="text-lg font-semibold text-charcoal hover:text-orange">
                                                 <Link href={`/jobs/${job.id}`}>{job.title}</Link>
                                             </h3>
                                             <div className="mt-2 flex items-center flex-wrap gap-4 text-sm text-gray-500">
@@ -263,8 +263,8 @@ export default function CompanyDetailsPage() {
                                                 <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {new Date(job.createdAt).toLocaleDateString()}</span>
                                             </div>
                                             <div className="mt-4">
-                                                <Link href={`/jobs/${job.id}`} className="text-indigo-600 font-medium hover:underline text-sm">
-                                                    View Details →
+                                                <Link href={`/jobs/${job.id}`} className="text-orange font-medium hover:underline text-sm">
+                                                    View Details
                                                 </Link>
                                             </div>
                                         </div>
@@ -278,7 +278,7 @@ export default function CompanyDetailsPage() {
                                         <button
                                             key={i}
                                             onClick={() => setPage(i + 1)}
-                                            className={`w-8 h-8 flex items-center justify-center rounded-md ${page === i + 1 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                            className={`w-8 h-8 flex items-center justify-center rounded-md ${page === i + 1 ? 'bg-orange text-charcoal' : 'bg-peach text-gray-700 hover:bg-gray-200'}`}
                                         >
                                             {i + 1}
                                         </button>
@@ -290,26 +290,26 @@ export default function CompanyDetailsPage() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h3 className="font-bold text-gray-900 mb-4">Company Details</h3>
+                        <div className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200">
+                            <h3 className="font-display font-bold text-charcoal mb-4">Company Details</h3>
                             <dl className="space-y-4 text-sm">
                                 <div>
                                     <dt className="text-gray-500 font-medium">Industry</dt>
-                                    <dd className="text-gray-900 mt-1">{company.industry || 'N/A'}</dd>
+                                    <dd className="text-charcoal mt-1">{company.industry || 'N/A'}</dd>
                                 </div>
                                 <div>
                                     <dt className="text-gray-500 font-medium">Company Size</dt>
-                                    <dd className="text-gray-900 mt-1">{company.companySize || 'N/A'}</dd>
+                                    <dd className="text-charcoal mt-1">{company.companySize || 'N/A'}</dd>
                                 </div>
                                 <div>
                                     <dt className="text-gray-500 font-medium">Headquarters</dt>
-                                    <dd className="text-gray-900 mt-1">{company.location || 'N/A'}</dd>
+                                    <dd className="text-charcoal mt-1">{company.location || 'N/A'}</dd>
                                 </div>
                                 {company.website && (
                                     <div>
                                         <dt className="text-gray-500 font-medium">Website</dt>
                                         <dd className="mt-1">
-                                            <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline break-all">
+                                            <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline break-all">
                                                 {company.website}
                                             </a>
                                         </dd>

@@ -58,10 +58,10 @@ function PaymentSuccessContent() {
     };
 
     return (
-        <div className="max-w-xl mx-auto p-8 my-12 bg-white rounded-xl shadow-lg text-center">
+        <div className="max-w-xl mx-auto p-8 my-12 bg-warmwhite rounded-xl shadow-lg text-center">
             {status === 'polling' && (
                 <div className="flex flex-col items-center">
-                    <Loader2 className="w-16 h-16 text-blue-500 animate-spin mb-4" />
+                    <Loader2 className="w-16 h-16 text-orange animate-spin mb-4" />
                     <h1 className="text-2xl font-bold mb-2">Verifying Payment...</h1>
                     <p className="text-gray-600">Please wait while we confirm your payment with PayHere. Do not close this page.</p>
                 </div>
@@ -74,7 +74,7 @@ function PaymentSuccessContent() {
                     <p className="text-gray-600 mb-6">Your payment has been verified. {submitting ? 'Submitting job for admin approval...' : 'Your job has been submitted for admin approval.'}</p>
                     <button 
                         onClick={() => router.push('/employer/manage-jobs')}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+                        className="bg-orange text-white px-6 py-2 rounded-lg hover:bg-orange/90 font-medium"
                     >
                         Go to Manage Jobs
                     </button>
@@ -87,7 +87,7 @@ function PaymentSuccessContent() {
                     <p className="text-gray-600 mb-6">We haven't received confirmation from PayHere yet. This might take a few minutes. Check your jobs dashboard later.</p>
                     <button 
                         onClick={() => router.push('/employer/manage-jobs')}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+                        className="bg-orange text-white px-6 py-2 rounded-lg hover:bg-orange/90 font-medium"
                     >
                         Go to Manage Jobs
                     </button>
@@ -99,7 +99,7 @@ function PaymentSuccessContent() {
 
 export default function PaymentSuccessPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">Loading...</div>}>
+        <Suspense fallback={<div className="min-h-screen bg-warmwhite flex items-center justify-center p-4">Loading...</div>}>
             <PaymentSuccessContent />
         </Suspense>
     );

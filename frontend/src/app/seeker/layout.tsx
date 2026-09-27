@@ -15,8 +15,8 @@ export default function SeekerLayout({ children }: { children: React.ReactNode }
 
     if (isInitializing) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="min-h-screen flex items-center justify-center bg-warmwhite">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange"></div>
             </div>
         );
     }

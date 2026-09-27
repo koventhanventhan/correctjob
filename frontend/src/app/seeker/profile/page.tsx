@@ -51,25 +51,25 @@ export default function SeekerProfile() {
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">My Profile</h1>
+            <h1 className="text-2xl font-bold text-charcoal mb-6">My Profile</h1>
             
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 p-6">
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 mb-8 p-6">
                 <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-lg font-medium text-gray-900">Profile Completion</h2>
-                    <span className="text-lg font-bold text-indigo-600">{completionPct}%</span>
+                    <h2 className="text-lg font-medium text-charcoal">Profile Completion</h2>
+                    <span className="text-lg font-bold text-orange">{completionPct}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${completionPct}%` }}></div>
+                    <div className="bg-orange h-2.5 rounded-full transition-all duration-500" style={{ width: `${completionPct}%` }}></div>
                 </div>
                 {completionPct < 100 && (
                     <p className="text-sm text-gray-500 mt-2 flex items-center">
                         <AlertCircle className="w-4 h-4 mr-1 text-yellow-500" />
-                        Complete all fields and <Link href="/seeker/resume" className="text-indigo-600 hover:underline mx-1">upload a resume</Link> to reach 100%.
+                        Complete all fields and <Link href="/seeker/resume" className="text-orange hover:underline mx-1">upload a resume</Link> to reach 100%.
                     </p>
                 )}
             </div>
 
-            <form onSubmit={handleSave} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+            <form onSubmit={handleSave} className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Career Title</label>
@@ -79,7 +79,7 @@ export default function SeekerProfile() {
                             value={profile?.careerTitle || ''}
                             onChange={handleChange}
                             placeholder="e.g. Senior Frontend Developer"
-                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
                         />
                     </div>
                     <div>
@@ -90,7 +90,7 @@ export default function SeekerProfile() {
                             value={profile?.location || ''}
                             onChange={handleChange}
                             placeholder="e.g. New York, NY or Remote"
-                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
                         />
                     </div>
                 </div>
@@ -103,7 +103,7 @@ export default function SeekerProfile() {
                         onChange={handleChange}
                         rows={4}
                         placeholder="Tell employers about your professional background and goals..."
-                        className="w-full border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
                     ></textarea>
                 </div>
 
@@ -116,7 +116,7 @@ export default function SeekerProfile() {
                             onChange={handleChange}
                             rows={3}
                             placeholder="Brief summary of past roles..."
-                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
                         ></textarea>
                     </div>
                     <div>
@@ -127,7 +127,7 @@ export default function SeekerProfile() {
                             onChange={handleChange}
                             rows={3}
                             placeholder="Degrees, certifications..."
-                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
                         ></textarea>
                     </div>
                 </div>
@@ -141,7 +141,7 @@ export default function SeekerProfile() {
                             value={profile?.linkedInUrl || ''}
                             onChange={handleChange}
                             placeholder="https://linkedin.com/in/..."
-                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
                         />
                     </div>
                     <div>
@@ -152,7 +152,7 @@ export default function SeekerProfile() {
                             value={profile?.portfolioUrl || ''}
                             onChange={handleChange}
                             placeholder="https://..."
-                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
                         />
                     </div>
                 </div>
@@ -162,7 +162,7 @@ export default function SeekerProfile() {
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex items-center bg-indigo-600 text-white px-6 py-2 rounded-md font-medium hover:bg-indigo-700 disabled:opacity-50"
+                        className="flex items-center bg-orange text-white px-6 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
                     >
                         <Save className="w-4 h-4 mr-2" />
                         {saving ? 'Saving...' : 'Save Profile'}

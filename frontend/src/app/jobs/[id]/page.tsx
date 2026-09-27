@@ -71,14 +71,14 @@ export default function JobDetailsPage() {
     const isSeeker = user?.role === 'JobSeeker';
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-warmwhite py-8">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 {/* Header */}
-                <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 mb-6">
+                <div className="bg-warmwhite p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 mb-6">
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                         <div className="flex items-start gap-4">
-                            <div className="h-16 w-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 border border-gray-200">
+                            <div className="h-16 w-16 bg-peach rounded-lg flex items-center justify-center flex-shrink-0 border border-gray-200">
                                 {job.company?.logoUrl ? (
                                     <img src={job.company.logoUrl} alt={job.company.companyName} className="h-12 w-12 object-contain" />
                                 ) : (
@@ -86,8 +86,8 @@ export default function JobDetailsPage() {
                                 )}
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
-                                <div className="text-lg text-indigo-600 font-medium mt-1 hover:underline cursor-pointer">
+                                <h1 className="text-3xl font-display font-bold text-charcoal">{job.title}</h1>
+                                <div className="text-lg text-orange font-medium mt-1 hover:underline cursor-pointer">
                                     {job.company?.companyName}
                                 </div>
                                 <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
@@ -110,13 +110,13 @@ export default function JobDetailsPage() {
                                 disabled={toggleSaveMutation.isPending}
                                 className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none transition-colors ${
                                     isSaved 
-                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' 
-                                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                                    ? 'bg-peach border-peach text-charcoal hover:bg-peach' 
+                                    : 'border-gray-300 text-gray-700 bg-warmwhite hover:bg-peach'
                                 }`}
                             >
                                 <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} /> {isSaved ? 'Saved' : 'Save'}
                             </button>
-                            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-warmwhite hover:bg-peach focus:outline-none">
                                 <Share2 className="h-4 w-4" /> Share
                             </button>
                             {isSeeker ? (
@@ -128,14 +128,14 @@ export default function JobDetailsPage() {
                                     <button 
                                         onClick={() => { setIsApplying(true); applyMutation.mutate(); }}
                                         disabled={isApplying}
-                                        className="bg-indigo-600 text-white px-8 py-2 rounded-md font-medium hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+                                        className="bg-orange text-white px-8 py-2 rounded-md font-medium hover:bg-orange/90 transition-colors shadow-sm disabled:opacity-50"
                                     >
                                         {isApplying ? 'Applying...' : 'Apply Now'}
                                     </button>
                                 )
                             ) : (
                                 !user && (
-                                    <Link href="/login" className="bg-indigo-600 text-white px-8 py-2 rounded-md font-medium hover:bg-indigo-700 text-center flex items-center justify-center">
+                                    <Link href="/login" className="bg-orange text-white px-8 py-2 rounded-md font-medium hover:bg-orange/90 text-center flex items-center justify-center">
                                         Sign in to Apply
                                     </Link>
                                 )
@@ -147,20 +147,20 @@ export default function JobDetailsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 prose max-w-none">
-                            <h3 className="text-xl font-bold text-gray-900 border-b pb-2 mb-4">Job Description</h3>
+                        <div className="bg-warmwhite p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 prose max-w-none">
+                            <h3 className="text-xl font-display font-bold text-charcoal border-b pb-2 mb-4">Job Description</h3>
                             <p className="text-gray-700 whitespace-pre-wrap">{job.description}</p>
                             
                             {job.responsibilities && (
                                 <>
-                                    <h3 className="text-xl font-bold text-gray-900 border-b pb-2 mt-8 mb-4">Responsibilities</h3>
+                                    <h3 className="text-xl font-display font-bold text-charcoal border-b pb-2 mt-8 mb-4">Responsibilities</h3>
                                     <p className="text-gray-700 whitespace-pre-wrap">{job.responsibilities}</p>
                                 </>
                             )}
 
                             {job.requirements && (
                                 <>
-                                    <h3 className="text-xl font-bold text-gray-900 border-b pb-2 mt-8 mb-4">Requirements</h3>
+                                    <h3 className="text-xl font-display font-bold text-charcoal border-b pb-2 mt-8 mb-4">Requirements</h3>
                                     <p className="text-gray-700 whitespace-pre-wrap">{job.requirements}</p>
                                 </>
                             )}
@@ -169,15 +169,15 @@ export default function JobDetailsPage() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h3 className="font-bold text-gray-900 mb-4">About the Company</h3>
+                        <div className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200">
+                            <h3 className="font-display font-bold text-charcoal mb-4">About the Company</h3>
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="h-12 w-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                                <div className="h-12 w-12 bg-peach rounded border border-gray-200 flex items-center justify-center">
                                     <Building className="h-6 w-6 text-gray-400" />
                                 </div>
                                 <div>
-                                    <div className="font-semibold text-gray-900">{job.company?.companyName}</div>
-                                    <Link href={job.company?.website || '#'} className="text-sm text-indigo-600 hover:underline">View website</Link>
+                                    <div className="font-semibold text-charcoal">{job.company?.companyName}</div>
+                                    <Link href={job.company?.website || '#'} className="text-sm text-orange hover:underline">View website</Link>
                                 </div>
                             </div>
                             <p className="text-sm text-gray-600 mb-4 line-clamp-4">
@@ -185,8 +185,8 @@ export default function JobDetailsPage() {
                             </p>
                             
                             <div className="space-y-2 text-sm text-gray-600">
-                                {job.company?.industry && <div className="flex justify-between"><span className="font-medium text-gray-900">Industry:</span> <span>{job.company.industry}</span></div>}
-                                {job.company?.companySize && <div className="flex justify-between"><span className="font-medium text-gray-900">Size:</span> <span>{job.company.companySize}</span></div>}
+                                {job.company?.industry && <div className="flex justify-between"><span className="font-medium text-charcoal">Industry:</span> <span>{job.company.industry}</span></div>}
+                                {job.company?.companySize && <div className="flex justify-between"><span className="font-medium text-charcoal">Size:</span> <span>{job.company.companySize}</span></div>}
                             </div>
                         </div>
                     </div>

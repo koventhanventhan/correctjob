@@ -101,10 +101,10 @@ export default function PostJobPage() {
 
     if (!hasCompany) {
         return (
-            <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md my-8 text-center">
+            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8 text-center">
                 <h1 className="text-2xl font-bold mb-4 text-red-600">Company Profile Required</h1>
                 <p className="mb-4">You must create a company profile before you can post jobs.</p>
-                <button onClick={() => router.push('/employer/company-profile')} className="bg-blue-600 text-white px-4 py-2 rounded">
+                <button onClick={() => router.push('/employer/company-profile')} className="bg-orange text-white px-4 py-2 rounded">
                     Create Company Profile
                 </button>
             </div>
@@ -113,7 +113,7 @@ export default function PostJobPage() {
 
     if (!isApproved) {
         return (
-            <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md my-8 text-center">
+            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8 text-center">
                 <h1 className="text-2xl font-bold mb-4 text-yellow-600">Pending Approval</h1>
                 <p>Your company profile is currently pending admin approval. You can post jobs once it's approved.</p>
             </div>
@@ -121,7 +121,7 @@ export default function PostJobPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md my-8">
+        <div className="max-w-4xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8">
             <h1 className="text-2xl font-bold mb-6">Post a New Job</h1>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -199,7 +199,7 @@ export default function PostJobPage() {
                     </div>
                 </div>
                 
-                <button disabled={saving} type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded hover:bg-blue-700 disabled:opacity-50 mt-6">
+                <button disabled={saving} type="submit" className="w-full bg-orange text-white font-bold py-3 px-4 rounded hover:bg-orange/90 disabled:opacity-50 mt-6">
                     {saving ? 'Processing...' : 'Pay & Publish (5,000 LKR)'}
                 </button>
             </form>

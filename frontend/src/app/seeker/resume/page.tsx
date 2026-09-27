@@ -71,22 +71,22 @@ export default function SeekerResume() {
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Manage Resume</h1>
+            <h1 className="text-2xl font-bold text-charcoal mb-6">Manage Resume</h1>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Current Resume</h2>
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 className="text-lg font-medium text-charcoal mb-4">Current Resume</h2>
                 {profile?.resumeUrl ? (
-                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-4 rounded-md">
+                    <div className="flex items-center justify-between bg-warmwhite border border-gray-200 p-4 rounded-md">
                         <div className="flex items-center">
-                            <FileText className="w-8 h-8 text-indigo-600 mr-3" />
+                            <FileText className="w-8 h-8 text-orange mr-3" />
                             <div>
-                                <p className="font-medium text-gray-900">Resume Uploaded</p>
+                                <p className="font-medium text-charcoal">Resume Uploaded</p>
                                 <p className="text-xs text-gray-500">Last updated recently</p>
                             </div>
                         </div>
                         <button 
                             onClick={handleDownload}
-                            className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                            className="flex items-center text-sm font-medium text-orange hover:text-orange"
                         >
                             <Download className="w-4 h-4 mr-1" /> Download
                         </button>
@@ -96,8 +96,8 @@ export default function SeekerResume() {
                 )}
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Upload New Resume</h2>
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-medium text-charcoal mb-4">Upload New Resume</h2>
                 <form onSubmit={handleUpload}>
                     <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
                         <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
@@ -113,7 +113,7 @@ export default function SeekerResume() {
                     <button
                         type="submit"
                         disabled={!file || uploading}
-                        className="mt-6 w-full bg-indigo-600 text-white px-4 py-2 rounded-md font-medium hover:bg-indigo-700 disabled:opacity-50"
+                        className="mt-6 w-full bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
                     >
                         {uploading ? 'Uploading...' : 'Upload Resume'}
                     </button>

@@ -24,7 +24,7 @@ const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
                 {flowStatuses.map((s, i) => (
                     <span key={s} className={`hidden md:block ${
                         isRejected && i === flowStatuses.length - 1 ? 'text-red-500' : 
-                        !isRejected && i <= currentIndex ? 'text-indigo-600' : ''
+                        !isRejected && i <= currentIndex ? 'text-orange' : ''
                     }`}>
                         {isRejected && i === flowStatuses.length - 1 ? 'Rejected' : s}
                     </span>
@@ -32,7 +32,7 @@ const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
             </div>
             <div className="relative flex items-center justify-between w-full">
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 rounded-full" />
-                <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full transition-all duration-500 ${isRejected ? 'bg-red-500' : 'bg-indigo-600'}`} 
+                <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full transition-all duration-500 ${isRejected ? 'bg-red-500' : 'bg-orange'}`} 
                     style={{ width: isRejected ? '100%' : `${(currentIndex / (flowStatuses.length - 1)) * 100}%` }} />
                 
                 {flowStatuses.map((s, i) => {
@@ -41,9 +41,9 @@ const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
                     const isRejectedNode = isRejected && i === flowStatuses.length - 1;
                     return (
                         <div key={s} className="relative z-10">
-                            <div className={`w-4 h-4 rounded-full border-2 bg-white ${
+                            <div className={`w-4 h-4 rounded-full border-2 bg-warmwhite ${
                                 isRejectedNode ? 'border-red-500 bg-red-500' :
-                                isCompleted ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'
+                                isCompleted ? 'border-orange bg-orange' : 'border-gray-300'
                             }`}>
                                 {isCompleted && <CheckIcon />}
                             </div>
@@ -81,28 +81,28 @@ export default function AppliedJobs() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Applied Jobs</h1>
+                    <h1 className="text-2xl font-bold text-charcoal">Applied Jobs</h1>
                     <p className="text-gray-600">Track the status of your applications.</p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {isLoading ? (
                     <div className="p-12 text-center text-gray-500">Loading applications...</div>
                 ) : applications.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">
                         You haven't applied to any jobs yet.
                         <div className="mt-4">
-                            <Link href="/jobs" className="text-indigo-600 font-medium hover:underline">Find Jobs</Link>
+                            <Link href="/jobs" className="text-orange font-medium hover:underline">Find Jobs</Link>
                         </div>
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-200">
                         {applications.map((app: any) => (
-                            <div key={app.id} className="p-6 hover:bg-gray-50 transition-colors">
+                            <div key={app.id} className="p-6 hover:bg-peach transition-colors">
                                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                     <div className="flex items-start gap-4">
-                                        <div className="h-12 w-12 bg-gray-100 rounded flex items-center justify-center border border-gray-200 shrink-0">
+                                        <div className="h-12 w-12 bg-peach rounded flex items-center justify-center border border-gray-200 shrink-0">
                                             {app.job?.company?.logoUrl ? (
                                                 <img src={app.job.company.logoUrl} alt="" className="h-10 w-10 object-contain" />
                                             ) : (
@@ -110,7 +110,7 @@ export default function AppliedJobs() {
                                             )}
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900 hover:text-indigo-600">
+                                            <h3 className="text-lg font-semibold text-charcoal hover:text-orange">
                                                 <Link href={`/jobs/${app.jobId}`}>{app.job?.title}</Link>
                                             </h3>
                                             <div className="mt-1 flex items-center flex-wrap gap-3 text-sm text-gray-500">
@@ -125,19 +125,19 @@ export default function AppliedJobs() {
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                                            app.status === 'Applied' ? 'bg-blue-100 text-blue-800' :
+                                            app.status === 'Applied' ? 'bg-peach text-charcoal' :
                                             app.status === 'Under Review' ? 'bg-purple-100 text-purple-800' :
                                             app.status === 'Shortlisted' ? 'bg-yellow-100 text-yellow-800' :
                                             app.status === 'Interview Scheduled' ? 'bg-orange-100 text-orange-800' :
                                             app.status === 'Selected' ? 'bg-green-100 text-green-800' :
                                             app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                                            'bg-gray-100 text-gray-800'
+                                            'bg-peach text-charcoal'
                                         }`}>
                                             {app.status}
                                         </span>
                                         <Link 
                                             href={`/chat/${app.id}`} 
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-orange rounded-md hover:bg-orange/90 transition-colors"
                                         >
                                             <MessageCircle className="w-3.5 h-3.5" />
                                             Chat
@@ -152,7 +152,7 @@ export default function AppliedJobs() {
                 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                    <div className="bg-warmwhite px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                         <div className="text-sm text-gray-700">
                             Showing <span className="font-medium">{(page - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(page * pageSize, totalCount)}</span> of <span className="font-medium">{totalCount}</span> applications
                         </div>
@@ -160,14 +160,14 @@ export default function AppliedJobs() {
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="p-2 border border-gray-300 rounded-md bg-white text-gray-700 disabled:opacity-50"
+                                className="p-2 border border-gray-300 rounded-md bg-warmwhite text-gray-700 disabled:opacity-50"
                             >
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
-                                className="p-2 border border-gray-300 rounded-md bg-white text-gray-700 disabled:opacity-50"
+                                className="p-2 border border-gray-300 rounded-md bg-warmwhite text-gray-700 disabled:opacity-50"
                             >
                                 <ChevronRight className="w-4 h-4" />
                             </button>
