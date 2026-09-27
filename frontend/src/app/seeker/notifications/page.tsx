@@ -1,7 +1,7 @@
 'use client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Bell, Check, CheckCircle2 } from 'lucide-react';
+import { LuBell, LuCheck, LuCircleCheck } from 'react-icons/lu';
 
 export default function Notifications() {
     const { data: notifications = [], isLoading, refetch } = useQuery({
@@ -40,7 +40,7 @@ export default function Notifications() {
                         disabled={markAllAsReadMutation.isPending}
                         className="text-sm font-medium text-charcoal hover:text-charcoal bg-peach px-4 py-2 rounded-md transition-colors disabled:opacity-50 flex items-center"
                     >
-                        <Check className="w-4 h-4 mr-1" /> Mark all as read
+                        <LuCheck className="w-4 h-4 mr-1" /> Mark all as read
                     </button>
                 )}
             </div>
@@ -48,7 +48,7 @@ export default function Notifications() {
             <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {notifications.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">
-                        <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <LuBell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                         <p>You're all caught up!</p>
                         <p className="text-sm mt-1">No new notifications at the moment.</p>
                     </div>
@@ -79,7 +79,7 @@ export default function Notifications() {
                                         title="Mark as read"
                                         className="text-gray-400 hover:text-orange self-start p-1"
                                     >
-                                        <CheckCircle2 className="w-5 h-5" />
+                                        <LuCircleCheck className="w-5 h-5" />
                                     </button>
                                 )}
                             </div>

@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { Building, MapPin, Search } from 'lucide-react';
+import { LuBuilding, LuMapPin, LuSearch } from 'react-icons/lu';
 import { useState } from 'react';
 
 export default function CompaniesPage() {
@@ -32,13 +32,13 @@ export default function CompaniesPage() {
 
                 <div className="max-w-xl mx-auto mb-10 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400" />
+                        <LuSearch className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search companies by name, industry, or location..."
+                        placeholder="LuSearch companies by name, industry, or location..."
                         className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md leading-5 bg-warmwhite placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-orange focus:border-orange sm:text-sm shadow-sm"
                     />
                 </div>
@@ -57,7 +57,7 @@ export default function CompaniesPage() {
                                             {company.logoUrl ? (
                                                 <img src={company.logoUrl} alt={company.companyName} className="h-12 w-12 object-contain" />
                                             ) : (
-                                                <Building className="h-8 w-8 text-gray-400" />
+                                                <LuBuilding className="h-8 w-8 text-gray-400" />
                                             )}
                                         </div>
                                         <div>
@@ -70,7 +70,7 @@ export default function CompaniesPage() {
                                     </p>
                                     <div className="flex items-center justify-between text-sm text-gray-500 mt-4 pt-4 border-t border-gray-100">
                                         <span className="flex items-center">
-                                            <MapPin className="h-4 w-4 mr-1" /> {company.location || 'Location not specified'}
+                                            <LuMapPin className="h-4 w-4 mr-1" /> {company.location || 'Location not specified'}
                                         </span>
                                         <span className="text-orange font-medium group-hover:underline">View Profile</span>
                                     </div>

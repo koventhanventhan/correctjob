@@ -1,14 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { XCircle } from 'lucide-react';
+import { LuCircleX } from 'react-icons/lu';
 
 export default function PaymentCancelledPage() {
     const router = useRouter();
 
     return (
         <div className="max-w-xl mx-auto p-8 my-12 bg-warmwhite rounded-xl shadow-lg text-center flex flex-col items-center">
-            <XCircle className="w-16 h-16 text-red-500 mb-4" />
+            <LuCircleX className="w-16 h-16 text-red-500 mb-4" />
             <h1 className="text-2xl font-bold mb-2 text-red-700">Payment Cancelled</h1>
             <p className="text-gray-600 mb-6">Your payment process was cancelled or failed. Your job was saved as a Draft.</p>
             

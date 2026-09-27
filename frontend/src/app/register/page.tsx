@@ -6,7 +6,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/services/api';
-import { Briefcase } from 'lucide-react';
+import { LuBriefcase } from 'react-icons/lu';
 
 const registerSchema = z.object({
     fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -54,7 +54,7 @@ function RegisterContent() {
         <div className="min-h-screen bg-warmwhite flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="flex justify-center">
-                    <Briefcase className="h-12 w-12 text-orange" />
+                    <LuBriefcase className="h-12 w-12 text-orange" />
                 </div>
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-charcoal">
                     Create an account

@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { LuMail, LuPhone, LuMapPin } from 'react-icons/lu';
 
 export default function AboutPage() {
     return (
@@ -43,15 +43,15 @@ export default function AboutPage() {
                             <h3 className="text-xl font-bold text-charcoal mb-6">Get in Touch</h3>
                             <div className="space-y-6">
                                 <div className="flex items-center">
-                                    <Mail className="h-6 w-6 text-orange mr-4" />
+                                    <LuMail className="h-6 w-6 text-orange mr-4" />
                                     <span className="text-gray-700">support@hireconnect.com</span>
                                 </div>
                                 <div className="flex items-center">
-                                    <Phone className="h-6 w-6 text-orange mr-4" />
+                                    <LuPhone className="h-6 w-6 text-orange mr-4" />
                                     <span className="text-gray-700">+1 (555) 123-4567</span>
                                 </div>
                                 <div className="flex items-center">
-                                    <MapPin className="h-6 w-6 text-orange mr-4" />
+                                    <LuMapPin className="h-6 w-6 text-orange mr-4" />
                                     <span className="text-gray-700">123 Tech Boulevard, Suite 400<br/>San Francisco, CA 94105</span>
                                 </div>
                             </div>

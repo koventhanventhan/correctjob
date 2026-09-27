@@ -1,7 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Bell, MapPin, Briefcase, Trash2, Tag } from 'lucide-react';
+import { LuBell, LuMapPin, LuBriefcase, LuTrash2, LuTag } from 'react-icons/lu';
 import Link from 'next/link';
 
 export default function JobAlertsPage() {
@@ -41,7 +41,7 @@ export default function JobAlertsPage() {
 
             {alerts?.length === 0 ? (
                 <div className="bg-warmwhite p-8 rounded-lg shadow-sm border border-gray-200 text-center">
-                    <Bell className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <LuBell className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium text-charcoal">No job alerts</h3>
                     <p className="text-gray-500 mt-1">You haven't set up any job alerts yet.</p>
                 </div>
@@ -51,24 +51,24 @@ export default function JobAlertsPage() {
                         <div key={alert.id} className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
                                 <h3 className="font-semibold text-charcoal flex items-center gap-2">
-                                    <Bell className="h-4 w-4 text-orange" />
+                                    <LuBell className="h-4 w-4 text-orange" />
                                     Alert for: "{alert.keyword || 'All Jobs'}"
                                 </h3>
                                 
                                 <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-500">
                                     {alert.location && (
                                         <span className="flex items-center gap-1">
-                                            <MapPin className="h-3 w-3" /> {alert.location}
+                                            <LuMapPin className="h-3 w-3" /> {alert.location}
                                         </span>
                                     )}
                                     {alert.jobType && (
                                         <span className="flex items-center gap-1">
-                                            <Briefcase className="h-3 w-3" /> {alert.jobType}
+                                            <LuBriefcase className="h-3 w-3" /> {alert.jobType}
                                         </span>
                                     )}
                                     {alert.category && (
                                         <span className="flex items-center gap-1">
-                                            <Tag className="h-3 w-3" /> {alert.category.name}
+                                            <LuTag className="h-3 w-3" /> {alert.category.name}
                                         </span>
                                     )}
                                 </div>
@@ -87,7 +87,7 @@ export default function JobAlertsPage() {
                                 className="text-red-600 hover:bg-red-50 p-2 rounded-full transition-colors disabled:opacity-50"
                                 title="Delete Alert"
                             >
-                                <Trash2 className="h-5 w-5" />
+                                <LuTrash2 className="h-5 w-5" />
                             </button>
                         </div>
                     ))}

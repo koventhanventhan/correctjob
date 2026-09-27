@@ -3,7 +3,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { Briefcase, Users, FileText, Activity } from 'lucide-react';
+import { LuBriefcase, LuUsers, LuFileText, LuActivity } from 'react-icons/lu';
 
 import { useRouter } from 'next/navigation';
 
@@ -62,7 +62,7 @@ export default function EmployerDashboard() {
                                 <p className="text-2xl font-bold text-charcoal mt-1">{jobs?.length || 0}</p>
                             </div>
                             <div className="h-10 w-10 bg-peach text-charcoal rounded-full flex items-center justify-center">
-                                <Briefcase className="h-5 w-5" />
+                                <LuBriefcase className="h-5 w-5" />
                             </div>
                         </div>
                     </div>
@@ -76,7 +76,7 @@ export default function EmployerDashboard() {
                                 </p>
                             </div>
                             <div className="h-10 w-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                                <Activity className="h-5 w-5" />
+                                <LuActivity className="h-5 w-5" />
                             </div>
                         </div>
                     </div>
@@ -88,7 +88,7 @@ export default function EmployerDashboard() {
                                 <p className="text-2xl font-bold text-charcoal mt-1">{stats?.totalApplications || 0}</p>
                             </div>
                             <div className="h-10 w-10 bg-peach text-charcoal rounded-full flex items-center justify-center">
-                                <FileText className="h-5 w-5" />
+                                <LuFileText className="h-5 w-5" />
                             </div>
                         </div>
                     </div>
@@ -100,7 +100,7 @@ export default function EmployerDashboard() {
                                 <p className="text-2xl font-bold text-charcoal mt-1">{stats?.interviewing || 0}</p>
                             </div>
                             <div className="h-10 w-10 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center">
-                                <Users className="h-5 w-5" />
+                                <LuUsers className="h-5 w-5" />
                             </div>
                         </div>
                     </div>

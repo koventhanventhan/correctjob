@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { Briefcase, ChevronLeft, ChevronRight, Clock, Building, MessageCircle } from 'lucide-react';
+import { LuBriefcase, LuChevronLeft, LuChevronRight, LuClock, LuBuilding, LuMessageCircle } from 'react-icons/lu';
 
 const statuses = ['Applied', 'Under Review', 'Shortlisted', 'Interview Scheduled', 'Selected', 'Rejected'];
 
@@ -106,7 +106,7 @@ export default function AppliedJobs() {
                                             {app.job?.company?.logoUrl ? (
                                                 <img src={app.job.company.logoUrl} alt="" className="h-10 w-10 object-contain" />
                                             ) : (
-                                                <Building className="h-6 w-6 text-gray-400" />
+                                                <LuBuilding className="h-6 w-6 text-gray-400" />
                                             )}
                                         </div>
                                         <div>
@@ -115,10 +115,10 @@ export default function AppliedJobs() {
                                             </h3>
                                             <div className="mt-1 flex items-center flex-wrap gap-3 text-sm text-gray-500">
                                                 <span className="flex items-center">
-                                                    <Building className="w-4 h-4 mr-1" /> {app.job?.company?.companyName}
+                                                    <LuBuilding className="w-4 h-4 mr-1" /> {app.job?.company?.companyName}
                                                 </span>
                                                 <span className="flex items-center">
-                                                    <Clock className="w-4 h-4 mr-1" /> Applied {new Date(app.appliedAt).toLocaleDateString()}
+                                                    <LuClock className="w-4 h-4 mr-1" /> Applied {new Date(app.appliedAt).toLocaleDateString()}
                                                 </span>
                                             </div>
                                         </div>
@@ -139,7 +139,7 @@ export default function AppliedJobs() {
                                             href={`/chat/${app.id}`} 
                                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-orange rounded-md hover:bg-orange/90 transition-colors"
                                         >
-                                            <MessageCircle className="w-3.5 h-3.5" />
+                                            <LuMessageCircle className="w-3.5 h-3.5" />
                                             Chat
                                         </Link>
                                     </div>
@@ -162,14 +162,14 @@ export default function AppliedJobs() {
                                 disabled={page === 1}
                                 className="p-2 border border-gray-300 rounded-md bg-warmwhite text-gray-700 disabled:opacity-50"
                             >
-                                <ChevronLeft className="w-4 h-4" />
+                                <LuChevronLeft className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
                                 className="p-2 border border-gray-300 rounded-md bg-warmwhite text-gray-700 disabled:opacity-50"
                             >
-                                <ChevronRight className="w-4 h-4" />
+                                <LuChevronRight className="w-4 h-4" />
                             </button>
                         </div>
                     </div>

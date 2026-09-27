@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import api from '@/services/api';
-import { Upload, FileText, Download } from 'lucide-react';
+import { LuUpload, LuFileText, LuDownload } from 'react-icons/lu';
 
 export default function SeekerResume() {
     const [profile, setProfile] = useState<any>(null);
@@ -78,7 +78,7 @@ export default function SeekerResume() {
                 {profile?.resumeUrl ? (
                     <div className="flex items-center justify-between bg-warmwhite border border-gray-200 p-4 rounded-md">
                         <div className="flex items-center">
-                            <FileText className="w-8 h-8 text-orange mr-3" />
+                            <LuFileText className="w-8 h-8 text-orange mr-3" />
                             <div>
                                 <p className="font-medium text-charcoal">Resume Uploaded</p>
                                 <p className="text-xs text-gray-500">Last updated recently</p>
@@ -88,7 +88,7 @@ export default function SeekerResume() {
                             onClick={handleDownload}
                             className="flex items-center text-sm font-medium text-orange hover:text-orange"
                         >
-                            <Download className="w-4 h-4 mr-1" /> Download
+                            <LuDownload className="w-4 h-4 mr-1" /> LuDownload
                         </button>
                     </div>
                 ) : (
@@ -97,11 +97,11 @@ export default function SeekerResume() {
             </div>
 
             <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-medium text-charcoal mb-4">Upload New Resume</h2>
+                <h2 className="text-lg font-medium text-charcoal mb-4">LuUpload New Resume</h2>
                 <form onSubmit={handleUpload}>
                     <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600 mb-4">Upload a PDF or Word document (Max 5MB)</p>
+                        <LuUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600 mb-4">LuUpload a PDF or Word document (Max 5MB)</p>
                         <input 
                             type="file" 
                             accept=".pdf,.doc,.docx" 
@@ -115,7 +115,7 @@ export default function SeekerResume() {
                         disabled={!file || uploading}
                         className="mt-6 w-full bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
                     >
-                        {uploading ? 'Uploading...' : 'Upload Resume'}
+                        {uploading ? 'Uploading...' : 'LuUpload Resume'}
                     </button>
                 </form>
             </div>

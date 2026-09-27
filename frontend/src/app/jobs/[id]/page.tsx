@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/services/api';
 import { useParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { MapPin, Briefcase, IndianRupee, Clock, Building, Bookmark, Share2 } from 'lucide-react';
+import { LuMapPin, LuBriefcase, LuIndianRupee, LuClock, LuBuilding, LuBookmark, LuShare2 } from 'react-icons/lu';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -82,7 +82,7 @@ export default function JobDetailsPage() {
                                 {job.company?.logoUrl ? (
                                     <img src={job.company.logoUrl} alt={job.company.companyName} className="h-12 w-12 object-contain" />
                                 ) : (
-                                    <Building className="h-8 w-8 text-gray-400" />
+                                    <LuBuilding className="h-8 w-8 text-gray-400" />
                                 )}
                             </div>
                             <div>
@@ -91,12 +91,12 @@ export default function JobDetailsPage() {
                                     {job.company?.companyName}
                                 </div>
                                 <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
-                                    <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-gray-400" /> {job.location}</span>
-                                    <span className="flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-gray-400" /> {job.jobType}</span>
+                                    <span className="flex items-center gap-1.5"><LuMapPin className="h-4 w-4 text-gray-400" /> {job.location}</span>
+                                    <span className="flex items-center gap-1.5"><LuBriefcase className="h-4 w-4 text-gray-400" /> {job.jobType}</span>
                                     {job.salaryMin && (
-                                        <span className="flex items-center gap-1.5"><IndianRupee className="h-4 w-4 text-gray-400" /> {job.salaryMin} - {job.salaryMax}</span>
+                                        <span className="flex items-center gap-1.5"><LuIndianRupee className="h-4 w-4 text-gray-400" /> {job.salaryMin} - {job.salaryMax}</span>
                                     )}
-                                    <span className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-gray-400" /> Posted {new Date(job.createdAt).toLocaleDateString()}</span>
+                                    <span className="flex items-center gap-1.5"><LuClock className="h-4 w-4 text-gray-400" /> Posted {new Date(job.createdAt).toLocaleDateString()}</span>
                                 </div>
                             </div>
                         </div>
@@ -114,10 +114,10 @@ export default function JobDetailsPage() {
                                     : 'border-gray-300 text-gray-700 bg-warmwhite hover:bg-peach'
                                 }`}
                             >
-                                <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} /> {isSaved ? 'Saved' : 'Save'}
+                                <LuBookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} /> {isSaved ? 'Saved' : 'Save'}
                             </button>
                             <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-warmwhite hover:bg-peach focus:outline-none">
-                                <Share2 className="h-4 w-4" /> Share
+                                <LuShare2 className="h-4 w-4" /> Share
                             </button>
                             {isSeeker ? (
                                 applySuccess ? (
@@ -173,7 +173,7 @@ export default function JobDetailsPage() {
                             <h3 className="font-display font-bold text-charcoal mb-4">About the Company</h3>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="h-12 w-12 bg-peach rounded border border-gray-200 flex items-center justify-center">
-                                    <Building className="h-6 w-6 text-gray-400" />
+                                    <LuBuilding className="h-6 w-6 text-gray-400" />
                                 </div>
                                 <div>
                                     <div className="font-semibold text-charcoal">{job.company?.companyName}</div>

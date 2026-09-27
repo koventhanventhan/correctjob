@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useAuthStore } from '../store/authStore';
-import { Briefcase, LogOut, User as UserIcon, Menu, X } from 'lucide-react';
+import { LuBriefcase, LuLogOut, LuUser as UserIcon, LuMenu, LuX } from 'react-icons/lu';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -22,7 +22,7 @@ export default function Navbar() {
                 <div className="flex justify-between h-16">
                     <div className="flex">
                         <Link href="/" className="flex-shrink-0 flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                            <Briefcase className="h-8 w-8 text-orange" />
+                            <LuBriefcase className="h-8 w-8 text-orange" />
                             <span className="font-bold text-xl text-charcoal tracking-tight">HireConnect</span>
                         </Link>
                         <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
@@ -34,7 +34,7 @@ export default function Navbar() {
                             </Link>
                         </div>
                     </div>
-                    {/* Desktop Menu */}
+                    {/* Desktop LuMenu */}
                     <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
                         {!user ? (
                             <>
@@ -65,14 +65,14 @@ export default function Navbar() {
                                     onClick={handleLogout}
                                     className="text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors"
                                 >
-                                    <LogOut className="h-5 w-5" />
+                                    <LuLogOut className="h-5 w-5" />
                                     <span>Logout</span>
                                 </button>
                             </div>
                         )}
                     </div>
                     
-                    {/* Mobile Menu Button */}
+                    {/* Mobile LuMenu Button */}
                     <div className="flex items-center sm:hidden">
                         <button
                             type="button"
@@ -81,16 +81,16 @@ export default function Navbar() {
                         >
                             <span className="sr-only">Open main menu</span>
                             {isMobileMenuOpen ? (
-                                <X className="block h-6 w-6" aria-hidden="true" />
+                                <LuX className="block h-6 w-6" aria-hidden="true" />
                             ) : (
-                                <Menu className="block h-6 w-6" aria-hidden="true" />
+                                <LuMenu className="block h-6 w-6" aria-hidden="true" />
                             )}
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Mobile Menu */}
+            {/* Mobile LuMenu */}
             {isMobileMenuOpen && (
                 <div className="sm:hidden border-t border-gray-200">
                     <div className="pt-2 pb-3 space-y-1">

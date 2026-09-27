@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import api from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
-import { Calendar, MessageCircle } from 'lucide-react';
+import { LuCalendar, LuMessageCircle } from 'react-icons/lu';
 import Link from 'next/link';
 
 function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) {
@@ -54,7 +54,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                         href={`/chat/${app.id}`} 
                         className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-charcoal bg-peach hover:bg-peach rounded-md transition-colors"
                     >
-                        <MessageCircle className="w-3.5 h-3.5" />
+                        <LuMessageCircle className="w-3.5 h-3.5" />
                         Chat
                     </Link>
                 </div>
@@ -96,7 +96,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
 
             {app.status === 'Interview Scheduled' && app.interviewDate && (
                 <div className="mb-4 flex items-center text-sm text-purple-700 bg-purple-50 p-2 rounded">
-                    <Calendar className="w-4 h-4 mr-2" />
+                    <LuCalendar className="w-4 h-4 mr-2" />
                     <strong>Interview:</strong> &nbsp;{new Date(app.interviewDate).toLocaleString()}
                 </div>
             )}

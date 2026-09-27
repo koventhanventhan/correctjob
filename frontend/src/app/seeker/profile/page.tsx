@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/services/api';
 import { calculateProfileCompletion } from '@/utils/profile';
-import { Save, AlertCircle } from 'lucide-react';
+import { LuSave, LuCircleAlert } from 'react-icons/lu';
 import Link from 'next/link';
 
 export default function SeekerProfile() {
@@ -63,7 +63,7 @@ export default function SeekerProfile() {
                 </div>
                 {completionPct < 100 && (
                     <p className="text-sm text-gray-500 mt-2 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1 text-yellow-500" />
+                        <LuCircleAlert className="w-4 h-4 mr-1 text-yellow-500" />
                         Complete all fields and <Link href="/seeker/resume" className="text-orange hover:underline mx-1">upload a resume</Link> to reach 100%.
                     </p>
                 )}
@@ -164,8 +164,8 @@ export default function SeekerProfile() {
                         disabled={saving}
                         className="flex items-center bg-orange text-white px-6 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
                     >
-                        <Save className="w-4 h-4 mr-2" />
-                        {saving ? 'Saving...' : 'Save Profile'}
+                        <LuSave className="w-4 h-4 mr-2" />
+                        {saving ? 'Saving...' : 'LuSave Profile'}
                     </button>
                 </div>
             </form>

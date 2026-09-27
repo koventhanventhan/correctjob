@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { Building, MapPin, IndianRupee, Clock, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LuBuilding, LuMapPin, LuIndianRupee, LuClock, LuTrash2, LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 
 export default function SavedJobs() {
     const [page, setPage] = useState(1);
@@ -63,7 +63,7 @@ export default function SavedJobs() {
                                                 {job.company?.logoUrl ? (
                                                     <img src={job.company.logoUrl} alt="" className="h-10 w-10 object-contain" />
                                                 ) : (
-                                                    <Building className="h-6 w-6 text-gray-400" />
+                                                    <LuBuilding className="h-6 w-6 text-gray-400" />
                                                 )}
                                             </div>
                                             <div>
@@ -72,18 +72,18 @@ export default function SavedJobs() {
                                                 </h3>
                                                 <div className="mt-1 flex items-center flex-wrap gap-4 text-sm text-gray-500">
                                                     <span className="flex items-center">
-                                                        <Building className="w-4 h-4 mr-1 text-gray-400" /> {job.company?.companyName}
+                                                        <LuBuilding className="w-4 h-4 mr-1 text-gray-400" /> {job.company?.companyName}
                                                     </span>
                                                     <span className="flex items-center">
-                                                        <MapPin className="w-4 h-4 mr-1 text-gray-400" /> {job.location}
+                                                        <LuMapPin className="w-4 h-4 mr-1 text-gray-400" /> {job.location}
                                                     </span>
                                                     {job.salaryMin && (
                                                         <span className="flex items-center">
-                                                            <IndianRupee className="w-4 h-4 mr-1 text-gray-400" /> {job.salaryMin} - {job.salaryMax}
+                                                            <LuIndianRupee className="w-4 h-4 mr-1 text-gray-400" /> {job.salaryMin} - {job.salaryMax}
                                                         </span>
                                                     )}
                                                     <span className="flex items-center">
-                                                        <Clock className="w-4 h-4 mr-1 text-gray-400" /> Saved {new Date(saved.savedAt).toLocaleDateString()}
+                                                        <LuClock className="w-4 h-4 mr-1 text-gray-400" /> Saved {new Date(saved.savedAt).toLocaleDateString()}
                                                     </span>
                                                 </div>
                                             </div>
@@ -101,7 +101,7 @@ export default function SavedJobs() {
                                                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                                 title="Unsave Job"
                                             >
-                                                <Trash2 className="w-5 h-5" />
+                                                <LuTrash2 className="w-5 h-5" />
                                             </button>
                                         </div>
                                     </div>
@@ -123,14 +123,14 @@ export default function SavedJobs() {
                                 disabled={page === 1}
                                 className="p-2 border border-gray-300 rounded-md bg-warmwhite text-gray-700 disabled:opacity-50"
                             >
-                                <ChevronLeft className="w-4 h-4" />
+                                <LuChevronLeft className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
                                 className="p-2 border border-gray-300 rounded-md bg-warmwhite text-gray-700 disabled:opacity-50"
                             >
-                                <ChevronRight className="w-4 h-4" />
+                                <LuChevronRight className="w-4 h-4" />
                             </button>
                         </div>
                     </div>

@@ -2,7 +2,7 @@
 import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Users, Building, Briefcase, AlertTriangle, Search, ChevronLeft, ChevronRight, MessageSquare, Star } from 'lucide-react';
+import { LuUsers, LuBuilding, LuBriefcase, LuTriangleAlert, LuSearch, LuChevronLeft, LuChevronRight, LuMessageSquare, LuStar } from 'react-icons/lu';
 import { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,7 @@ export default function AdminDashboard() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('jobs');
     
-    // Pagination & Search States
+    // Pagination & LuSearch States
     const [jobsPage, setJobsPage] = useState(1);
     const [searchJob, setSearchJob] = useState('');
     const [filterJobStatus, setFilterJobStatus] = useState('');
@@ -121,19 +121,19 @@ export default function AdminDashboard() {
                 </div>
                 <nav className="space-y-1 px-3">
                     <button onClick={() => setActiveTab('jobs')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'jobs' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
-                        <Briefcase className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <LuBriefcase className="mr-3 h-5 w-5 flex-shrink-0" />
                         Manage Jobs
                     </button>
                     <button onClick={() => setActiveTab('users')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'users' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
-                        <Users className="mr-3 h-5 w-5 flex-shrink-0" />
-                        Manage Users
+                        <LuUsers className="mr-3 h-5 w-5 flex-shrink-0" />
+                        Manage LuUsers
                     </button>
                     <button onClick={() => setActiveTab('companies')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'companies' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
-                        <Building className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <LuBuilding className="mr-3 h-5 w-5 flex-shrink-0" />
                         Manage Employers
                     </button>
                     <button onClick={() => setActiveTab('reviews')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'reviews' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
-                        <MessageSquare className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <LuMessageSquare className="mr-3 h-5 w-5 flex-shrink-0" />
                         Manage Reviews
                     </button>
                 </nav>
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
                         onChange={(e) => setActiveTab(e.target.value)}
                     >
                         <option value="jobs">Manage Jobs</option>
-                        <option value="users">Manage Users</option>
+                        <option value="users">Manage LuUsers</option>
                         <option value="companies">Manage Employers</option>
                         <option value="reviews">Manage Reviews</option>
                     </select>
@@ -164,11 +164,11 @@ export default function AdminDashboard() {
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Users</p>
+                                <p className="text-sm font-medium text-gray-500">Total LuUsers</p>
                                 <p className="text-2xl font-bold text-charcoal mt-1">{totalUsers}</p>
                             </div>
                             <div className="h-10 w-10 bg-peach text-charcoal rounded-full flex items-center justify-center">
-                                <Users className="h-5 w-5" />
+                                <LuUsers className="h-5 w-5" />
                             </div>
                         </div>
                     </div>
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
                                 </p>
                             </div>
                             <div className="h-10 w-10 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center">
-                                <AlertTriangle className="h-5 w-5" />
+                                <LuTriangleAlert className="h-5 w-5" />
                             </div>
                         </div>
                     </div>
@@ -205,10 +205,10 @@ export default function AdminDashboard() {
                                     <option value="Published">Published</option>
                                 </select>
                                 <div className="flex items-center border rounded px-2 bg-warmwhite">
-                                    <Search className="w-4 h-4 text-gray-400" />
+                                    <LuSearch className="w-4 h-4 text-gray-400" />
                                     <input 
                                         type="text" 
-                                        placeholder="Search jobs..." 
+                                        placeholder="LuSearch jobs..." 
                                         className="p-1 outline-none text-sm"
                                         value={searchJob}
                                         onChange={(e) => { setSearchJob(e.target.value); setJobsPage(1); }}
@@ -259,8 +259,8 @@ export default function AdminDashboard() {
                         <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
                             <span className="text-sm text-gray-500">Total: {totalJobs}</span>
                             <div className="flex space-x-2">
-                                <button disabled={jobsPage === 1} onClick={() => setJobsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
-                                <button disabled={jobsPage * 10 >= totalJobs} onClick={() => setJobsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><ChevronRight className="w-4 h-4"/></button>
+                                <button disabled={jobsPage === 1} onClick={() => setJobsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={jobsPage * 10 >= totalJobs} onClick={() => setJobsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
                             </div>
                         </div>
                     </div>
@@ -269,12 +269,12 @@ export default function AdminDashboard() {
                 {activeTab === 'users' && (
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                          <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
-                            <h3 className="text-lg font-display font-bold text-charcoal">All Users</h3>
+                            <h3 className="text-lg font-display font-bold text-charcoal">All LuUsers</h3>
                             <div className="flex items-center border rounded px-2 bg-warmwhite">
-                                <Search className="w-4 h-4 text-gray-400" />
+                                <LuSearch className="w-4 h-4 text-gray-400" />
                                 <input 
                                     type="text" 
-                                    placeholder="Search users..." 
+                                    placeholder="LuSearch users..." 
                                     className="p-1 outline-none text-sm"
                                     value={searchUser}
                                     onChange={(e) => { setSearchUser(e.target.value); setUsersPage(1); }}
@@ -325,8 +325,8 @@ export default function AdminDashboard() {
                         <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
                             <span className="text-sm text-gray-500">Total: {totalUsers}</span>
                             <div className="flex space-x-2">
-                                <button disabled={usersPage === 1} onClick={() => setUsersPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
-                                <button disabled={usersPage * 10 >= totalUsers} onClick={() => setUsersPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><ChevronRight className="w-4 h-4"/></button>
+                                <button disabled={usersPage === 1} onClick={() => setUsersPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={usersPage * 10 >= totalUsers} onClick={() => setUsersPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
                             </div>
                         </div>
                     </div>
@@ -337,10 +337,10 @@ export default function AdminDashboard() {
                          <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
                             <h3 className="text-lg font-display font-bold text-charcoal">Manage Employers</h3>
                             <div className="flex items-center border rounded px-2 bg-warmwhite">
-                                <Search className="w-4 h-4 text-gray-400" />
+                                <LuSearch className="w-4 h-4 text-gray-400" />
                                 <input 
                                     type="text" 
-                                    placeholder="Search companies..." 
+                                    placeholder="LuSearch companies..." 
                                     className="p-1 outline-none text-sm"
                                     value={searchCompany}
                                     onChange={(e) => { setSearchCompany(e.target.value); setCompaniesPage(1); }}
@@ -392,8 +392,8 @@ export default function AdminDashboard() {
                         <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
                             <span className="text-sm text-gray-500">Total: {totalCompanies}</span>
                             <div className="flex space-x-2">
-                                <button disabled={companiesPage === 1} onClick={() => setCompaniesPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
-                                <button disabled={companiesPage * 10 >= totalCompanies} onClick={() => setCompaniesPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><ChevronRight className="w-4 h-4"/></button>
+                                <button disabled={companiesPage === 1} onClick={() => setCompaniesPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={companiesPage * 10 >= totalCompanies} onClick={() => setCompaniesPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
                             </div>
                         </div>
                     </div>
@@ -425,7 +425,7 @@ export default function AdminDashboard() {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-charcoal max-w-xs truncate">
                                                 <div className="flex items-center text-yellow-500 mb-1">
-                                                    {r.rating} <Star className="w-3 h-3 ml-1 fill-yellow-500" />
+                                                    {r.rating} <LuStar className="w-3 h-3 ml-1 fill-yellow-500" />
                                                 </div>
                                                 <span title={r.description}>{r.headline}</span>
                                             </td>
@@ -453,8 +453,8 @@ export default function AdminDashboard() {
                         <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
                             <span className="text-sm text-gray-500">Total: {totalReviews}</span>
                             <div className="flex space-x-2">
-                                <button disabled={reviewsPage === 1} onClick={() => setReviewsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
-                                <button disabled={reviewsPage * 10 >= totalReviews} onClick={() => setReviewsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><ChevronRight className="w-4 h-4"/></button>
+                                <button disabled={reviewsPage === 1} onClick={() => setReviewsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={reviewsPage * 10 >= totalReviews} onClick={() => setReviewsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
                             </div>
                         </div>
                     </div>

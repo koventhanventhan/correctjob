@@ -5,7 +5,7 @@ import * as signalR from '@microsoft/signalr';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/services/api';
 import { useParams, useRouter } from 'next/navigation';
-import { Send, ArrowLeft, Loader2 } from 'lucide-react';
+import { LuSend, LuArrowLeft, LuLoader } from 'react-icons/lu';
 
 interface Message {
     id: number;
@@ -108,7 +108,7 @@ export default function ChatPage() {
     if (loading) {
         return (
             <div className="flex h-[80vh] items-center justify-center">
-                <Loader2 className="w-8 h-8 text-orange animate-spin" />
+                <LuLoader className="w-8 h-8 text-orange animate-spin" />
             </div>
         );
     }
@@ -119,7 +119,7 @@ export default function ChatPage() {
             <div className="bg-warmwhite p-4 sm:rounded-t-xl shadow-sm border-b flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <button onClick={() => router.back()} className="text-gray-500 hover:text-charcoal">
-                        <ArrowLeft className="w-6 h-6" />
+                        <LuArrowLeft className="w-6 h-6" />
                     </button>
                     <div>
                         <h1 className="text-lg font-semibold text-charcoal">Chat</h1>
@@ -132,7 +132,7 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto bg-warmwhite p-4 shadow-sm border-x flex flex-col gap-3">
                 {messages.length === 0 ? (
                     <div className="flex-1 flex items-center justify-center text-gray-400">
-                        No messages yet. Send a message to start the conversation!
+                        No messages yet. LuSend a message to start the conversation!
                     </div>
                 ) : (
                     messages.map((msg) => {
@@ -168,7 +168,7 @@ export default function ChatPage() {
                         disabled={!newMessage.trim() || !hubConnection}
                         className="bg-orange text-white p-2 rounded-full hover:bg-orange/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-10 h-10"
                     >
-                        <Send className="w-5 h-5" />
+                        <LuSend className="w-5 h-5" />
                     </button>
                 </form>
             </div>

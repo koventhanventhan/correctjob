@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Building, MapPin, Globe, Briefcase, IndianRupee, Clock, Star, MessageSquare } from 'lucide-react';
+import { LuBuilding, LuMapPin, LuGlobe, LuBriefcase, LuIndianRupee, LuClock, LuStar, LuMessageSquare } from 'react-icons/lu';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -70,7 +70,7 @@ export default function CompanyDetailsPage() {
 
     const renderStars = (rating: number) => {
         return Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} className={`h-4 w-4 ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+            <LuStar key={i} className={`h-4 w-4 ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
         ));
     };
 
@@ -86,7 +86,7 @@ export default function CompanyDetailsPage() {
                             {company.logoUrl ? (
                                 <img src={company.logoUrl} alt={company.companyName} className="h-full w-full object-contain" />
                             ) : (
-                                <Building className="h-16 w-16 text-gray-400" />
+                                <LuBuilding className="h-16 w-16 text-gray-400" />
                             )}
                         </div>
                         <div className="flex-1 pb-2 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
@@ -95,17 +95,17 @@ export default function CompanyDetailsPage() {
                                     {company.companyName}
                                     {reviewsData?.averageRating > 0 && (
                                         <span className="flex items-center text-lg bg-yellow-50 px-2 py-0.5 rounded border border-yellow-200 text-yellow-700">
-                                            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500 mr-1" />
+                                            <LuStar className="h-4 w-4 fill-yellow-500 text-yellow-500 mr-1" />
                                             {reviewsData.averageRating.toFixed(1)}
                                         </span>
                                     )}
                                 </h1>
                                 <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
-                                    <span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-gray-400" /> {company.location || 'Location not specified'}</span>
-                                    <span className="flex items-center gap-1"><Briefcase className="h-4 w-4 text-gray-400" /> {company.industry || 'Industry not specified'}</span>
+                                    <span className="flex items-center gap-1"><LuMapPin className="h-4 w-4 text-gray-400" /> {company.location || 'Location not specified'}</span>
+                                    <span className="flex items-center gap-1"><LuBriefcase className="h-4 w-4 text-gray-400" /> {company.industry || 'Industry not specified'}</span>
                                     {company.website && (
                                         <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-orange hover:underline">
-                                            <Globe className="h-4 w-4" /> Website
+                                            <LuGlobe className="h-4 w-4" /> Website
                                         </a>
                                     )}
                                 </div>
@@ -116,7 +116,7 @@ export default function CompanyDetailsPage() {
                                     onClick={() => setShowReviewForm(true)}
                                     className="flex items-center gap-2 bg-warmwhite border border-peach text-charcoal hover:bg-peach px-4 py-2 rounded-md shadow-sm font-medium transition-colors"
                                 >
-                                    <MessageSquare className="w-4 h-4" />
+                                    <LuMessageSquare className="w-4 h-4" />
                                     Write a Review
                                 </button>
                             )}
@@ -145,7 +145,7 @@ export default function CompanyDetailsPage() {
                                                     onClick={() => setReviewData({...reviewData, rating: star})}
                                                     className="focus:outline-none"
                                                 >
-                                                    <Star className={`h-6 w-6 ${reviewData.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                                    <LuStar className={`h-6 w-6 ${reviewData.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
                                                 </button>
                                             ))}
                                         </div>
@@ -255,12 +255,12 @@ export default function CompanyDetailsPage() {
                                                 <Link href={`/jobs/${job.id}`}>{job.title}</Link>
                                             </h3>
                                             <div className="mt-2 flex items-center flex-wrap gap-4 text-sm text-gray-500">
-                                                <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {job.location}</span>
-                                                <span className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> {job.jobType}</span>
+                                                <span className="flex items-center gap-1"><LuMapPin className="h-4 w-4" /> {job.location}</span>
+                                                <span className="flex items-center gap-1"><LuBriefcase className="h-4 w-4" /> {job.jobType}</span>
                                                 {job.salaryMin && (
-                                                    <span className="flex items-center gap-1"><IndianRupee className="h-4 w-4" /> {job.salaryMin} - {job.salaryMax}</span>
+                                                    <span className="flex items-center gap-1"><LuIndianRupee className="h-4 w-4" /> {job.salaryMin} - {job.salaryMax}</span>
                                                 )}
-                                                <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {new Date(job.createdAt).toLocaleDateString()}</span>
+                                                <span className="flex items-center gap-1"><LuClock className="h-4 w-4" /> {new Date(job.createdAt).toLocaleDateString()}</span>
                                             </div>
                                             <div className="mt-4">
                                                 <Link href={`/jobs/${job.id}`} className="text-orange font-medium hover:underline text-sm">

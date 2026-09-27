@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, MapPin, Briefcase, Building } from 'lucide-react';
+import { LuSearch, LuMapPin, LuBriefcase, LuBuilding } from 'react-icons/lu';
 
 export default function Home() {
   return (
@@ -25,13 +25,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: Search Hub */}
+          {/* Right: LuSearch Hub */}
           <div className="flex-1 w-full max-w-md lg:max-w-none">
             <div className="bg-peach p-8 rounded-2xl shadow-sm">
               <h2 className="text-2xl font-display font-bold text-charcoal mb-6">Start Searching</h2>
               <form action="/jobs" className="flex flex-col gap-4">
                 <div className="flex items-center bg-white rounded-lg px-4 py-3 shadow-sm">
-                  <Search className="h-5 w-5 text-gray-400 mr-3" />
+                  <LuSearch className="h-5 w-5 text-gray-400 mr-3" />
                   <input 
                     type="text" 
                     name="keyword"
@@ -40,7 +40,7 @@ export default function Home() {
                   />
                 </div>
                 <div className="flex items-center bg-white rounded-lg px-4 py-3 shadow-sm">
-                  <MapPin className="h-5 w-5 text-gray-400 mr-3" />
+                  <LuMapPin className="h-5 w-5 text-gray-400 mr-3" />
                   <input 
                     type="text" 
                     name="location"
@@ -49,7 +49,7 @@ export default function Home() {
                   />
                 </div>
                 <button type="submit" className="w-full bg-orange hover:bg-orange/90 text-white font-bold py-4 rounded-lg transition-colors mt-2 text-lg">
-                  Search Jobs
+                  LuSearch Jobs
                 </button>
               </form>
             </div>
@@ -88,7 +88,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {['Software Development', 'Marketing', 'Finance', 'Healthcare', 'Design', 'Customer Support', 'Sales', 'Education'].map((cat) => (
               <Link key={cat} href={`/jobs?category=${cat}`} className="bg-warmwhite p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-peach transition-all text-center group">
-                <Briefcase className="h-8 w-8 text-orange mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <LuBriefcase className="h-8 w-8 text-orange mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="font-semibold text-charcoal">{cat}</h3>
               </Link>
             ))}
@@ -110,14 +110,14 @@ export default function Home() {
             {/* Mock Job Card - we'll replace with a component later */}
             <div className="border border-gray-200 rounded-lg p-6 hover:border-orange hover:shadow-md transition-all bg-warmwhite flex gap-4">
                <div className="h-12 w-12 rounded bg-peach flex items-center justify-center flex-shrink-0">
-                  <Building className="h-6 w-6 text-gray-400" />
+                  <LuBuilding className="h-6 w-6 text-gray-400" />
                </div>
                <div className="flex-1">
                  <h3 className="text-lg font-bold text-charcoal hover:text-orange"><Link href="/jobs/1">Senior React Developer</Link></h3>
                  <p className="text-gray-600 mb-2">ABC Technologies</p>
                  <div className="flex flex-wrap gap-2 text-sm text-gray-500 mb-4">
-                    <span className="flex items-center gap-1"><MapPin className="h-4 w-4"/> Chennai (Remote)</span>
-                    <span className="flex items-center gap-1"><Briefcase className="h-4 w-4"/> Full-Time</span>
+                    <span className="flex items-center gap-1"><LuMapPin className="h-4 w-4"/> Chennai (Remote)</span>
+                    <span className="flex items-center gap-1"><LuBriefcase className="h-4 w-4"/> Full-Time</span>
                  </div>
                  <div className="flex justify-between items-center">
                     <span className="font-semibold text-charcoal">₹8L - ₹12L</span>
@@ -130,14 +130,14 @@ export default function Home() {
             {/* Another Mock Card */}
              <div className="border border-gray-200 rounded-lg p-6 hover:border-orange hover:shadow-md transition-all bg-warmwhite flex gap-4">
                <div className="h-12 w-12 rounded bg-peach flex items-center justify-center flex-shrink-0">
-                  <Building className="h-6 w-6 text-gray-400" />
+                  <LuBuilding className="h-6 w-6 text-gray-400" />
                </div>
                <div className="flex-1">
                  <h3 className="text-lg font-bold text-charcoal hover:text-orange"><Link href="/jobs/2">Product Marketing Manager</Link></h3>
                  <p className="text-gray-600 mb-2">Global Media Corp</p>
                  <div className="flex flex-wrap gap-2 text-sm text-gray-500 mb-4">
-                    <span className="flex items-center gap-1"><MapPin className="h-4 w-4"/> Mumbai</span>
-                    <span className="flex items-center gap-1"><Briefcase className="h-4 w-4"/> Full-Time</span>
+                    <span className="flex items-center gap-1"><LuMapPin className="h-4 w-4"/> Mumbai</span>
+                    <span className="flex items-center gap-1"><LuBriefcase className="h-4 w-4"/> Full-Time</span>
                  </div>
                  <div className="flex justify-between items-center">
                     <span className="font-semibold text-charcoal">₹15L - ₹20L</span>

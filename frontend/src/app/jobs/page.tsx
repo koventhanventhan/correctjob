@@ -2,7 +2,7 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { MapPin, Briefcase, Search, Filter, Bell } from 'lucide-react';
+import { LuMapPin, LuBriefcase, LuSearch, LuFilter, LuBell } from 'react-icons/lu';
 import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -127,8 +127,8 @@ function JobsContent() {
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
                             className="w-full bg-peach text-charcoal font-bold py-3 rounded-md flex items-center justify-center gap-2 border border-transparent hover:border-orange transition-colors"
                         >
-                            <Filter className="h-5 w-5" />
-                            {isFilterOpen ? 'Hide Filters' : 'Show Filters & Search'}
+                            <LuFilter className="h-5 w-5" />
+                            {isFilterOpen ? 'Hide Filters' : 'Show Filters & LuSearch'}
                         </button>
                     </div>
 
@@ -139,7 +139,7 @@ function JobsContent() {
                         {/* Primary Row */}
                         <div className="flex flex-col lg:flex-row gap-4 lg:items-center w-full">
                             <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                                <LuSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                                 <input 
                                     type="text" 
                                     value={searchTerm}
@@ -149,7 +149,7 @@ function JobsContent() {
                                 />
                             </div>
                             <div className="relative flex-1">
-                                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                                <LuMapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                                 <input 
                                     type="text" 
                                     value={location}
@@ -171,7 +171,7 @@ function JobsContent() {
                                 </select>
                             </div>
                             <button type="submit" className="bg-orange text-white font-bold px-8 py-3 rounded-md hover:bg-orange/90 whitespace-nowrap transition-colors shadow-sm">
-                                Update Search
+                                Update LuSearch
                             </button>
                         </div>
                         
@@ -201,7 +201,7 @@ function JobsContent() {
                 {user?.role === 'JobSeeker' && hasAnyFilter && (
                     <div className="mb-6 flex flex-col sm:flex-row items-center justify-between bg-peach p-4 rounded-md gap-4">
                         <div className="flex items-center text-charcoal">
-                            <Bell className="w-5 h-5 mr-2 text-orange" />
+                            <LuBell className="w-5 h-5 mr-2 text-orange" />
                             <span>
                                 Get notified when new jobs match 
                                 {currentKeyword && <strong> "{currentKeyword}"</strong>}
@@ -251,10 +251,10 @@ function JobsContent() {
                                             
                                             <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500">
                                                 <span className="flex items-center gap-1">
-                                                    <MapPin className="h-4 w-4" /> {job.location}
+                                                    <LuMapPin className="h-4 w-4" /> {job.location}
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                    <Briefcase className="h-4 w-4" /> {job.jobType}
+                                                    <LuBriefcase className="h-4 w-4" /> {job.jobType}
                                                 </span>
                                             </div>
                                         </div>

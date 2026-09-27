@@ -3,7 +3,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { Briefcase, FileText, CheckCircle, Clock, Bell, Calendar as CalendarIcon, Download } from 'lucide-react';
+import { LuBriefcase, LuFileText, LuCircleCheck, LuClock, LuBell, LuCalendar as CalendarIcon, LuDownload } from 'react-icons/lu';
 import { calculateProfileCompletion } from '@/utils/profile';
 
 export default function SeekerDashboard() {
@@ -61,7 +61,7 @@ export default function SeekerDashboard() {
                                 <p className="text-2xl font-bold text-charcoal mt-1">{calculateProfileCompletion(profile)}%</p>
                             </div>
                             <div className="h-10 w-10 bg-peach text-charcoal rounded-full flex items-center justify-center">
-                                <FileText className="h-5 w-5" />
+                                <LuFileText className="h-5 w-5" />
                             </div>
                         </div>
                         <div className="mt-4">
@@ -78,7 +78,7 @@ export default function SeekerDashboard() {
                                 <p className="text-2xl font-bold text-charcoal mt-1">{applications?.length || 0}</p>
                             </div>
                             <div className="h-10 w-10 bg-peach text-charcoal rounded-full flex items-center justify-center">
-                                <Briefcase className="h-5 w-5" />
+                                <LuBriefcase className="h-5 w-5" />
                             </div>
                         </div>
                     </div>
@@ -92,7 +92,7 @@ export default function SeekerDashboard() {
                                 </p>
                             </div>
                             <div className="h-10 w-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                                <CheckCircle className="h-5 w-5" />
+                                <LuCircleCheck className="h-5 w-5" />
                             </div>
                         </div>
                     </div>
@@ -105,7 +105,7 @@ export default function SeekerDashboard() {
                                     <p className="text-sm text-charcoal mt-1">Manage saved searches</p>
                                 </div>
                                 <div className="h-10 w-10 bg-orange-100 text-charcoal-600 rounded-full flex items-center justify-center group-hover:bg-peach group-hover:text-charcoal transition-colors">
-                                    <Bell className="h-5 w-5" />
+                                    <LuBell className="h-5 w-5" />
                                 </div>
                             </div>
                         </Link>
@@ -135,7 +135,7 @@ export default function SeekerDashboard() {
                                             {app.job?.company?.logoUrl ? (
                                                 <img src={app.job.company.logoUrl} alt="" className="h-8 w-8 object-contain" />
                                             ) : (
-                                                <Briefcase className="h-6 w-6 text-gray-400" />
+                                                <LuBriefcase className="h-6 w-6 text-gray-400" />
                                             )}
                                         </div>
                                         <div>
@@ -168,13 +168,13 @@ export default function SeekerDashboard() {
                                                     onClick={() => handleDownloadCalendar(app.id, app.job?.title || 'Job')}
                                                     className="flex items-center gap-1 text-xs text-orange hover:text-orange hover:underline mt-1 font-medium bg-transparent border-none cursor-pointer"
                                                 >
-                                                    <Download className="h-3 w-3" /> Add to Calendar
+                                                    <LuDownload className="h-3 w-3" /> Add to Calendar
                                                 </button>
                                             </div>
                                         )}
 
                                         <span className="flex items-center gap-1 text-xs text-gray-500 mt-2">
-                                            <Clock className="h-3 w-3" /> Applied on {new Date(app.appliedAt).toLocaleDateString()}
+                                            <LuClock className="h-3 w-3" /> Applied on {new Date(app.appliedAt).toLocaleDateString()}
                                         </span>
                                     </div>
                                 </div>

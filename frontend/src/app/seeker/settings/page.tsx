@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import api from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
-import { Lock, Save } from 'lucide-react';
+import { LuLock, LuSave } from 'react-icons/lu';
 
 export default function SeekerSettings() {
     const { user } = useAuthStore();
@@ -58,7 +58,7 @@ export default function SeekerSettings() {
 
             <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-medium text-charcoal mb-4 border-b pb-2 flex items-center">
-                    <Lock className="w-5 h-5 mr-2" /> Change Password
+                    <LuLock className="w-5 h-5 mr-2" /> Change Password
                 </h2>
                 
                 <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
@@ -94,7 +94,7 @@ export default function SeekerSettings() {
                         disabled={saving}
                         className="flex items-center justify-center bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
                     >
-                        <Save className="w-4 h-4 mr-2" />
+                        <LuSave className="w-4 h-4 mr-2" />
                         {saving ? 'Updating...' : 'Update Password'}
                     </button>
                 </form>

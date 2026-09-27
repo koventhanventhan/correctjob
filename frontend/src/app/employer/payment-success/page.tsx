@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/services/api';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { LuCircleCheck, LuLoader } from 'react-icons/lu';
 
 function PaymentSuccessContent() {
     const searchParams = useSearchParams();
@@ -61,7 +61,7 @@ function PaymentSuccessContent() {
         <div className="max-w-xl mx-auto p-8 my-12 bg-warmwhite rounded-xl shadow-lg text-center">
             {status === 'polling' && (
                 <div className="flex flex-col items-center">
-                    <Loader2 className="w-16 h-16 text-orange animate-spin mb-4" />
+                    <LuLoader className="w-16 h-16 text-orange animate-spin mb-4" />
                     <h1 className="text-2xl font-bold mb-2">Verifying Payment...</h1>
                     <p className="text-gray-600">Please wait while we confirm your payment with PayHere. Do not close this page.</p>
                 </div>
@@ -69,7 +69,7 @@ function PaymentSuccessContent() {
 
             {status === 'success' && (
                 <div className="flex flex-col items-center">
-                    <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+                    <LuCircleCheck className="w-16 h-16 text-green-500 mb-4" />
                     <h1 className="text-2xl font-bold mb-2 text-green-700">Payment Successful!</h1>
                     <p className="text-gray-600 mb-6">Your payment has been verified. {submitting ? 'Submitting job for admin approval...' : 'Your job has been submitted for admin approval.'}</p>
                     <button 
