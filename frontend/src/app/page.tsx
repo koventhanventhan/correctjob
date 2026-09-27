@@ -1,5 +1,20 @@
 import Link from 'next/link';
-import { LuSearch, LuMapPin, LuBriefcase, LuBuilding } from 'react-icons/lu';
+import { 
+  LuSearch, LuMapPin, LuBriefcase, LuBuilding,
+  LuCode, LuMegaphone, LuBanknote, LuHeartPulse, 
+  LuPalette, LuHeadset, LuHandshake, LuGraduationCap 
+} from 'react-icons/lu';
+
+const categoryIcons: Record<string, React.ElementType> = {
+  'Software Development': LuCode,
+  'Marketing': LuMegaphone,
+  'Finance': LuBanknote,
+  'Healthcare': LuHeartPulse,
+  'Design': LuPalette,
+  'Customer Support': LuHeadset,
+  'Sales': LuHandshake,
+  'Education': LuGraduationCap,
+};
 
 export default function Home() {
   return (
@@ -86,12 +101,15 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-display font-bold text-charcoal mb-8 text-center">Popular Categories</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {['Software Development', 'Marketing', 'Finance', 'Healthcare', 'Design', 'Customer Support', 'Sales', 'Education'].map((cat) => (
-              <Link key={cat} href={`/jobs?category=${cat}`} className="bg-warmwhite p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-peach transition-all text-center group">
-                <LuBriefcase className="h-8 w-8 text-orange mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                <h3 className="font-semibold text-charcoal">{cat}</h3>
-              </Link>
-            ))}
+            {['Software Development', 'Marketing', 'Finance', 'Healthcare', 'Design', 'Customer Support', 'Sales', 'Education'].map((cat) => {
+              const Icon = categoryIcons[cat] || LuBriefcase;
+              return (
+                <Link key={cat} href={`/jobs?category=${cat}`} className="bg-warmwhite p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-peach transition-all text-center group">
+                  <Icon className="h-8 w-8 text-orange mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                  <h3 className="font-semibold text-charcoal">{cat}</h3>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -110,7 +128,7 @@ export default function Home() {
             {/* Mock Job Card - we'll replace with a component later */}
             <div className="border border-gray-200 rounded-lg p-6 hover:border-orange hover:shadow-md transition-all bg-warmwhite flex gap-4">
                <div className="h-12 w-12 rounded bg-peach flex items-center justify-center flex-shrink-0">
-                  <LuBuilding className="h-6 w-6 text-gray-400" />
+                  <LuCode className="h-6 w-6 text-gray-400" />
                </div>
                <div className="flex-1">
                  <h3 className="text-lg font-bold text-charcoal hover:text-orange"><Link href="/jobs/1">Senior React Developer</Link></h3>
@@ -130,7 +148,7 @@ export default function Home() {
             {/* Another Mock Card */}
              <div className="border border-gray-200 rounded-lg p-6 hover:border-orange hover:shadow-md transition-all bg-warmwhite flex gap-4">
                <div className="h-12 w-12 rounded bg-peach flex items-center justify-center flex-shrink-0">
-                  <LuBuilding className="h-6 w-6 text-gray-400" />
+                  <LuMegaphone className="h-6 w-6 text-gray-400" />
                </div>
                <div className="flex-1">
                  <h3 className="text-lg font-bold text-charcoal hover:text-orange"><Link href="/jobs/2">Product Marketing Manager</Link></h3>
