@@ -378,7 +378,7 @@ export default function AdminDashboard() {
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <button 
                                                     onClick={() => handleApproveCompany(c.id, !c.isApproved)}
-                                                    className={`${c.isApproved ? 'text-red-600 hover:text-red-900' : 'text-orange hover:text-orange'}`}
+                                                    className={`${c.isApproved ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
                                                 >
                                                     {c.isApproved ? 'Revoke Approval' : 'Approve'}
                                                 </button>
