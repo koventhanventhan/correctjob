@@ -48,13 +48,13 @@ export default function SeekerDashboard() {
         <div className="min-h-screen bg-warmwhite">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-charcoal">Welcome back, {user.fullName}</h1>
-                    <p className="text-gray-600">Here's what's happening with your job search today.</p>
+                    <h1 className="text-3xl font-display font-bold text-charcoal">Welcome back, {user.fullName}</h1>
+                    <p className="text-gray-600 mt-1">Here's what's happening with your job search today.</p>
                 </div>
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Profile Completion</p>
@@ -71,7 +71,7 @@ export default function SeekerDashboard() {
                         </div>
                     </div>
                     
-                    <div className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Total Applications</p>
@@ -83,7 +83,7 @@ export default function SeekerDashboard() {
                         </div>
                     </div>
 
-                    <div className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Shortlisted</p>
@@ -97,7 +97,7 @@ export default function SeekerDashboard() {
                         </div>
                     </div>
                     
-                    <div className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200 hover:border-peach transition-colors cursor-pointer group">
+                    <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
                         <Link href="/seeker/job-alerts" className="block">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -113,9 +113,9 @@ export default function SeekerDashboard() {
                 </div>
 
                 {/* Applications Timeline */}
-                <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-warmwhite">
-                        <h3 className="font-semibold text-charcoal">Recent Applications</h3>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-white">
+                        <h3 className="text-lg font-display font-bold text-charcoal">Recent Applications</h3>
                     </div>
                     <div className="divide-y divide-gray-200">
                         {isLoading ? (

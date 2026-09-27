@@ -115,9 +115,9 @@ export default function AdminDashboard() {
     return (
         <div className="min-h-screen bg-warmwhite flex">
             {/* Sidebar */}
-            <div className="w-64 bg-warmwhite border-r border-gray-200 hidden md:block">
+            <div className="w-64 bg-white shadow-sm hidden md:block">
                 <div className="p-6">
-                    <h2 className="text-lg font-bold text-charcoal">Admin Panel</h2>
+                    <h2 className="text-xl font-display font-bold text-charcoal">Admin Panel</h2>
                 </div>
                 <nav className="space-y-1 px-3">
                     <button onClick={() => setActiveTab('jobs')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'jobs' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Total Users</p>
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                     
-                    <div className="bg-warmwhite p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Pending Job Approvals</p>
@@ -189,9 +189,9 @@ export default function AdminDashboard() {
                 </div>
 
                 {activeTab === 'jobs' && (
-                    <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 bg-warmwhite flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                            <h3 className="font-semibold text-charcoal">Manage Jobs</h3>
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 bg-white flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                            <h3 className="text-lg font-display font-bold text-charcoal">Manage Jobs</h3>
                             <div className="flex items-center gap-2">
                                 <select 
                                     className="border rounded p-1 text-sm bg-warmwhite"
@@ -218,14 +218,14 @@ export default function AdminDashboard() {
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-warmwhite">
+                                <thead className="bg-white">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job / Company</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-warmwhite divide-y divide-gray-200">
+                                <tbody className="bg-white divide-y divide-gray-100">
                                     {jobs.map((job: any) => (
                                         <tr key={job.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
                             </table>
                         </div>
                         {/* Pagination */}
-                        <div className="px-6 py-3 bg-warmwhite flex items-center justify-between border-t border-gray-200">
+                        <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
                             <span className="text-sm text-gray-500">Total: {totalJobs}</span>
                             <div className="flex space-x-2">
                                 <button disabled={jobsPage === 1} onClick={() => setJobsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
@@ -267,9 +267,9 @@ export default function AdminDashboard() {
                 )}
                 
                 {activeTab === 'users' && (
-                    <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                         <div className="px-6 py-4 border-b border-gray-200 bg-warmwhite flex justify-between items-center">
-                            <h3 className="font-semibold text-charcoal">All Users</h3>
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                         <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold text-charcoal">All Users</h3>
                             <div className="flex items-center border rounded px-2 bg-warmwhite">
                                 <Search className="w-4 h-4 text-gray-400" />
                                 <input 
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-warmwhite">
+                                <thead className="bg-white">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name / Email</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
@@ -291,7 +291,7 @@ export default function AdminDashboard() {
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-warmwhite divide-y divide-gray-200">
+                                <tbody className="bg-white divide-y divide-gray-100">
                                     {users.map((u: any) => (
                                         <tr key={u.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
                             </table>
                         </div>
                         {/* Pagination */}
-                        <div className="px-6 py-3 bg-warmwhite flex items-center justify-between border-t border-gray-200">
+                        <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
                             <span className="text-sm text-gray-500">Total: {totalUsers}</span>
                             <div className="flex space-x-2">
                                 <button disabled={usersPage === 1} onClick={() => setUsersPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
@@ -333,9 +333,9 @@ export default function AdminDashboard() {
                 )}
 
                 {activeTab === 'companies' && (
-                    <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                         <div className="px-6 py-4 border-b border-gray-200 bg-warmwhite flex justify-between items-center">
-                            <h3 className="font-semibold text-charcoal">Manage Employers</h3>
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                         <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold text-charcoal">Manage Employers</h3>
                             <div className="flex items-center border rounded px-2 bg-warmwhite">
                                 <Search className="w-4 h-4 text-gray-400" />
                                 <input 
@@ -349,7 +349,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-warmwhite">
+                                <thead className="bg-white">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company Name</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employer Details</th>
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-warmwhite divide-y divide-gray-200">
+                                <tbody className="bg-white divide-y divide-gray-100">
                                     {companies.map((c: any) => (
                                         <tr key={c.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -389,7 +389,7 @@ export default function AdminDashboard() {
                             </table>
                         </div>
                         {/* Pagination */}
-                        <div className="px-6 py-3 bg-warmwhite flex items-center justify-between border-t border-gray-200">
+                        <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
                             <span className="text-sm text-gray-500">Total: {totalCompanies}</span>
                             <div className="flex space-x-2">
                                 <button disabled={companiesPage === 1} onClick={() => setCompaniesPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
@@ -399,13 +399,13 @@ export default function AdminDashboard() {
                     </div>
                 )}
                 {activeTab === 'reviews' && (
-                    <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                         <div className="px-6 py-4 border-b border-gray-200 bg-warmwhite flex justify-between items-center">
-                            <h3 className="font-semibold text-charcoal">Manage Company Reviews</h3>
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                         <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold text-charcoal">Manage Company Reviews</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-warmwhite">
+                                <thead className="bg-white">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviewer</th>
@@ -414,7 +414,7 @@ export default function AdminDashboard() {
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-warmwhite divide-y divide-gray-200">
+                                <tbody className="bg-white divide-y divide-gray-100">
                                     {reviews.map((r: any) => (
                                         <tr key={r.id}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-charcoal">
@@ -450,7 +450,7 @@ export default function AdminDashboard() {
                             </table>
                         </div>
                         {/* Pagination */}
-                        <div className="px-6 py-3 bg-warmwhite flex items-center justify-between border-t border-gray-200">
+                        <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
                             <span className="text-sm text-gray-500">Total: {totalReviews}</span>
                             <div className="flex space-x-2">
                                 <button disabled={reviewsPage === 1} onClick={() => setReviewsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><ChevronLeft className="w-4 h-4"/></button>
