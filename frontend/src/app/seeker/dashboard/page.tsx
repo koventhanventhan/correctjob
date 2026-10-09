@@ -164,12 +164,24 @@ export default function SeekerDashboard() {
                                                     <CalendarIcon className="h-4 w-4" /> 
                                                     {new Date(app.interviewDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                                                 </span>
-                                                <button 
-                                                    onClick={() => handleDownloadCalendar(app.id, app.job?.title || 'Job')}
-                                                    className="flex items-center gap-1 text-xs text-orange hover:text-orange hover:underline mt-1 font-medium bg-transparent border-none cursor-pointer"
-                                                >
-                                                    <LuDownload className="h-3 w-3" /> Add to Calendar
-                                                </button>
+                                                <div className="flex items-center gap-3 mt-1">
+                                                    {app.meetingLink && (
+                                                        <a 
+                                                            href={app.meetingLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 text-xs text-white bg-purple-600 hover:bg-purple-700 px-2 py-1.5 rounded font-medium transition-colors"
+                                                        >
+                                                            Join Interview
+                                                        </a>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => handleDownloadCalendar(app.id, app.job?.title || 'Job')}
+                                                        className="flex items-center gap-1 text-xs text-orange hover:text-orange hover:underline font-medium bg-transparent border-none cursor-pointer"
+                                                    >
+                                                        <LuDownload className="h-3 w-3" /> Add to Calendar
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
 

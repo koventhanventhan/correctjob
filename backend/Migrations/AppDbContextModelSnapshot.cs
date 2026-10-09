@@ -45,6 +45,16 @@ namespace HireConnect.API.Migrations
                     b.Property<int>("JobId")
                         .HasColumnType("int");
 
+                    b.Property<string>("MatchExplanation")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("MatchScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MeetingLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
                     b.Property<string>("ResumeUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
@@ -605,6 +615,9 @@ namespace HireConnect.API.Migrations
                     b.Property<string>("PortfolioUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
+
+                    b.Property<string>("ResumeText")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ResumeUrl")
                         .HasMaxLength(255)

@@ -123,26 +123,46 @@ export default function AppliedJobs() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-2">
-                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                                            app.status === 'Applied' ? 'bg-peach text-charcoal' :
-                                            app.status === 'Under Review' ? 'bg-purple-100 text-purple-800' :
-                                            app.status === 'Shortlisted' ? 'bg-yellow-100 text-yellow-800' :
-                                            app.status === 'Interview Scheduled' ? 'bg-orange-100 text-orange-800' :
-                                            app.status === 'Selected' ? 'bg-green-100 text-green-800' :
-                                            app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                                            'bg-peach text-charcoal'
-                                        }`}>
-                                            {app.status}
-                                        </span>
-                                        <Link 
-                                            href={`/chat/${app.id}`} 
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-orange rounded-md hover:bg-orange/90 transition-colors"
-                                        >
-                                            <LuMessageCircle className="w-3.5 h-3.5" />
-                                            Chat
-                                        </Link>
-                                    </div>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                                                app.status === 'Applied' ? 'bg-peach text-charcoal' :
+                                                app.status === 'Under Review' ? 'bg-purple-100 text-purple-800' :
+                                                app.status === 'Shortlisted' ? 'bg-yellow-100 text-yellow-800' :
+                                                app.status === 'Interview Scheduled' ? 'bg-orange-100 text-orange-800' :
+                                                app.status === 'Selected' ? 'bg-green-100 text-green-800' :
+                                                app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                                'bg-peach text-charcoal'
+                                            }`}>
+                                                {app.status}
+                                            </span>
+                                            
+                                            {app.status === 'Interview Scheduled' && app.interviewDate && (
+                                                <div className="flex flex-col items-end gap-1 my-1">
+                                                    <span className="flex items-center gap-1 text-xs font-medium text-purple-700 bg-purple-50 px-2 py-1 rounded">
+                                                        <LuClock className="h-3.5 w-3.5" /> 
+                                                        {new Date(app.interviewDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                                                    </span>
+                                                    {app.meetingLink && (
+                                                        <a 
+                                                            href={app.meetingLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 text-xs text-white bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-md font-medium transition-colors"
+                                                        >
+                                                            Join Interview
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <Link 
+                                                href={`/chat/${app.id}`} 
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-orange rounded-md hover:bg-orange/90 transition-colors"
+                                            >
+                                                <LuMessageCircle className="w-3.5 h-3.5" />
+                                                Chat
+                                            </Link>
+                                        </div>
                                 </div>
                                 <StatusTimeline currentStatus={app.status} />
                             </div>

@@ -23,6 +23,9 @@ namespace HireConnect.API.Models
 
         public DateTime? InterviewDate { get; set; }
 
+        [MaxLength(2000)]
+        public string? MeetingLink { get; set; }
+
         public int? MatchScore { get; set; }
         
         [Column(TypeName = "text")]

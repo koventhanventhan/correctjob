@@ -183,6 +183,16 @@ namespace HireConnect.API.Controllers
                 return BadRequest(new { message = "Interview date is required when scheduling an interview." });
             }
 
+            if (model.Status == "Interview Scheduled" && !string.IsNullOrEmpty(model.MeetingLink))
+            {
+                if (!Uri.TryCreate(model.MeetingLink, UriKind.Absolute, out Uri? uriResult) 
+                    || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+                {
+                    return BadRequest(new { message = "Meeting link must be a valid HTTP or HTTPS URL." });
+                }
+                application.MeetingLink = model.MeetingLink;
+            }
+
             application.Status = model.Status;
             if (!string.IsNullOrEmpty(model.EmployerNotes))
                 application.EmployerNotes = model.EmployerNotes;
@@ -266,6 +276,15 @@ namespace HireConnect.API.Controllers
             var dtStart = startTime.ToString("yyyyMMddTHHmmssZ");
             var dtEnd = endTime.ToString("yyyyMMddTHHmmssZ");
 
+            var description = $"You have an interview scheduled for the position of {application.Job.Title} at {application.Job.Company.CompanyName}.";
+            var location = "To be decided / Online";
+
+            if (!string.IsNullOrEmpty(application.MeetingLink))
+            {
+                description += $"\\n\\nMeeting Link: {application.MeetingLink}";
+                location = application.MeetingLink;
+            }
+
             var icsContent = $@"BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//HireConnect//EN
@@ -276,8 +295,8 @@ DTSTAMP:{dtStamp}
 DTSTART:{dtStart}
 DTEND:{dtEnd}
 SUMMARY:Interview for {application.Job.Title} at {application.Job.Company.CompanyName}
-DESCRIPTION:You have an interview scheduled for the position of {application.Job.Title} at {application.Job.Company.CompanyName}.
-LOCATION:To be decided / Online
+DESCRIPTION:{description}
+LOCATION:{location}
 UID:{Guid.NewGuid()}
 STATUS:CONFIRMED
 BEGIN:VALARM
@@ -357,5 +376,6 @@ END:VCALENDAR";
         public string Status { get; set; } = string.Empty;
         public string? EmployerNotes { get; set; }
         public DateTime? InterviewDate { get; set; }
+        public string? MeetingLink { get; set; }
     }
 }

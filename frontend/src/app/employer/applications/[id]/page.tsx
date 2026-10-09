@@ -10,7 +10,18 @@ import Link from 'next/link';
 function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) {
     const [status, setStatus] = useState(app.status);
     const [interviewDate, setInterviewDate] = useState(app.interviewDate ? app.interviewDate.slice(0, 16) : '');
+    const [meetingLink, setMeetingLink] = useState(app.meetingLink || '');
     const [isUpdating, setIsUpdating] = useState(false);
+    
+    const isValidUrl = (urlString: string) => {
+        if (!urlString) return true; // Optional
+        try {
+            const url = new URL(urlString);
+            return url.protocol === "http:" || url.protocol === "https:";
+        } catch (_) {
+            return false;
+        }
+    };
 
     const handleUpdate = async () => {
         if (status === 'Interview Scheduled' && !interviewDate) {
@@ -21,7 +32,8 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
         try {
             await api.patch(`/Applications/${app.id}/status`, { 
                 status: status, 
-                interviewDate: status === 'Interview Scheduled' ? new Date(interviewDate).toISOString() : null 
+                interviewDate: status === 'Interview Scheduled' ? new Date(interviewDate).toISOString() : null,
+                meetingLink: status === 'Interview Scheduled' ? meetingLink : null
             });
             onUpdate();
         } catch (error: any) {
@@ -118,20 +130,35 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
                     </select>
 
                     {status === 'Interview Scheduled' && (
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Interview Date & Time <span className="text-red-500">*</span></label>
-                            <input 
-                                type="datetime-local" 
-                                value={interviewDate}
-                                onChange={(e) => setInterviewDate(e.target.value)}
-                                className="w-full border p-2 rounded text-sm focus:ring-orange focus:border-orange" 
-                            />
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Interview Date & Time <span className="text-red-500">*</span></label>
+                                <input 
+                                    type="datetime-local" 
+                                    value={interviewDate}
+                                    onChange={(e) => setInterviewDate(e.target.value)}
+                                    className="w-full border p-2 rounded text-sm focus:ring-orange focus:border-orange" 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Meeting link (optional)</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="https://meet.google.com/..."
+                                    value={meetingLink}
+                                    onChange={(e) => setMeetingLink(e.target.value)}
+                                    className={`w-full border p-2 rounded text-sm focus:ring-orange focus:border-orange ${!isValidUrl(meetingLink) ? 'border-red-500 focus:border-red-500' : ''}`} 
+                                />
+                                {!isValidUrl(meetingLink) && (
+                                    <p className="text-xs text-red-500 mt-1">Please enter a valid HTTP/HTTPS URL.</p>
+                                )}
+                            </div>
                         </div>
                     )}
                     
                     <button 
                         onClick={handleUpdate}
-                        disabled={isUpdating || (status === app.status && (!app.interviewDate || interviewDate === app.interviewDate.slice(0, 16)))}
+                        disabled={isUpdating || !isValidUrl(meetingLink) || (status === app.status && (!app.interviewDate || interviewDate === app.interviewDate.slice(0, 16)) && meetingLink === (app.meetingLink || ''))}
                         className="w-full bg-orange text-white py-2 px-4 rounded text-sm font-medium hover:bg-orange/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {isUpdating ? 'Updating...' : 'Update Application'}
