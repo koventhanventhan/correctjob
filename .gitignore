@@ -31,3 +31,7 @@ obj/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Archives
+*.zip
+frontend-deploy.zip

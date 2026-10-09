@@ -34,8 +34,13 @@ export default function LoginPage() {
             setAuth(res.data.user, res.data.token);
             
             // Redirect based on role
-            const role = res.data.user.role.toLowerCase();
-            router.push(`/${role}/dashboard`);
+            const roleToPath: Record<string, string> = {
+                JobSeeker: 'seeker',
+                Employer: 'employer',
+                Admin: 'admin',
+            };
+            const rolePath = roleToPath[res.data.user.role] || res.data.user.role.toLowerCase();
+            router.push(`/${rolePath}/dashboard`);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to login. Please check your credentials.');
         } finally {

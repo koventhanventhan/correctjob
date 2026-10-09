@@ -161,6 +161,27 @@ namespace HireConnect.API.Controllers
             });
         }
 
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                var tokenEntity = await _context.RefreshTokens
+                    .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+
+                if (tokenEntity != null)
+                {
+                    tokenEntity.IsRevoked = true;
+                    await _context.SaveChangesAsync();
+                }
+
+                Response.Cookies.Delete("refreshToken");
+            }
+
+            return Ok(new { message = "Logged out successfully" });
+        }
+
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> GetMe()

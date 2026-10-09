@@ -4,13 +4,25 @@ import { useAuthStore } from '../store/authStore';
 import { LuBriefcase, LuLogOut, LuUser as UserIcon, LuMenu, LuX } from 'react-icons/lu';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import api from '@/services/api';
+
+const roleToPath: Record<string, string> = {
+    JobSeeker: 'seeker',
+    Employer: 'employer',
+    Admin: 'admin',
+};
 
 export default function Navbar() {
     const { user, logout } = useAuthStore();
     const router = useRouter();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error('Logout failed on backend', error);
+        }
         logout();
         setIsMobileMenuOpen(false);
         router.push('/');
@@ -55,7 +67,7 @@ export default function Navbar() {
                                     Welcome, <span className="font-medium text-charcoal">{user.fullName}</span>
                                 </span>
                                 <Link 
-                                    href={`/${user.role.toLowerCase()}/dashboard`}
+                                    href={`/${user && roleToPath[user.role] ? roleToPath[user.role] : user?.role.toLowerCase()}/dashboard`}
                                     className="text-gray-500 hover:text-charcoal flex items-center gap-1 transition-colors"
                                 >
                                     <UserIcon className="h-5 w-5" />
@@ -150,7 +162,7 @@ export default function Navbar() {
                                 </div>
                                 <div className="mt-3 space-y-1">
                                     <Link
-                                        href={`/${user.role.toLowerCase()}/dashboard`}
+                                        href={`/${user && roleToPath[user.role] ? roleToPath[user.role] : user?.role.toLowerCase()}/dashboard`}
                                         className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 hover:text-charcoal hover:bg-peach hover:border-gray-300"
                                         onClick={() => setIsMobileMenuOpen(false)}
                                     >
