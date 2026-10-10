@@ -64,6 +64,7 @@ namespace HireConnect.API.Controllers
         }
         
         [HttpPost("resume")]
+        [RequestSizeLimit(5242880)] // 5 MB limit
         public async Task<IActionResult> UploadResume(IFormFile resumeFile)
         {
             if (resumeFile == null || resumeFile.Length == 0) return BadRequest("No file uploaded.");
