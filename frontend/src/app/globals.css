@@ -16,11 +16,8 @@
   --color-charcoal: #2B2620;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+input, textarea, select {
+  color: var(--color-charcoal);
 }
 
 body {
