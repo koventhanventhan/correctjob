@@ -3,7 +3,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { LuBriefcase, LuUsers, LuFileText, LuActivity } from 'react-icons/lu';
+import { LuBriefcase, LuUsers, LuFileText, LuActivity, LuSettings } from 'react-icons/lu';
 
 import { useRouter } from 'next/navigation';
 
@@ -48,9 +48,14 @@ export default function EmployerDashboard() {
                         <h1 className="text-3xl font-display font-bold text-charcoal">Employer Dashboard</h1>
                         <p className="text-gray-600 mt-1">Manage your job postings and applicants.</p>
                     </div>
-                    <Link href="/employer/post-job" className="bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 transition-colors shadow-sm">
-                        Post New Job
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <Link href="/employer/settings" className="text-gray-600 hover:text-orange flex items-center gap-1 font-medium bg-white px-4 py-2 rounded-md shadow-sm border border-gray-200">
+                            <LuSettings className="w-4 h-4" /> Settings
+                        </Link>
+                        <Link href="/employer/post-job" className="bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 transition-colors shadow-sm">
+                            Post New Job
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Stats */}

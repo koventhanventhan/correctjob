@@ -205,6 +205,42 @@ namespace HireConnect.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Decision recorded.", status = profile.VerificationStatus });
         }
+
+        [HttpGet("jobseekers")]
+        public async Task<IActionResult> GetJobSeekers([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var query = _context.SeekerProfiles
+                .Include(s => s.User)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(s => s.User.FullName.Contains(search) || s.User.Email.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+            var seekers = await query
+                .OrderByDescending(s => s.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => new 
+                {
+                    s.Id, // Profile ID
+                    UserId = s.User.Id,
+                    FullName = s.User.FullName,
+                    Email = s.User.Email,
+                    s.User.IsActive,
+                    s.VerificationStatus,
+                    s.CareerTitle,
+                    HasResume = !string.IsNullOrEmpty(s.ResumeUrl),
+                    ApplicationsCount = _context.Applications.Count(a => a.SeekerProfileId == s.Id),
+                    SavedJobsCount = _context.SavedJobs.Count(sj => sj.UserId == s.UserId),
+                    RegisteredAt = s.User.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(new { data = seekers, totalCount });
+        }
     }
 
     public class VerificationDecisionDto

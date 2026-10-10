@@ -1,0 +1,110 @@
+'use client';
+import { useState } from 'react';
+import api from '@/services/api';
+import { useAuthStore } from '@/store/authStore';
+import { LuLock, LuSave, LuArrowLeft } from 'react-icons/lu';
+import Link from 'next/link';
+
+export default function AdminSettings() {
+    const { user } = useAuthStore();
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '' });
+    const [msg, setMsg] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+        setMsg('');
+
+        try {
+            await api.post('/auth/change-password', passwordData);
+            setMsg('Password changed successfully.');
+            setPasswordData({ currentPassword: '', newPassword: '' });
+        } catch (error: any) {
+            setMsg(error.response?.data?.message || 'Failed to change password.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="mb-6">
+                <Link href="/admin/dashboard" className="text-orange hover:underline flex items-center text-sm font-medium">
+                    <LuArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
+                </Link>
+            </div>
+            <h1 className="text-2xl font-bold text-charcoal mb-6">Admin Account Settings</h1>
+
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 className="text-lg font-medium text-charcoal mb-4 border-b pb-2">Profile Information</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input
+                            type="text"
+                            disabled
+                            value={user?.fullName || ''}
+                            className="w-full border border-gray-300 rounded-md p-2 bg-warmwhite text-gray-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Name cannot be changed directly.</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <input
+                            type="email"
+                            disabled
+                            value={user?.email || ''}
+                            className="w-full border border-gray-300 rounded-md p-2 bg-warmwhite text-gray-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Email is associated with your account identity.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-medium text-charcoal mb-4 border-b pb-2 flex items-center">
+                    <LuLock className="w-5 h-5 mr-2" /> Change Password
+                </h2>
+                
+                <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                        <input
+                            type="password"
+                            required
+                            value={passwordData.currentPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                        <input
+                            type="password"
+                            required
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                            className="w-full border border-gray-300 rounded-md p-2 focus:ring-orange focus:border-orange"
+                        />
+                    </div>
+
+                    {msg && (
+                        <p className={`text-sm ${msg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+                            {msg}
+                        </p>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="flex items-center justify-center bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
+                    >
+                        <LuSave className="w-4 h-4 mr-2" />
+                        {saving ? 'Updating...' : 'Update Password'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+}

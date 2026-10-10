@@ -2,10 +2,12 @@
 import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
-import { LuUsers, LuBuilding, LuBriefcase, LuTriangleAlert, LuSearch, LuChevronLeft, LuChevronRight, LuMessageSquare, LuStar, LuBadgeCheck } from 'react-icons/lu';
+import { LuUsers, LuBuilding, LuBriefcase, LuTriangleAlert, LuSearch, LuChevronLeft, LuChevronRight, LuMessageSquare, LuStar, LuBadgeCheck, LuUserCheck } from 'react-icons/lu';
 import { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { LuSettings } from 'react-icons/lu';
 
 export default function AdminDashboard() {
     const { user, isInitializing } = useAuthStore();
@@ -21,6 +23,10 @@ export default function AdminDashboard() {
     const [reviewsPage, setReviewsPage] = useState(1);
     const [searchUser, setSearchUser] = useState('');
     const [searchCompany, setSearchCompany] = useState('');
+    
+    // Job Seekers Tab
+    const [jobseekersPage, setJobseekersPage] = useState(1);
+    const [searchJobseeker, setSearchJobseeker] = useState('');
     
     // Verifications Tab
     const [verificationsPage, setVerificationsPage] = useState(1);
@@ -39,6 +45,14 @@ export default function AdminDashboard() {
         queryKey: ['admin-jobs', jobsPage, searchJob, filterJobStatus],
         queryFn: async () => {
             const res = await api.get(`/admin/jobs?page=${jobsPage}&pageSize=10&search=${searchJob}&status=${filterJobStatus}`);
+            return res.data;
+        }
+    });
+
+    const { data: jobseekersData, refetch: refetchJobseekers } = useQuery({
+        queryKey: ['admin-jobseekers', jobseekersPage, searchJobseeker],
+        queryFn: async () => {
+            const res = await api.get(`/admin/jobseekers?page=${jobseekersPage}&pageSize=10&search=${searchJobseeker}`);
             return res.data;
         }
     });
@@ -89,6 +103,7 @@ export default function AdminDashboard() {
         try {
             await api.patch(`/admin/users/${id}/block`, !currentStatus, { headers: { 'Content-Type': 'application/json' }});
             refetchUsers();
+            refetchJobseekers();
         } catch (error) {
             console.error("Failed to block/unblock user");
         }
@@ -138,6 +153,8 @@ export default function AdminDashboard() {
     const reviews = reviewsData?.data || [];
     const verifications = verificationsData?.data || [];
     const totalVerifications = verificationsData?.totalCount || 0;
+    const jobseekers = jobseekersData?.data || [];
+    const totalJobseekers = jobseekersData?.totalCount || 0;
 
     return (
         <div className="min-h-screen bg-warmwhite flex">
@@ -153,7 +170,11 @@ export default function AdminDashboard() {
                     </button>
                     <button onClick={() => setActiveTab('users')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'users' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
                         <LuUsers className="mr-3 h-5 w-5 flex-shrink-0" />
-                        Manage LuUsers
+                        Manage Users
+                    </button>
+                    <button onClick={() => setActiveTab('jobseekers')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'jobseekers' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
+                        <LuUserCheck className="mr-3 h-5 w-5 flex-shrink-0" />
+                        Manage Job Seekers
                     </button>
                     <button onClick={() => setActiveTab('companies')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'companies' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
                         <LuBuilding className="mr-3 h-5 w-5 flex-shrink-0" />
@@ -170,6 +191,10 @@ export default function AdminDashboard() {
                             <span className="ml-auto bg-red-100 text-red-800 py-0.5 px-2 rounded-full text-xs">{totalVerifications}</span>
                         )}
                     </button>
+                    <Link href="/admin/settings" className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-peach mt-4">
+                        <LuSettings className="mr-3 h-5 w-5 flex-shrink-0" />
+                        Settings
+                    </Link>
                 </nav>
             </div>
 
@@ -184,13 +209,21 @@ export default function AdminDashboard() {
                         name="tabs"
                         className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-orange focus:outline-none focus:ring-orange sm:text-sm"
                         value={activeTab}
-                        onChange={(e) => setActiveTab(e.target.value)}
+                        onChange={(e) => {
+                            if (e.target.value === 'settings') {
+                                router.push('/admin/settings');
+                            } else {
+                                setActiveTab(e.target.value);
+                            }
+                        }}
                     >
                         <option value="jobs">Manage Jobs</option>
-                        <option value="users">Manage LuUsers</option>
+                        <option value="users">Manage Users</option>
+                        <option value="jobseekers">Manage Job Seekers</option>
                         <option value="companies">Manage Employers</option>
                         <option value="reviews">Manage Reviews</option>
                         <option value="verifications">ID Verifications</option>
+                        <option value="settings">Settings (Redirect)</option>
                     </select>
                 </div>
 
@@ -199,7 +232,7 @@ export default function AdminDashboard() {
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total LuUsers</p>
+                                <p className="text-sm font-medium text-gray-500">Total Users</p>
                                 <p className="text-2xl font-bold text-charcoal mt-1">{totalUsers}</p>
                             </div>
                             <div className="h-10 w-10 bg-peach text-charcoal rounded-full flex items-center justify-center">
@@ -304,12 +337,12 @@ export default function AdminDashboard() {
                 {activeTab === 'users' && (
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                          <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
-                            <h3 className="text-lg font-display font-bold text-charcoal">All LuUsers</h3>
+                            <h3 className="text-lg font-display font-bold text-charcoal">All Users</h3>
                             <div className="flex items-center border rounded px-2 bg-warmwhite">
                                 <LuSearch className="w-4 h-4 text-gray-400" />
                                 <input 
                                     type="text" 
-                                    placeholder="LuSearch users..." 
+                                    placeholder="Search users..." 
                                     className="p-1 outline-none text-sm"
                                     value={searchUser}
                                     onChange={(e) => { setSearchUser(e.target.value); setUsersPage(1); }}
@@ -367,6 +400,95 @@ export default function AdminDashboard() {
                     </div>
                 )}
 
+                {activeTab === 'jobseekers' && (
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                         <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold text-charcoal">Manage Job Seekers</h3>
+                            <div className="flex items-center border rounded px-2 bg-warmwhite">
+                                <LuSearch className="w-4 h-4 text-gray-400" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search job seekers..." 
+                                    className="p-1 outline-none text-sm"
+                                    value={searchJobseeker}
+                                    onChange={(e) => { setSearchJobseeker(e.target.value); setJobseekersPage(1); }}
+                                />
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-white">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seeker</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verification</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stats</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {jobseekers.map((s: any) => (
+                                        <tr key={s.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="font-medium text-charcoal">{s.fullName}</div>
+                                                <div className="text-sm text-gray-500">{s.email}</div>
+                                                {s.careerTitle && <div className="text-xs text-gray-400">{s.careerTitle}</div>}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    s.verificationStatus === 'Verified' ? 'bg-green-100 text-green-800' :
+                                                    s.verificationStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                    s.verificationStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {s.verificationStatus}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <div>Apps: {s.applicationsCount} | Saved: {s.savedJobsCount}</div>
+                                                <div>Resume: {s.hasResume ? 'Yes' : 'No'}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    s.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                    {s.isActive ? 'Active' : 'Blocked'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex flex-col items-end gap-1">
+                                                    {s.verificationStatus === 'Pending' && (
+                                                        <button 
+                                                            onClick={() => { setActiveTab('verifications'); setSearchVerification(s.email); }}
+                                                            className="text-orange hover:text-orange/80"
+                                                        >
+                                                            Review ID
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => handleToggleUserBlock(s.userId, s.isActive)}
+                                                        className={`${s.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                                                    >
+                                                        {s.isActive ? 'Block' : 'Unblock'}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* Pagination */}
+                        <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
+                            <span className="text-sm text-gray-500">Total: {totalJobseekers}</span>
+                            <div className="flex space-x-2">
+                                <button disabled={jobseekersPage === 1} onClick={() => setJobseekersPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={jobseekersPage * 10 >= totalJobseekers} onClick={() => setJobseekersPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'companies' && (
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                          <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
@@ -375,7 +497,7 @@ export default function AdminDashboard() {
                                 <LuSearch className="w-4 h-4 text-gray-400" />
                                 <input 
                                     type="text" 
-                                    placeholder="LuSearch companies..." 
+                                    placeholder="Search companies..." 
                                     className="p-1 outline-none text-sm"
                                     value={searchCompany}
                                     onChange={(e) => { setSearchCompany(e.target.value); setCompaniesPage(1); }}
