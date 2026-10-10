@@ -206,6 +206,71 @@ namespace HireConnect.API.Controllers
             return Ok(new { message = "Decision recorded.", status = profile.VerificationStatus });
         }
 
+        [HttpGet("employer-verifications")]
+        public async Task<IActionResult> GetEmployerVerifications([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var query = _context.Companies
+                .Include(c => c.Employer)
+                .Where(c => c.VerificationStatus == "Pending")
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(c => c.Employer.FullName.Contains(search) || c.Employer.Email.Contains(search) || c.CompanyName.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+            var verifications = await query
+                .OrderByDescending(c => c.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(c => new 
+                {
+                    c.Id,
+                    FullName = c.Employer.FullName,
+                    Email = c.Employer.Email,
+                    CompanyName = c.CompanyName,
+                    c.VerificationStatus,
+                    c.IdCardFrontUrl,
+                    c.IdCardBackUrl,
+                    UserId = c.EmployerId
+                })
+                .ToListAsync();
+
+            return Ok(new { data = verifications, totalCount });
+        }
+
+        [HttpPatch("employer-verifications/{companyId}/decision")]
+        public async Task<IActionResult> DecideEmployerVerification(int companyId, [FromBody] VerificationDecisionDto decision)
+        {
+            var company = await _context.Companies.Include(c => c.Employer).FirstOrDefaultAsync(c => c.Id == companyId);
+            if (company == null) return NotFound();
+
+            if (decision.Approved)
+            {
+                company.VerificationStatus = "Verified";
+                company.VerifiedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                company.VerificationStatus = "Rejected";
+                company.VerificationNotes = decision.Notes;
+            }
+
+            var notification = new Notification
+            {
+                UserId = company.EmployerId,
+                Title = decision.Approved ? "Identity Verified" : "Identity Verification Rejected",
+                Message = decision.Approved 
+                    ? "Your identity verification request has been approved. You can now post jobs." 
+                    : $"Your identity verification request was rejected. Reason: {decision.Notes}"
+            };
+            _context.Notifications.Add(notification);
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Decision recorded.", status = company.VerificationStatus });
+        }
+
         [HttpGet("jobseekers")]
         public async Task<IActionResult> GetJobSeekers([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {

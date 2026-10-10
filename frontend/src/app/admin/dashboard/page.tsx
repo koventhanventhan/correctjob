@@ -32,11 +32,23 @@ export default function AdminDashboard() {
     const [verificationsPage, setVerificationsPage] = useState(1);
     const [searchVerification, setSearchVerification] = useState('');
     
+    // Employer Verifications Tab
+    const [employerVerificationsPage, setEmployerVerificationsPage] = useState(1);
+    const [searchEmployerVerification, setSearchEmployerVerification] = useState('');
+    
     // Verifications Query
     const { data: verificationsData, refetch: refetchVerifications } = useQuery({
         queryKey: ['admin-verifications', verificationsPage, searchVerification],
         queryFn: async () => {
             const res = await api.get(`/admin/identity-verifications?page=${verificationsPage}&pageSize=10&search=${searchVerification}`);
+            return res.data;
+        }
+    });
+
+    const { data: employerVerificationsData, refetch: refetchEmployerVerifications } = useQuery({
+        queryKey: ['admin-employer-verifications', employerVerificationsPage, searchEmployerVerification],
+        queryFn: async () => {
+            const res = await api.get(`/admin/employer-verifications?page=${employerVerificationsPage}&pageSize=10&search=${searchEmployerVerification}`);
             return res.data;
         }
     });
@@ -130,6 +142,18 @@ export default function AdminDashboard() {
         }
     };
 
+    const handleEmployerVerificationDecision = async (id: number, approved: boolean) => {
+        const notes = approved ? '' : prompt("Please provide a reason for rejection:");
+        if (!approved && notes === null) return; // User cancelled prompt
+
+        try {
+            await api.patch(`/admin/employer-verifications/${id}/decision`, { approved, notes });
+            refetchEmployerVerifications();
+        } catch (error) {
+            console.error("Failed to submit decision");
+        }
+    };
+
     if (isInitializing) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-warmwhite">
@@ -153,6 +177,8 @@ export default function AdminDashboard() {
     const reviews = reviewsData?.data || [];
     const verifications = verificationsData?.data || [];
     const totalVerifications = verificationsData?.totalCount || 0;
+    const employerVerifications = employerVerificationsData?.data || [];
+    const totalEmployerVerifications = employerVerificationsData?.totalCount || 0;
     const jobseekers = jobseekersData?.data || [];
     const totalJobseekers = jobseekersData?.totalCount || 0;
 
@@ -186,9 +212,16 @@ export default function AdminDashboard() {
                     </button>
                     <button onClick={() => setActiveTab('verifications')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'verifications' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
                         <LuBadgeCheck className="mr-3 h-5 w-5 flex-shrink-0" />
-                        ID Verifications
+                        ID Verifications (Seeker)
                         {totalVerifications > 0 && (
                             <span className="ml-auto bg-red-100 text-red-800 py-0.5 px-2 rounded-full text-xs">{totalVerifications}</span>
+                        )}
+                    </button>
+                    <button onClick={() => setActiveTab('employer-verifications')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'employer-verifications' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
+                        <LuBadgeCheck className="mr-3 h-5 w-5 flex-shrink-0" />
+                        ID Verifications (Employer)
+                        {totalEmployerVerifications > 0 && (
+                            <span className="ml-auto bg-red-100 text-red-800 py-0.5 px-2 rounded-full text-xs">{totalEmployerVerifications}</span>
                         )}
                     </button>
                     <Link href="/admin/settings" className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-peach mt-4">
@@ -222,7 +255,8 @@ export default function AdminDashboard() {
                         <option value="jobseekers">Manage Job Seekers</option>
                         <option value="companies">Manage Employers</option>
                         <option value="reviews">Manage Reviews</option>
-                        <option value="verifications">ID Verifications</option>
+                        <option value="verifications">ID Verifications (Seeker)</option>
+                        <option value="employer-verifications">ID Verifications (Employer)</option>
                         <option value="settings">Settings (Redirect)</option>
                     </select>
                 </div>
@@ -675,6 +709,68 @@ export default function AdminDashboard() {
                             <div className="flex space-x-2">
                                 <button disabled={verificationsPage === 1} onClick={() => setVerificationsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
                                 <button disabled={verificationsPage * 10 >= totalVerifications} onClick={() => setVerificationsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'employer-verifications' && (
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                         <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold text-charcoal">Pending Employer ID Verifications</h3>
+                            <div className="flex items-center border rounded px-2 bg-warmwhite">
+                                <LuSearch className="w-4 h-4 text-gray-400" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search by name, email, or company..." 
+                                    className="p-1 outline-none text-sm w-64"
+                                    value={searchEmployerVerification}
+                                    onChange={(e) => { setSearchEmployerVerification(e.target.value); setEmployerVerificationsPage(1); }}
+                                />
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-white">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employer & Company</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Documents</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {employerVerifications.length === 0 ? (
+                                        <tr><td colSpan={3} className="px-6 py-4 text-center text-gray-500">No pending verifications.</td></tr>
+                                    ) : employerVerifications.map((v: any) => (
+                                        <tr key={v.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="font-medium text-charcoal">{v.fullName}</div>
+                                                <div className="text-sm text-gray-500">{v.email}</div>
+                                                <div className="text-xs text-orange mt-1">Company: {v.companyName}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
+                                                {v.idCardFrontUrl && (
+                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/companies/id-card/front?companyId=${v.id}`} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline font-medium">Front</a>
+                                                )}
+                                                {v.idCardBackUrl && (
+                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/companies/id-card/back?companyId=${v.id}`} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline font-medium">Back</a>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                                <button onClick={() => handleEmployerVerificationDecision(v.id, true)} className="text-green-600 hover:text-green-900 bg-green-50 px-3 py-1 rounded border border-green-200">Approve</button>
+                                                <button onClick={() => handleEmployerVerificationDecision(v.id, false)} className="text-red-600 hover:text-red-900 bg-red-50 px-3 py-1 rounded border border-red-200">Reject</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* Pagination */}
+                        <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
+                            <span className="text-sm text-gray-500">Total Pending: {totalEmployerVerifications}</span>
+                            <div className="flex space-x-2">
+                                <button disabled={employerVerificationsPage === 1} onClick={() => setEmployerVerificationsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
+                                <button disabled={employerVerificationsPage * 10 >= totalEmployerVerifications} onClick={() => setEmployerVerificationsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
                             </div>
                         </div>
                     </div>

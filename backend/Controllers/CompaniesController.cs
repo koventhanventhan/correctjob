@@ -100,6 +100,86 @@ namespace HireConnect.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(company);
         }
+
+        [HttpPost("verify-identity")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> VerifyIdentity([FromForm] IFormFile? idCardFront, [FromForm] IFormFile? idCardBack)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
+            if (company == null) return NotFound("Company profile not found.");
+
+            if (idCardFront == null || idCardBack == null)
+            {
+                return BadRequest(new { message = "Both front and back of the ID card are required." });
+            }
+
+            var allowedTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
+            if (!allowedTypes.Contains(idCardFront.ContentType) || !allowedTypes.Contains(idCardBack.ContentType))
+            {
+                return BadRequest(new { message = "Only JPG, PNG, or PDF files are allowed." });
+            }
+
+            if (idCardFront.Length > 5 * 1024 * 1024 || idCardBack.Length > 5 * 1024 * 1024)
+            {
+                return BadRequest(new { message = "File size cannot exceed 5MB." });
+            }
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "IdCards");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var frontFileName = $"{Guid.NewGuid()}_{Path.GetFileName(idCardFront.FileName)}";
+            var backFileName = $"{Guid.NewGuid()}_{Path.GetFileName(idCardBack.FileName)}";
+
+            using (var stream = new FileStream(Path.Combine(uploadsFolder, frontFileName), FileMode.Create))
+            {
+                await idCardFront.CopyToAsync(stream);
+            }
+            using (var stream = new FileStream(Path.Combine(uploadsFolder, backFileName), FileMode.Create))
+            {
+                await idCardBack.CopyToAsync(stream);
+            }
+
+            company.IdCardFrontUrl = frontFileName;
+            company.IdCardBackUrl = backFileName;
+            company.VerificationStatus = "Pending";
+            company.VerificationNotes = null;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Identity verification submitted successfully.", status = company.VerificationStatus });
+        }
+
+        [HttpGet("id-card/{side}")]
+        [Authorize]
+        public async Task<IActionResult> DownloadIdCard(string side, [FromQuery] int companyId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Admin");
+
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.Id == companyId);
+            if (company == null) return NotFound();
+
+            if (!isAdmin && company.EmployerId != userId)
+            {
+                return Forbid();
+            }
+
+            var fileName = side.ToLower() == "front" ? company.IdCardFrontUrl : company.IdCardBackUrl;
+            if (string.IsNullOrEmpty(fileName)) return NotFound();
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "IdCards", fileName);
+            if (!System.IO.File.Exists(filePath)) return NotFound();
+
+            var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(filePath, out var contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+
+            var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            return File(fileStream, contentType, fileName);
+        }
     }
 
     public class CompanyDto

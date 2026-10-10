@@ -12,6 +12,7 @@ export default function PostJobPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isApproved, setIsApproved] = useState(false);
+    const [isVerified, setIsVerified] = useState(false);
     const [hasCompany, setHasCompany] = useState(false);
     const [payHereData, setPayHereData] = useState<any>(null);
 
@@ -44,6 +45,7 @@ export default function PostJobPage() {
             if (res.data) {
                 setHasCompany(true);
                 setIsApproved(res.data.isApproved);
+                setIsVerified(res.data.verificationStatus === 'Verified');
             }
         } catch (error: any) {
             if (error.response?.status === 404) {
@@ -116,6 +118,18 @@ export default function PostJobPage() {
             <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8 text-center">
                 <h1 className="text-2xl font-bold mb-4 text-yellow-600">Pending Approval</h1>
                 <p>Your company profile is currently pending admin approval. You can post jobs once it's approved.</p>
+            </div>
+        );
+    }
+
+    if (!isVerified) {
+        return (
+            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8 text-center">
+                <h1 className="text-2xl font-bold mb-4 text-red-600">Identity Verification Required</h1>
+                <p className="mb-4">You must verify your identity before you can post jobs.</p>
+                <button onClick={() => router.push('/employer/verification')} className="bg-orange text-white px-4 py-2 rounded">
+                    Verify Identity
+                </button>
             </div>
         );
     }

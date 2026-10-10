@@ -33,6 +33,20 @@ namespace HireConnect.API.Models
 
         public bool IsApproved { get; set; } = false;
 
+        [MaxLength(255)]
+        public string? IdCardFrontUrl { get; set; }
+
+        [MaxLength(255)]
+        public string? IdCardBackUrl { get; set; }
+
+        [MaxLength(20)]
+        public string VerificationStatus { get; set; } = "NotSubmitted"; // NotSubmitted, Pending, Verified, Rejected
+
+        [MaxLength(500)]
+        public string? VerificationNotes { get; set; }
+
+        public DateTime? VerifiedAt { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey(nameof(EmployerId))]

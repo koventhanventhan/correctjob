@@ -172,6 +172,7 @@ namespace HireConnect.API.Controllers
             var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
             
             if (company == null) return BadRequest(new { message = "You must create a company profile first." });
+            if (company.VerificationStatus != "Verified") return BadRequest(new { message = "Your identity must be verified before posting jobs." });
             if (!company.IsApproved) return Forbid(); // "An Employer's company must be Admin-approved before it can post jobs at all."
 
             var job = new Job
@@ -235,6 +236,7 @@ namespace HireConnect.API.Controllers
             if (job == null) return NotFound();
             if (job.Company.EmployerId != userId) return Forbid(); // Ownership check
 
+            if (job.Company.VerificationStatus != "Verified") return BadRequest(new { message = "Your identity must be verified before submitting jobs." });
             if (!job.IsPaid) return BadRequest(new { message = "You must pay for this job post before submitting for approval." });
             if (job.Status != "Draft") return BadRequest(new { message = "Only draft jobs can be submitted." });
 
