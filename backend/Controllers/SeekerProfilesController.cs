@@ -68,6 +68,26 @@ namespace HireConnect.API.Controllers
         {
             if (resumeFile == null || resumeFile.Length == 0) return BadRequest("No file uploaded.");
 
+            // 1. Validate file size (max 5 MB)
+            const long maxFileSize = 5 * 1024 * 1024;
+            if (resumeFile.Length > maxFileSize)
+            {
+                return BadRequest("File size exceeds the 5 MB limit.");
+            }
+
+            // 2. Validate file type
+            var allowedContentTypes = new[]
+            {
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            };
+
+            if (!allowedContentTypes.Contains(resumeFile.ContentType))
+            {
+                return BadRequest("Invalid file type. Only PDF and Word documents are allowed.");
+            }
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
             if (profile == null)
