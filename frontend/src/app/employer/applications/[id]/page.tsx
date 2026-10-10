@@ -48,7 +48,14 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
         <div className="bg-warmwhite p-6 rounded-lg shadow-md border border-gray-200">
             <div className="flex justify-between items-start mb-4">
                 <div>
-                    <h2 className="text-xl font-bold">{app.seeker?.user?.fullName || 'Unknown Applicant'}</h2>
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        {app.seeker?.user?.fullName || 'Unknown Applicant'}
+                        {app.seeker?.verificationStatus === 'Verified' && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1 border border-green-200" title="Identity Verified">
+                                ✓ Verified
+                            </span>
+                        )}
+                    </h2>
                     <p className="text-gray-600 text-sm">{app.seeker?.user?.email}</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">

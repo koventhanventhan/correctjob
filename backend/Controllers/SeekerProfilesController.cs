@@ -137,6 +137,87 @@ namespace HireConnect.API.Controllers
 
             return PhysicalFile(filePath, contentType, Path.GetFileName(filePath));
         }
+
+        [HttpPost("verify-identity")]
+        [RequestSizeLimit(10485760)] // 10 MB total
+        public async Task<IActionResult> UploadIdCard(IFormFile front, IFormFile? back)
+        {
+            if (front == null || front.Length == 0) return BadRequest("Front ID card is required.");
+
+            const long maxFileSize = 5 * 1024 * 1024;
+            var allowedContentTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
+
+            if (front.Length > maxFileSize) return BadRequest("Front ID card exceeds 5MB.");
+            if (!allowedContentTypes.Contains(front.ContentType)) return BadRequest("Invalid file type for front ID.");
+
+            if (back != null)
+            {
+                if (back.Length > maxFileSize) return BadRequest("Back ID card exceeds 5MB.");
+                if (!allowedContentTypes.Contains(back.ContentType)) return BadRequest("Invalid file type for back ID.");
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (profile == null)
+            {
+                profile = new SeekerProfile { UserId = userId! };
+                _context.SeekerProfiles.Add(profile);
+            }
+
+            profile.IdCardFrontUrl = await _fileStorage.UploadFileAsync(front, "id-cards");
+
+            if (back != null)
+            {
+                profile.IdCardBackUrl = await _fileStorage.UploadFileAsync(back, "id-cards");
+            }
+
+            profile.VerificationStatus = "Pending";
+            profile.VerificationNotes = null;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "ID card uploaded successfully", status = profile.VerificationStatus });
+        }
+
+        [HttpGet("id-card/{side}")]
+        [AllowAnonymous] // We handle custom auth inside
+        public async Task<IActionResult> DownloadIdCard(string side, [FromQuery] int? profileId = null)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true) return Unauthorized();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Admin");
+
+            SeekerProfile? profile;
+
+            if (isAdmin && profileId.HasValue)
+            {
+                profile = await _context.SeekerProfiles.FindAsync(profileId.Value);
+            }
+            else
+            {
+                profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            }
+
+            if (profile == null) return NotFound();
+
+            if (!isAdmin && profile.UserId != userId) return Forbid();
+
+            var fileUrl = side.ToLower() == "back" ? profile.IdCardBackUrl : profile.IdCardFrontUrl;
+            if (string.IsNullOrEmpty(fileUrl)) return NotFound();
+
+            var env = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            var filePath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, fileUrl.TrimStart('/'));
+
+            if (!System.IO.File.Exists(filePath)) return NotFound();
+
+            var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(filePath, out var contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+
+            return PhysicalFile(filePath, contentType, Path.GetFileName(filePath));
+        }
     }
 
     public class SeekerProfileDto

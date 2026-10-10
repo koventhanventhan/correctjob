@@ -27,9 +27,13 @@ A production-quality job portal web application.
    *(Note: The `InitialCreate` migration is already generated in the Migrations folder).*
 5. Run the API:
    ```bash
+   ```bash
    dotnet run
    ```
    The API will start (usually on `http://localhost:5189` or `https://localhost:7200`).
+
+### Production Deployment
+When deploying to production (e.g., Azure App Service), ensure you explicitly set the `ASPNETCORE_ENVIRONMENT` application setting to `Production`. Without it, error responses could leak stack traces to users.
 
 ### 2. Frontend Setup
 

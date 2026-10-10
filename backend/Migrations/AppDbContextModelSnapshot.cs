@@ -604,6 +604,12 @@ namespace HireConnect.API.Migrations
                     b.Property<string>("Experience")
                         .HasColumnType("longtext");
 
+                    b.Property<string>("IdCardBackUrl")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("IdCardFrontUrl")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("LinkedInUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
@@ -626,6 +632,16 @@ namespace HireConnect.API.Migrations
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("varchar(255)");
+
+                    b.Property<string>("VerificationNotes")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("VerificationStatus")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 

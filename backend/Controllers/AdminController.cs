@@ -117,6 +117,15 @@ namespace HireConnect.API.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound();
 
+            var isAdmin = await _context.UserRoles
+                .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+                .AnyAsync(x => x.UserId == id && x.Name == "Admin");
+
+            if (isAdmin && !isActive)
+            {
+                return BadRequest(new { message = "Cannot block an Admin account." });
+            }
+
             user.IsActive = isActive;
             await _context.SaveChangesAsync();
             return Ok(user);
@@ -132,5 +141,75 @@ namespace HireConnect.API.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
+
+        [HttpGet("identity-verifications")]
+        public async Task<IActionResult> GetIdentityVerifications([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var query = _context.SeekerProfiles
+                .Include(s => s.User)
+                .Where(s => s.VerificationStatus == "Pending")
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(s => s.User.FullName.Contains(search) || s.User.Email.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+            var verifications = await query
+                .OrderByDescending(s => s.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => new 
+                {
+                    s.Id,
+                    FullName = s.User.FullName,
+                    Email = s.User.Email,
+                    s.VerificationStatus,
+                    s.IdCardFrontUrl,
+                    s.IdCardBackUrl,
+                    s.UserId = s.UserId
+                })
+                .ToListAsync();
+
+            return Ok(new { data = verifications, totalCount });
+        }
+
+        [HttpPatch("identity-verifications/{seekerProfileId}/decision")]
+        public async Task<IActionResult> DecideIdentityVerification(int seekerProfileId, [FromBody] VerificationDecisionDto decision)
+        {
+            var profile = await _context.SeekerProfiles.Include(s => s.User).FirstOrDefaultAsync(s => s.Id == seekerProfileId);
+            if (profile == null) return NotFound();
+
+            if (decision.Approved)
+            {
+                profile.VerificationStatus = "Verified";
+                profile.VerifiedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                profile.VerificationStatus = "Rejected";
+                profile.VerificationNotes = decision.Notes;
+            }
+
+            var notification = new Notification
+            {
+                UserId = profile.UserId,
+                Title = decision.Approved ? "Identity Verified" : "Identity Verification Rejected",
+                Message = decision.Approved 
+                    ? "Your identity verification request has been approved." 
+                    : $"Your identity verification request was rejected. Reason: {decision.Notes}"
+            };
+            _context.Notifications.Add(notification);
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Decision recorded.", status = profile.VerificationStatus });
+        }
+    }
+
+    public class VerificationDecisionDto
+    {
+        public bool Approved { get; set; }
+        public string? Notes { get; set; }
     }
 }
