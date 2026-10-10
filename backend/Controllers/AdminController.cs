@@ -168,7 +168,7 @@ namespace HireConnect.API.Controllers
                     s.VerificationStatus,
                     s.IdCardFrontUrl,
                     s.IdCardBackUrl,
-                    s.UserId = s.UserId
+                    UserId = s.UserId
                 })
                 .ToListAsync();
 
@@ -233,8 +233,8 @@ namespace HireConnect.API.Controllers
                     s.VerificationStatus,
                     s.CareerTitle,
                     HasResume = !string.IsNullOrEmpty(s.ResumeUrl),
-                    ApplicationsCount = _context.Applications.Count(a => a.SeekerProfileId == s.Id),
-                    SavedJobsCount = _context.SavedJobs.Count(sj => sj.UserId == s.UserId),
+                    ApplicationsCount = _context.Applications.Count(a => a.SeekerId == s.Id),
+                    SavedJobsCount = _context.SavedJobs.Count(sj => sj.SeekerId == s.Id),
                     RegisteredAt = s.User.CreatedAt
                 })
                 .ToListAsync();
