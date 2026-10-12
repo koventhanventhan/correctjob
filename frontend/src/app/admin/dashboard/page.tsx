@@ -2,17 +2,64 @@
 import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
-import { LuUsers, LuBuilding, LuBriefcase, LuTriangleAlert, LuSearch, LuChevronLeft, LuChevronRight, LuMessageSquare, LuStar, LuBadgeCheck, LuUserCheck } from 'react-icons/lu';
-import { useState } from 'react';
+import { LuUsers, LuBuilding, LuBriefcase, LuTriangleAlert, LuSearch, LuChevronLeft, LuChevronRight, LuMessageSquare, LuStar, LuBadgeCheck, LuUserCheck, LuShieldCheck, LuLock, LuSave, LuPen } from 'react-icons/lu';
+import { useState, useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LuSettings } from 'react-icons/lu';
+import { getFileUrl } from '@/utils/imageUrl';
 
 export default function AdminDashboard() {
     const { user, isInitializing } = useAuthStore();
     const router = useRouter();
+    const { setUser } = useAuthStore();
     const [activeTab, setActiveTab] = useState('jobs');
+
+    // Profile editing state
+    const [profileData, setProfileData] = useState({ fullName: '', email: '' });
+    const [profileMsg, setProfileMsg] = useState('');
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '' });
+    const [passwordMsg, setPasswordMsg] = useState('');
+    const [passwordSaving, setPasswordSaving] = useState(false);
+
+    // Sync profile data when user changes
+    useEffect(() => {
+        if (user) {
+            setProfileData({ fullName: user.fullName, email: user.email });
+        }
+    }, [user]);
+
+    const handleProfileSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setProfileSaving(true);
+        setProfileMsg('');
+        try {
+            const res = await api.put('/auth/profile', profileData);
+            setUser(res.data.user);
+            setProfileMsg('Profile updated successfully.');
+        } catch (error: any) {
+            setProfileMsg(error.response?.data?.message || 'Failed to update profile.');
+        } finally {
+            setProfileSaving(false);
+        }
+    };
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordSaving(true);
+        setPasswordMsg('');
+        try {
+            await api.post('/auth/change-password', passwordData);
+            setPasswordMsg('Password changed successfully.');
+            setPasswordData({ currentPassword: '', newPassword: '' });
+        } catch (error: any) {
+            setPasswordMsg(error.response?.data?.message || 'Failed to change password.');
+        } finally {
+            setPasswordSaving(false);
+        }
+    };
     
     // Pagination & LuSearch States
     const [jobsPage, setJobsPage] = useState(1);
@@ -185,8 +232,42 @@ export default function AdminDashboard() {
     return (
         <div className="min-h-screen bg-warmwhite flex">
             {/* Sidebar */}
-            <div className="w-64 bg-white shadow-sm hidden md:block">
-                <div className="p-6">
+            <div className="w-64 bg-white shadow-sm hidden md:block flex-shrink-0">
+                {/* Admin Profile Card */}
+                <div className="p-5 border-b border-gray-100">
+                    <div className="flex items-center gap-3 mb-3">
+                        {user?.profileImage ? (
+                            <img
+                                src={getFileUrl(user.profileImage)}
+                                alt={user.fullName}
+                                className="w-11 h-11 rounded-full object-cover border border-gray-200 shadow-md flex-shrink-0"
+                            />
+                        ) : (
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-orange to-amber-500 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
+                                {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
+                            </div>
+                        )}
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-charcoal truncate">{user?.fullName}</p>
+                            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-orange/10 to-amber-100 text-orange border border-orange/20">
+                            <LuShieldCheck className="w-3 h-3" />
+                            {user?.role}
+                        </span>
+                        <button
+                            onClick={() => setActiveTab('profile')}
+                            className="inline-flex items-center gap-1 text-xs text-orange hover:text-orange/80 font-medium transition-colors"
+                        >
+                            <LuPen className="w-3 h-3" />
+                            Edit Profile
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-6 pb-2">
                     <h2 className="text-xl font-display font-bold text-charcoal">Admin Panel</h2>
                 </div>
                 <nav className="space-y-1 px-3">
@@ -224,7 +305,12 @@ export default function AdminDashboard() {
                             <span className="ml-auto bg-red-100 text-red-800 py-0.5 px-2 rounded-full text-xs">{totalEmployerVerifications}</span>
                         )}
                     </button>
-                    <Link href="/admin/settings" className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-peach mt-4">
+                    <div className="border-t border-gray-100 my-2 mx-1"></div>
+                    <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'profile' ? 'bg-orange text-white' : 'text-gray-700 hover:bg-peach'}`}>
+                        <LuShieldCheck className="mr-3 h-5 w-5 flex-shrink-0" />
+                        Profile & Security
+                    </button>
+                    <Link href="/admin/settings" className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-peach">
                         <LuSettings className="mr-3 h-5 w-5 flex-shrink-0" />
                         Settings
                     </Link>
@@ -257,6 +343,7 @@ export default function AdminDashboard() {
                         <option value="reviews">Manage Reviews</option>
                         <option value="verifications">ID Verifications (Seeker)</option>
                         <option value="employer-verifications">ID Verifications (Employer)</option>
+                        <option value="profile">Profile & Security</option>
                         <option value="settings">Settings (Redirect)</option>
                     </select>
                 </div>
@@ -772,6 +859,121 @@ export default function AdminDashboard() {
                                 <button disabled={employerVerificationsPage === 1} onClick={() => setEmployerVerificationsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
                                 <button disabled={employerVerificationsPage * 10 >= totalEmployerVerifications} onClick={() => setEmployerVerificationsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'profile' && (
+                    <div className="max-w-2xl">
+                        <h2 className="text-2xl font-display font-bold text-charcoal mb-6">Profile & Security</h2>
+
+                        {/* Edit Profile Section */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                            <div className="flex items-center gap-4 mb-6">
+                                {user?.profileImage ? (
+                                    <img
+                                        src={getFileUrl(user.profileImage)}
+                                        alt={user.fullName}
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-orange/20 shadow-lg flex-shrink-0"
+                                    />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange to-amber-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg flex-shrink-0">
+                                        {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-charcoal">{user?.fullName}</h3>
+                                    <p className="text-sm text-gray-500">{user?.email}</p>
+                                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-orange/10 to-amber-100 text-orange border border-orange/20">
+                                        <LuShieldCheck className="w-3 h-3" />
+                                        {user?.role}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <h4 className="text-base font-semibold text-charcoal mb-4 border-b border-gray-100 pb-2">Edit Profile</h4>
+                            <form onSubmit={handleProfileSave} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={profileData.fullName}
+                                        onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        value={profileData.email}
+                                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                    />
+                                </div>
+
+                                {profileMsg && (
+                                    <p className={`text-sm font-medium ${profileMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+                                        {profileMsg}
+                                    </p>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={profileSaving}
+                                    className="flex items-center justify-center bg-orange text-white px-5 py-2.5 rounded-lg font-medium hover:bg-orange/90 disabled:opacity-50 transition-all shadow-sm"
+                                >
+                                    <LuSave className="w-4 h-4 mr-2" />
+                                    {profileSaving ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Change Password Section */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h4 className="text-base font-semibold text-charcoal mb-4 border-b border-gray-100 pb-2 flex items-center">
+                                <LuLock className="w-4 h-4 mr-2 text-gray-500" />
+                                Change Password
+                            </h4>
+                            <form onSubmit={handlePasswordChange} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={passwordData.currentPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={passwordData.newPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                    />
+                                </div>
+
+                                {passwordMsg && (
+                                    <p className={`text-sm font-medium ${passwordMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+                                        {passwordMsg}
+                                    </p>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={passwordSaving}
+                                    className="flex items-center justify-center bg-charcoal text-white px-5 py-2.5 rounded-lg font-medium hover:bg-charcoal/90 disabled:opacity-50 transition-all shadow-sm"
+                                >
+                                    <LuLock className="w-4 h-4 mr-2" />
+                                    {passwordSaving ? 'Updating...' : 'Update Password'}
+                                </button>
+                            </form>
                         </div>
                     </div>
                 )}

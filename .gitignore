@@ -35,3 +35,8 @@ Thumbs.db
 # Archives
 *.zip
 frontend-deploy.zip
+
+# Uploads
+uploads/
+backend/uploads/
+

@@ -1,5 +1,6 @@
 using HireConnect.API.Data;
 using HireConnect.API.Models;
+using HireConnect.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -19,13 +20,20 @@ namespace HireConnect.API.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly AppDbContext _context;
+        private readonly IFileStorageService _fileStorage;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration, AppDbContext context)
+        public AuthController(
+            UserManager<User> userManager,
+            SignInManager<User> signInManager,
+            IConfiguration configuration,
+            AppDbContext context,
+            IFileStorageService fileStorage)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _context = context;
+            _fileStorage = fileStorage;
         }
 
         [HttpPost("register")]
@@ -100,7 +108,7 @@ namespace HireConnect.API.Controllers
             {
                 token = new JwtSecurityTokenHandler().WriteToken(token),
                 expiration = token.ValidTo,
-                user = new { user.Id, user.FullName, user.Email, Role = userRole }
+                user = new { user.Id, user.FullName, user.Email, user.ProfileImage, Role = userRole }
             });
         }
 
@@ -200,6 +208,7 @@ namespace HireConnect.API.Controllers
                 user.Id,
                 user.FullName,
                 user.Email,
+                user.ProfileImage,
                 Role = userRole
             });
         }
@@ -223,6 +232,150 @@ namespace HireConnect.API.Controllers
         private static string GenerateRefreshToken()
         {
             return Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(64));
+        }
+
+        [HttpPut("profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId!);
+            if (user == null) return NotFound();
+
+            // Update full name
+            if (!string.IsNullOrWhiteSpace(model.FullName))
+            {
+                user.FullName = model.FullName.Trim();
+            }
+
+            // Update email (also update UserName since it's used as the login identifier)
+            if (!string.IsNullOrWhiteSpace(model.Email) && model.Email.Trim() != user.Email)
+            {
+                var existingUser = await _userManager.FindByEmailAsync(model.Email.Trim());
+                if (existingUser != null && existingUser.Id != userId)
+                {
+                    return BadRequest(new { message = "This email address is already in use." });
+                }
+
+                user.Email = model.Email.Trim();
+                user.UserName = model.Email.Trim();
+                user.NormalizedEmail = model.Email.Trim().ToUpperInvariant();
+                user.NormalizedUserName = model.Email.Trim().ToUpperInvariant();
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { message = "Failed to update profile.", errors = result.Errors });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var userRole = roles.FirstOrDefault() ?? "JobSeeker";
+
+            return Ok(new
+            {
+                message = "Profile updated successfully.",
+                user = new { user.Id, user.FullName, user.Email, user.ProfileImage, Role = userRole }
+            });
+        }
+
+        [HttpPost("profile-image")]
+        [Authorize]
+        [RequestSizeLimit(2097152)] // 2MB limit
+        public async Task<IActionResult> UploadProfileImage(IFormFile? file)
+        {
+            file ??= Request.Form.Files.FirstOrDefault();
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "No image file provided." });
+
+            const long maxFileSize = 2 * 1024 * 1024;
+            if (file.Length > maxFileSize)
+                return BadRequest(new { message = "File size exceeds the 2MB limit." });
+
+            var allowedContentTypes = new[] { "image/jpeg", "image/png" };
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            if (!allowedContentTypes.Contains(file.ContentType.ToLowerInvariant()) || !allowedExtensions.Contains(extension))
+            {
+                return BadRequest(new { message = "Invalid file type. Only JPEG and PNG images are allowed." });
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId!);
+            if (user == null) return Unauthorized();
+
+            if (!string.IsNullOrEmpty(user.ProfileImage))
+            {
+                await _fileStorage.DeleteFileAsync(user.ProfileImage);
+            }
+
+            var imageUrl = await _fileStorage.UploadFileAsync(file, "profile-images");
+            user.ProfileImage = imageUrl;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { message = "Failed to update profile image.", errors = result.Errors });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var userRole = roles.FirstOrDefault() ?? "JobSeeker";
+
+            return Ok(new
+            {
+                message = "Profile image updated successfully.",
+                profileImage = imageUrl,
+                user = new { user.Id, user.FullName, user.Email, user.ProfileImage, Role = userRole }
+            });
+        }
+
+        [HttpPost("change-email")]
+        [Authorize]
+        public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailDto model)
+        {
+            if (string.IsNullOrWhiteSpace(model.NewEmail))
+                return BadRequest(new { message = "New email address is required." });
+
+            var trimmedNewEmail = model.NewEmail.Trim();
+            if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(trimmedNewEmail))
+                return BadRequest(new { message = "Invalid email format." });
+
+            if (string.IsNullOrWhiteSpace(model.CurrentPassword))
+                return BadRequest(new { message = "Current password is required to change email." });
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId!);
+            if (user == null) return Unauthorized();
+
+            var passwordCheck = await _userManager.CheckPasswordAsync(user, model.CurrentPassword);
+            if (!passwordCheck)
+                return BadRequest(new { message = "Incorrect current password." });
+
+            if (string.Equals(trimmedNewEmail, user.Email, StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "The new email cannot be the same as your current email." });
+
+            var existingUser = await _userManager.FindByEmailAsync(trimmedNewEmail);
+            if (existingUser != null && existingUser.Id != user.Id)
+                return BadRequest(new { message = "This email address is already in use by another account." });
+
+            user.Email = trimmedNewEmail;
+            user.UserName = trimmedNewEmail;
+            user.NormalizedEmail = trimmedNewEmail.ToUpperInvariant();
+            user.NormalizedUserName = trimmedNewEmail.ToUpperInvariant();
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                return BadRequest(new { message = "Failed to update email.", errors = result.Errors });
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var userRole = roles.FirstOrDefault() ?? "JobSeeker";
+
+            return Ok(new
+            {
+                message = "Email address updated successfully.",
+                user = new { user.Id, user.FullName, user.Email, user.ProfileImage, Role = userRole }
+            });
         }
 
         [HttpPost("change-password")]
@@ -264,10 +417,22 @@ namespace HireConnect.API.Controllers
         }
     }
 
+    public class ChangeEmailDto
+    {
+        public string NewEmail { get; set; } = string.Empty;
+        public string CurrentPassword { get; set; } = string.Empty;
+    }
+
     public class ChangePasswordDto
     {
         public string CurrentPassword { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class UpdateProfileDto
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
 
     public class ForgotPasswordDto

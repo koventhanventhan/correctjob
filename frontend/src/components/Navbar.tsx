@@ -6,10 +6,19 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import api from '@/services/api';
 
+import ProfileMenu from './ProfileMenu';
+import { getFileUrl } from '@/utils/imageUrl';
+
 const roleToPath: Record<string, string> = {
     JobSeeker: 'seeker',
     Employer: 'employer',
     Admin: 'admin',
+};
+
+const roleToProfilePath: Record<string, string> = {
+    Admin: '/admin/settings',
+    Employer: '/employer/profile',
+    JobSeeker: '/seeker/profile',
 };
 
 export default function Navbar() {
@@ -46,7 +55,7 @@ export default function Navbar() {
                             </Link>
                         </div>
                     </div>
-                    {/* Desktop LuMenu */}
+                    {/* Desktop Menu */}
                     <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
                         {!user ? (
                             <>
@@ -62,25 +71,7 @@ export default function Navbar() {
                                 </Link>
                             </>
                         ) : (
-                            <div className="flex items-center space-x-4">
-                                <span className="text-sm text-gray-500">
-                                    Welcome, <span className="font-medium text-charcoal">{user.fullName}</span>
-                                </span>
-                                <Link 
-                                    href={`/${user && roleToPath[user.role] ? roleToPath[user.role] : user?.role.toLowerCase()}/dashboard`}
-                                    className="text-gray-500 hover:text-charcoal flex items-center gap-1 transition-colors"
-                                >
-                                    <UserIcon className="h-5 w-5" />
-                                    <span>Dashboard</span>
-                                </Link>
-                                <button 
-                                    onClick={handleLogout}
-                                    className="text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors"
-                                >
-                                    <LuLogOut className="h-5 w-5" />
-                                    <span>Logout</span>
-                                </button>
-                            </div>
+                            <ProfileMenu />
                         )}
                     </div>
                     
@@ -151,9 +142,17 @@ export default function Navbar() {
                             <>
                                 <div className="flex items-center px-4 mb-3">
                                     <div className="flex-shrink-0">
-                                        <div className="h-10 w-10 rounded-full bg-peach flex items-center justify-center text-charcoal font-bold text-xl">
-                                            {user.fullName.charAt(0)}
-                                        </div>
+                                        {user.profileImage ? (
+                                            <img
+                                                src={getFileUrl(user.profileImage)}
+                                                alt={user.fullName}
+                                                className="h-10 w-10 rounded-full object-cover border border-gray-200"
+                                            />
+                                        ) : (
+                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange to-amber-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                                                {user.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="ml-3">
                                         <div className="text-base font-medium text-charcoal">{user.fullName}</div>
@@ -167,6 +166,13 @@ export default function Navbar() {
                                         onClick={() => setIsMobileMenuOpen(false)}
                                     >
                                         Dashboard
+                                    </Link>
+                                    <Link
+                                        href={roleToProfilePath[user.role] || `/${user && roleToPath[user.role] ? roleToPath[user.role] : user?.role.toLowerCase()}/dashboard`}
+                                        className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 hover:text-charcoal hover:bg-peach hover:border-gray-300"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        My Profile
                                     </Link>
                                     <button
                                         onClick={handleLogout}
