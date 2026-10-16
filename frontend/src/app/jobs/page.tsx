@@ -128,7 +128,7 @@ function JobsContent() {
                             className="w-full bg-peach text-charcoal font-bold py-3 rounded-md flex items-center justify-center gap-2 border border-transparent hover:border-orange transition-colors"
                         >
                             <LuFilter className="h-5 w-5" />
-                            {isFilterOpen ? 'Hide Filters' : 'Show Filters & LuSearch'}
+                            {isFilterOpen ? 'Hide Filters' : 'Show Filters & Search'}
                         </button>
                     </div>
 
@@ -171,12 +171,12 @@ function JobsContent() {
                                 </select>
                             </div>
                             <button type="submit" className="bg-orange text-white font-bold px-8 py-3 rounded-md hover:bg-orange/90 whitespace-nowrap transition-colors shadow-sm">
-                                Update LuSearch
+                                Update Search
                             </button>
                         </div>
                         
                         {/* Secondary Row (Advanced Filters) */}
-                        <div className="flex flex-col lg:flex-row gap-4 lg:items-center w-full text-sm">
+                        <div className="flex flex-wrap gap-4 items-center w-full text-sm">
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-charcoal">Job Type:</span>
                                 <select value={jobType} onChange={(e) => setJobType(e.target.value)} className="bg-white border border-gray-200 rounded p-1.5 focus:ring-orange focus:border-orange outline-none text-charcoal">
@@ -193,6 +193,10 @@ function JobsContent() {
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-charcoal">Min Salary (₹):</span>
                                 <input type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} className="w-24 bg-white border border-gray-200 rounded p-1.5 focus:ring-orange focus:border-orange outline-none text-charcoal" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-charcoal">Max Salary (₹):</span>
+                                <input type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} className="w-24 bg-white border border-gray-200 rounded p-1.5 focus:ring-orange focus:border-orange outline-none text-charcoal" />
                             </div>
                         </div>
                     </form>

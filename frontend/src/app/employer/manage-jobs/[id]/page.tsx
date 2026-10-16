@@ -29,15 +29,7 @@ export default function EditJobPage() {
         deadline: ''
     });
 
-    useEffect(() => {
-        if (!user || user.role !== 'Employer') {
-            router.push('/');
-            return;
-        }
-        if (id) {
-            fetchJob();
-        }
-    }, [user, router, id]);
+    const [deleting, setDeleting] = useState(false);
 
     const fetchJob = async () => {
         try {
@@ -63,6 +55,32 @@ export default function EditJobPage() {
             router.push('/employer/manage-jobs');
         } finally {
             setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!user || user.role !== 'Employer') {
+            router.push('/');
+            return;
+        }
+        if (id) {
+            fetchJob();
+        }
+    }, [user, router, id]);
+
+    const handleDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete this job post? This action cannot be undone.`)) {
+            return;
+        }
+        setDeleting(true);
+        try {
+            await api.delete(`/Jobs/${id}`);
+            alert("Job deleted successfully.");
+            router.push('/employer/manage-jobs');
+        } catch (error: any) {
+            console.error("Failed to delete job", error);
+            alert(error.response?.data?.message || "Failed to delete the job.");
+            setDeleting(false);
         }
     };
 
@@ -98,7 +116,7 @@ export default function EditJobPage() {
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8">
+        <div className="max-w-4xl mx-4 sm:mx-auto p-4 sm:p-6 bg-warmwhite rounded-lg shadow-md my-6 sm:my-8 border border-gray-200">
             <h1 className="text-2xl font-bold mb-6">Edit Job</h1>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -157,7 +175,7 @@ export default function EditJobPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t pt-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t pt-4 mt-4">
                     <div>
                         <label className="block font-medium mb-1 text-sm">Min Salary</label>
                         <input type="number" name="salaryMin" value={formData.salaryMin} onChange={handleChange} className="w-full border p-2 rounded" />
@@ -176,9 +194,19 @@ export default function EditJobPage() {
                     </div>
                 </div>
                 
-                <button disabled={saving} type="submit" className="w-full bg-orange text-white font-bold py-3 px-4 rounded hover:bg-orange/90 disabled:opacity-50 mt-6">
-                    {saving ? 'Updating...' : 'Update Job'}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-4 mt-6">
+                    <button disabled={saving || deleting} type="submit" className="flex-1 bg-orange text-white font-bold py-3 px-4 rounded-lg hover:bg-orange/90 disabled:opacity-50 transition-colors shadow-sm">
+                        {saving ? 'Updating...' : 'Update Job'}
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={handleDelete} 
+                        disabled={saving || deleting} 
+                        className="sm:w-auto px-6 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
+                    >
+                        {deleting ? 'Deleting...' : 'Delete Job'}
+                    </button>
+                </div>
             </form>
         </div>
     );

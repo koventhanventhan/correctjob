@@ -91,10 +91,10 @@ export default function CompanyDetailsPage() {
                         </div>
                         <div className="flex-1 pb-2 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                             <div>
-                                <h1 className="text-3xl font-display font-bold text-charcoal flex items-center gap-3">
-                                    {company.companyName}
+                                <h1 className="text-2xl sm:text-3xl font-display font-bold text-charcoal flex flex-wrap items-center gap-2 sm:gap-3 break-words">
+                                    <span>{company.companyName}</span>
                                     {reviewsData?.averageRating > 0 && (
-                                        <span className="flex items-center text-lg bg-yellow-50 px-2 py-0.5 rounded border border-yellow-200 text-yellow-700">
+                                        <span className="flex items-center text-sm sm:text-lg bg-yellow-50 px-2 py-0.5 rounded border border-yellow-200 text-yellow-700">
                                             <LuStar className="h-4 w-4 fill-yellow-500 text-yellow-500 mr-1" />
                                             {reviewsData.averageRating.toFixed(1)}
                                         </span>

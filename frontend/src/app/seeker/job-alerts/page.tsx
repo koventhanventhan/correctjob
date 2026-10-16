@@ -28,13 +28,13 @@ export default function JobAlertsPage() {
     }
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-charcoal">Job Alerts</h1>
                     <p className="text-gray-500 mt-1">Manage your saved searches and get notified of new matches.</p>
                 </div>
-                <Link href="/jobs" className="bg-orange text-white px-4 py-2 rounded text-sm hover:bg-orange/90">
+                <Link href="/jobs" className="self-start sm:self-auto bg-orange text-white px-4 py-2 rounded text-sm hover:bg-orange/90 text-center">
                     Create New Alert
                 </Link>
             </div>

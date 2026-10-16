@@ -132,7 +132,7 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto bg-warmwhite p-4 shadow-sm border-x flex flex-col gap-3">
                 {messages.length === 0 ? (
                     <div className="flex-1 flex items-center justify-center text-gray-400">
-                        No messages yet. LuSend a message to start the conversation!
+                        No messages yet. Send a message to start the conversation!
                     </div>
                 ) : (
                     messages.map((msg) => {

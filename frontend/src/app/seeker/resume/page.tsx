@@ -76,19 +76,19 @@ export default function SeekerResume() {
             <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <h2 className="text-lg font-medium text-charcoal mb-4">Current Resume</h2>
                 {profile?.resumeUrl ? (
-                    <div className="flex items-center justify-between bg-warmwhite border border-gray-200 p-4 rounded-md">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-warmwhite border border-gray-200 p-4 rounded-md gap-3">
                         <div className="flex items-center">
-                            <LuFileText className="w-8 h-8 text-orange mr-3" />
-                            <div>
+                            <LuFileText className="w-8 h-8 text-orange mr-3 flex-shrink-0" />
+                            <div className="min-w-0">
                                 <p className="font-medium text-charcoal">Resume Uploaded</p>
                                 <p className="text-xs text-gray-500">Last updated recently</p>
                             </div>
                         </div>
                         <button 
                             onClick={handleDownload}
-                            className="flex items-center text-sm font-medium text-orange hover:text-orange"
+                            className="inline-flex items-center justify-center text-sm font-medium text-orange hover:text-orange/90 bg-peach/40 sm:bg-transparent px-3 py-1.5 sm:px-0 sm:py-0 rounded"
                         >
-                            <LuDownload className="w-4 h-4 mr-1" /> LuDownload
+                            <LuDownload className="w-4 h-4 mr-1.5" /> Download
                         </button>
                     </div>
                 ) : (
@@ -97,11 +97,11 @@ export default function SeekerResume() {
             </div>
 
             <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-medium text-charcoal mb-4">LuUpload New Resume</h2>
+                <h2 className="text-lg font-medium text-charcoal mb-4">Upload New Resume</h2>
                 <form onSubmit={handleUpload}>
                     <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
                         <LuUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600 mb-4">LuUpload a PDF or Word document (Max 5MB)</p>
+                        <p className="text-sm text-gray-600 mb-4">Upload a PDF or Word document (Max 5MB)</p>
                         <input 
                             type="file" 
                             accept=".pdf,.doc,.docx" 
@@ -115,7 +115,7 @@ export default function SeekerResume() {
                         disabled={!file || uploading}
                         className="mt-6 w-full bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
                     >
-                        {uploading ? 'Uploading...' : 'LuUpload Resume'}
+                        {uploading ? 'Uploading...' : 'Upload Resume'}
                     </button>
                 </form>
             </div>

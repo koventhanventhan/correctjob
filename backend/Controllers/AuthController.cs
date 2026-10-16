@@ -401,7 +401,10 @@ namespace HireConnect.API.Controllers
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             Console.WriteLine($"[Dev Use Only] Password reset token for {model.Email}: {token}");
             
-            return Ok(new { message = "If the email exists, a reset link has been sent." });
+            return Ok(new { 
+                message = "If the email exists, a reset link has been sent.",
+                token = token 
+            });
         }
 
         [HttpPost("reset-password")]

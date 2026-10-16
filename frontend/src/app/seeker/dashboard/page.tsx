@@ -53,7 +53,7 @@ export default function SeekerDashboard() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
@@ -131,22 +131,22 @@ export default function SeekerDashboard() {
                             applications?.map((app: any) => (
                                 <div key={app.id} className="p-6 hover:bg-peach transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 bg-peach rounded flex items-center justify-center border border-gray-200">
+                                        <div className="h-12 w-12 bg-peach rounded flex items-center justify-center border border-gray-200 flex-shrink-0">
                                             {app.job?.company?.logoUrl ? (
                                                 <img src={app.job.company.logoUrl} alt="" className="h-8 w-8 object-contain" />
                                             ) : (
                                                 <LuBriefcase className="h-6 w-6 text-gray-400" />
                                             )}
                                         </div>
-                                        <div>
-                                            <h4 className="font-semibold text-charcoal hover:text-orange">
+                                        <div className="min-w-0 flex-1">
+                                            <h4 className="font-semibold text-charcoal hover:text-orange truncate">
                                                 <Link href={`/jobs/${app.jobId}`}>{app.job?.title}</Link>
                                             </h4>
-                                            <p className="text-sm text-gray-500">{app.job?.company?.companyName}</p>
+                                            <p className="text-sm text-gray-500 truncate">{app.job?.company?.companyName}</p>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex flex-col md:items-end gap-2">
+                                    <div className="flex flex-col items-start md:items-end gap-2">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                             app.status === 'Applied' ? 'bg-peach text-charcoal' :
                                             app.status === 'Shortlisted' ? 'bg-yellow-100 text-yellow-800' :
@@ -159,7 +159,7 @@ export default function SeekerDashboard() {
                                         </span>
 
                                         {app.status === 'Interview Scheduled' && app.interviewDate && (
-                                            <div className="flex flex-col items-end gap-1 mt-2">
+                                            <div className="flex flex-col items-start md:items-end gap-1 mt-2">
                                                 <span className="flex items-center gap-1 text-sm font-medium text-purple-700 bg-purple-50 px-2 py-1 rounded">
                                                     <CalendarIcon className="h-4 w-4" /> 
                                                     {new Date(app.interviewDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}

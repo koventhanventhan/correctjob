@@ -29,7 +29,7 @@ const roleToDashboardPath: Record<string, string> = {
 
 const roleToProfilePath: Record<string, string> = {
     Admin: '/admin/settings',
-    Employer: '/employer/profile',
+    Employer: '/employer/company-profile',
     JobSeeker: '/seeker/profile',
 };
 

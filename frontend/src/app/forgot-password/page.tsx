@@ -9,6 +9,7 @@ export default function ForgotPasswordPage() {
     const [loading, setLoading] = useState(false);
     const [token, setToken] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [step, setStep] = useState(1);
 
     const handleForgot = async (e: React.FormEvent) => {
@@ -18,9 +19,14 @@ export default function ForgotPasswordPage() {
         try {
             const res = await api.post('/auth/forgot-password', { email });
             setMsg(res.data.message || 'If the email exists, a reset link has been sent.');
-            setStep(2); // In real app, they'd click link in email
-        } catch (error) {
-            setMsg('Failed to send reset link.');
+            if (res.data.token || res.data.resetToken) {
+                setToken(res.data.token || res.data.resetToken);
+            }
+            setStep(2);
+        } catch (error: any) {
+            const errorData = error.response?.data;
+            const errorText = typeof errorData === 'string' ? errorData : errorData?.message || 'Failed to send reset link.';
+            setMsg(errorText);
         } finally {
             setLoading(false);
         }
@@ -28,21 +34,41 @@ export default function ForgotPasswordPage() {
 
     const handleReset = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setMsg('');
+
+        if (newPassword !== confirmPassword) {
+            setMsg('New password and confirm password do not match.');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setMsg('New password must be at least 6 characters long.');
+            return;
+        }
+
+        setLoading(true);
         try {
             const res = await api.post('/auth/reset-password', { email, token, newPassword });
             setMsg(res.data.message || 'Password reset successfully.');
             setStep(3);
         } catch (error: any) {
-            setMsg(error.response?.data || 'Failed to reset password.');
+            const errorData = error.response?.data;
+            let errorText = 'Failed to reset password.';
+            if (typeof errorData === 'string') {
+                errorText = errorData;
+            } else if (Array.isArray(errorData)) {
+                errorText = errorData.map((e: any) => e.description || e.code).join(' ');
+            } else if (errorData?.message) {
+                errorText = errorData.message;
+            }
+            setMsg(errorText);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-warmwhite flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-warmwhite flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <h2 className="text-center text-3xl font-extrabold text-charcoal">
                     Reset your password
@@ -96,8 +122,20 @@ export default function ForgotPasswordPage() {
                                 <input
                                     type="password"
                                     required
+                                    placeholder="Minimum 6 characters"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
+                                    className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange focus:border-orange sm:text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                                <input
+                                    type="password"
+                                    required
+                                    placeholder="Re-enter new password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                     className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange focus:border-orange sm:text-sm"
                                 />
                             </div>

@@ -88,7 +88,7 @@ export default function CompanyProfilePage() {
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
     return (
-        <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8">
+        <div className="max-w-3xl mx-4 sm:mx-auto p-4 sm:p-6 bg-warmwhite rounded-lg shadow-md my-6 sm:my-8 border border-gray-200">
             <h1 className="text-2xl font-bold mb-6">Company Profile</h1>
             
             {companyId && (

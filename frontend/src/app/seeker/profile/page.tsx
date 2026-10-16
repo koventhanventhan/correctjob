@@ -157,7 +157,7 @@ export default function SeekerProfile() {
                     </div>
                 </div>
 
-                <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="pt-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span className="text-green-600 font-medium">{successMsg}</span>
                     <button
                         type="submit"
@@ -165,7 +165,7 @@ export default function SeekerProfile() {
                         className="flex items-center bg-orange text-white px-6 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
                     >
                         <LuSave className="w-4 h-4 mr-2" />
-                        {saving ? 'Saving...' : 'LuSave Profile'}
+                        {saving ? 'Saving...' : 'Save Profile'}
                     </button>
                 </div>
             </form>

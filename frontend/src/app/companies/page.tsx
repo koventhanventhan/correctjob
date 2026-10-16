@@ -38,7 +38,7 @@ export default function CompaniesPage() {
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="LuSearch companies by name, industry, or location..."
+                        placeholder="Search companies by name, industry, or location..."
                         className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md leading-5 bg-warmwhite placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-orange focus:border-orange sm:text-sm shadow-sm"
                     />
                 </div>
@@ -60,9 +60,9 @@ export default function CompaniesPage() {
                                                 <LuBuilding className="h-8 w-8 text-gray-400" />
                                             )}
                                         </div>
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                             <h3 className="text-lg font-display font-bold text-charcoal group-hover:text-orange transition-colors line-clamp-1">{company.companyName}</h3>
-                                            <p className="text-sm text-gray-500">{company.industry}</p>
+                                            <p className="text-sm text-gray-500 truncate">{company.industry}</p>
                                         </div>
                                     </div>
                                     <p className="text-gray-600 text-sm line-clamp-2 mb-4 h-10">

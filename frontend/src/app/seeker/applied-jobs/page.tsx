@@ -3,9 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { LuBriefcase, LuChevronLeft, LuChevronRight, LuClock, LuBuilding, LuMessageCircle } from 'react-icons/lu';
-
-const statuses = ['Applied', 'Under Review', 'Shortlisted', 'Interview Scheduled', 'Selected', 'Rejected'];
+import { LuChevronLeft, LuChevronRight, LuClock, LuBuilding, LuMessageCircle } from 'react-icons/lu';
 
 const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
     // If Rejected, we handle it separately
@@ -24,7 +22,7 @@ const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
                 {flowStatuses.map((s, i) => (
                     <span key={s} className={`hidden md:block ${
                         isRejected && i === flowStatuses.length - 1 ? 'text-red-500' : 
-                        !isRejected && i <= currentIndex ? 'text-orange' : ''
+                        !isRejected && i <= currentIndex ? 'text-orange font-semibold' : ''
                     }`}>
                         {isRejected && i === flowStatuses.length - 1 ? 'Rejected' : s}
                     </span>
@@ -41,8 +39,9 @@ const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
                     const isRejectedNode = isRejected && i === flowStatuses.length - 1;
                     return (
                         <div key={s} className="relative z-10">
-                            <div className={`w-4 h-4 rounded-full border-2 bg-warmwhite ${
+                            <div className={`w-4 h-4 rounded-full border-2 bg-warmwhite transition-all ${
                                 isRejectedNode ? 'border-red-500 bg-red-500' :
+                                isCurrent ? 'border-orange bg-orange ring-4 ring-orange/20' :
                                 isCompleted ? 'border-orange bg-orange' : 'border-gray-300'
                             }`}>
                                 {isCompleted && <CheckIcon />}

@@ -38,7 +38,17 @@ namespace HireConnect.API.Controllers
         public async Task<IActionResult> GetCompany(int id)
         {
             var company = await _context.Companies.FindAsync(id);
-            if (company == null || !company.IsApproved) return NotFound();
+            if (company == null) return NotFound();
+
+            if (!company.IsApproved)
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var isAdmin = User.IsInRole("Admin");
+                if (!isAdmin && (userId == null || company.EmployerId != userId))
+                {
+                    return NotFound();
+                }
+            }
 
             return Ok(company);
         }
@@ -109,35 +119,38 @@ namespace HireConnect.API.Controllers
             var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
             if (company == null) return NotFound("Company profile not found.");
 
-            if (idCardFront == null || idCardBack == null)
+            var front = idCardFront ?? Request.Form.Files["idFront"] ?? Request.Form.Files["front"];
+            var back = idCardBack ?? Request.Form.Files["idBack"] ?? Request.Form.Files["back"];
+
+            if (front == null || back == null)
             {
                 return BadRequest(new { message = "Both front and back of the ID card are required." });
             }
 
             var allowedTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
-            if (!allowedTypes.Contains(idCardFront.ContentType) || !allowedTypes.Contains(idCardBack.ContentType))
+            if (!allowedTypes.Contains(front.ContentType.ToLowerInvariant()) || !allowedTypes.Contains(back.ContentType.ToLowerInvariant()))
             {
                 return BadRequest(new { message = "Only JPG, PNG, or PDF files are allowed." });
             }
 
-            if (idCardFront.Length > 5 * 1024 * 1024 || idCardBack.Length > 5 * 1024 * 1024)
+            if (front.Length > 5 * 1024 * 1024 || back.Length > 5 * 1024 * 1024)
             {
                 return BadRequest(new { message = "File size cannot exceed 5MB." });
             }
 
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "IdCards");
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "id-cards");
             Directory.CreateDirectory(uploadsFolder);
 
-            var frontFileName = $"{Guid.NewGuid()}_{Path.GetFileName(idCardFront.FileName)}";
-            var backFileName = $"{Guid.NewGuid()}_{Path.GetFileName(idCardBack.FileName)}";
+            var frontFileName = $"{Guid.NewGuid()}_{Path.GetFileName(front.FileName)}";
+            var backFileName = $"{Guid.NewGuid()}_{Path.GetFileName(back.FileName)}";
 
             using (var stream = new FileStream(Path.Combine(uploadsFolder, frontFileName), FileMode.Create))
             {
-                await idCardFront.CopyToAsync(stream);
+                await front.CopyToAsync(stream);
             }
             using (var stream = new FileStream(Path.Combine(uploadsFolder, backFileName), FileMode.Create))
             {
-                await idCardBack.CopyToAsync(stream);
+                await back.CopyToAsync(stream);
             }
 
             company.IdCardFrontUrl = frontFileName;
@@ -168,7 +181,11 @@ namespace HireConnect.API.Controllers
             var fileName = side.ToLower() == "front" ? company.IdCardFrontUrl : company.IdCardBackUrl;
             if (string.IsNullOrEmpty(fileName)) return NotFound();
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "IdCards", fileName);
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "id-cards", fileName);
+            if (!System.IO.File.Exists(filePath))
+            {
+                filePath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "IdCards", fileName);
+            }
             if (!System.IO.File.Exists(filePath)) return NotFound();
 
             var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();

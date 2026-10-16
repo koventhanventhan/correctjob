@@ -135,7 +135,7 @@ export default function PostJobPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-warmwhite rounded-lg shadow-md my-8">
+        <div className="max-w-4xl mx-4 sm:mx-auto p-4 sm:p-6 bg-warmwhite rounded-lg shadow-md my-6 sm:my-8 border border-gray-200">
             <h1 className="text-2xl font-bold mb-6">Post a New Job</h1>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -194,7 +194,7 @@ export default function PostJobPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t pt-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t pt-4 mt-4">
                     <div>
                         <label className="block font-medium mb-1 text-sm">Min Salary</label>
                         <input type="number" name="salaryMin" value={formData.salaryMin} onChange={handleChange} className="w-full border p-2 rounded" />

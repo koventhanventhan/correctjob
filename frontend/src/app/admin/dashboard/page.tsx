@@ -20,7 +20,7 @@ export default function AdminDashboard() {
     const [profileData, setProfileData] = useState({ fullName: '', email: '' });
     const [profileMsg, setProfileMsg] = useState('');
     const [profileSaving, setProfileSaving] = useState(false);
-    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '' });
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [passwordMsg, setPasswordMsg] = useState('');
     const [passwordSaving, setPasswordSaving] = useState(false);
 
@@ -50,18 +50,38 @@ export default function AdminDashboard() {
         e.preventDefault();
         setPasswordSaving(true);
         setPasswordMsg('');
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setPasswordMsg('New password and confirm password do not match.');
+            setPasswordSaving(false);
+            return;
+        }
+
+        if (passwordData.newPassword.length < 6) {
+            setPasswordMsg('New password must be at least 6 characters long.');
+            setPasswordSaving(false);
+            return;
+        }
+
         try {
-            await api.post('/auth/change-password', passwordData);
+            await api.post('/auth/change-password', {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
             setPasswordMsg('Password changed successfully.');
-            setPasswordData({ currentPassword: '', newPassword: '' });
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error: any) {
-            setPasswordMsg(error.response?.data?.message || 'Failed to change password.');
+            setPasswordMsg(
+                error.response?.data?.message ||
+                error.response?.data?.[0]?.description ||
+                'Failed to change password.'
+            );
         } finally {
             setPasswordSaving(false);
         }
     };
     
-    // Pagination & LuSearch States
+    // Pagination & Search States
     const [jobsPage, setJobsPage] = useState(1);
     const [searchJob, setSearchJob] = useState('');
     const [filterJobStatus, setFilterJobStatus] = useState('');
@@ -349,7 +369,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
@@ -397,7 +417,7 @@ export default function AdminDashboard() {
                                     <LuSearch className="w-4 h-4 text-gray-400" />
                                     <input 
                                         type="text" 
-                                        placeholder="LuSearch jobs..." 
+                                        placeholder="Search jobs..." 
                                         className="p-1 outline-none text-sm"
                                         value={searchJob}
                                         onChange={(e) => { setSearchJob(e.target.value); setJobsPage(1); }}
@@ -957,6 +977,20 @@ export default function AdminDashboard() {
                                         onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                                         className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        placeholder="Re-enter new password"
+                                        value={passwordData.confirmPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                    />
+                                    {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                                        <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
+                                    )}
                                 </div>
 
                                 {passwordMsg && (

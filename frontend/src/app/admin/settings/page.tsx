@@ -12,9 +12,10 @@ import {
     LuMail,
     LuCamera,
     LuUpload,
-    LuShieldCheck,
     LuCheck,
-    LuTriangleAlert
+    LuTriangleAlert,
+    LuEye,
+    LuEyeOff
 } from 'react-icons/lu';
 import Link from 'next/link';
 
@@ -39,8 +40,11 @@ export default function AdminSettings() {
     const [emailSaving, setEmailSaving] = useState(false);
 
     // 4. Change Password State
-    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '' });
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [passwordMsg, setPasswordMsg] = useState<{ text: string; isError: boolean } | null>(null);
+    const [showCurrentPw, setShowCurrentPw] = useState(false);
+    const [showNewPw, setShowNewPw] = useState(false);
+    const [showConfirmPw, setShowConfirmPw] = useState(false);
     const [passwordSaving, setPasswordSaving] = useState(false);
 
     useEffect(() => {
@@ -174,10 +178,25 @@ export default function AdminSettings() {
         setPasswordSaving(true);
         setPasswordMsg(null);
 
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setPasswordMsg({ text: 'New password and confirm password do not match.', isError: true });
+            setPasswordSaving(false);
+            return;
+        }
+
+        if (passwordData.newPassword.length < 6) {
+            setPasswordMsg({ text: 'New password must be at least 6 characters long.', isError: true });
+            setPasswordSaving(false);
+            return;
+        }
+
         try {
-            await api.post('/auth/change-password', passwordData);
+            await api.post('/auth/change-password', {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
             setPasswordMsg({ text: 'Password changed successfully!', isError: false });
-            setPasswordData({ currentPassword: '', newPassword: '' });
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error: any) {
             const errorMsg =
                 error.response?.data?.message ||
@@ -410,7 +429,7 @@ export default function AdminSettings() {
                             <button
                                 type="submit"
                                 disabled={emailSaving}
-                                className="inline-flex items-center justify-center px-4 py-2 bg-orange text-white text-sm font-medium rounded-lg hover:bg-orange/90 disabled:opacity-50 transition-all shadow-sm"
+                                className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-orange text-white text-sm font-medium rounded-lg hover:bg-orange/90 disabled:opacity-50 transition-all shadow-sm"
                             >
                                 <LuSave className="w-4 h-4 mr-2" />
                                 {emailSaving ? 'Updating...' : 'Update Email'}
@@ -434,38 +453,75 @@ export default function AdminSettings() {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Current Password
                             </label>
-                            <input
-                                type="password"
-                                required
-                                placeholder="Enter current password"
-                                value={passwordData.currentPassword}
-                                onChange={(e) =>
-                                    setPasswordData({
-                                        ...passwordData,
-                                        currentPassword: e.target.value
-                                    })
-                                }
-                                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showCurrentPw ? 'text' : 'password'}
+                                    required
+                                    placeholder="Enter current password"
+                                    value={passwordData.currentPassword}
+                                    onChange={(e) =>
+                                        setPasswordData({
+                                            ...passwordData,
+                                            currentPassword: e.target.value
+                                        })
+                                    }
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 pr-10 text-sm focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                />
+                                <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    {showCurrentPw ? <LuEyeOff className="w-4 h-4" /> : <LuEye className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 New Password
                             </label>
-                            <input
-                                type="password"
-                                required
-                                placeholder="Enter new strong password"
-                                value={passwordData.newPassword}
-                                onChange={(e) =>
-                                    setPasswordData({
-                                        ...passwordData,
-                                        newPassword: e.target.value
-                                    })
-                                }
-                                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showNewPw ? 'text' : 'password'}
+                                    required
+                                    placeholder="Enter new strong password"
+                                    value={passwordData.newPassword}
+                                    onChange={(e) =>
+                                        setPasswordData({
+                                            ...passwordData,
+                                            newPassword: e.target.value
+                                        })
+                                    }
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 pr-10 text-sm focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                />
+                                <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    {showNewPw ? <LuEyeOff className="w-4 h-4" /> : <LuEye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Confirm New Password
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPw ? 'text' : 'password'}
+                                    required
+                                    placeholder="Re-enter new password"
+                                    value={passwordData.confirmPassword}
+                                    onChange={(e) =>
+                                        setPasswordData({
+                                            ...passwordData,
+                                            confirmPassword: e.target.value
+                                        })
+                                    }
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 pr-10 text-sm focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                />
+                                <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    {showConfirmPw ? <LuEyeOff className="w-4 h-4" /> : <LuEye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                            {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                                <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
+                            )}
                         </div>
 
                         {passwordMsg && (
@@ -488,7 +544,7 @@ export default function AdminSettings() {
                         <button
                             type="submit"
                             disabled={passwordSaving}
-                            className="inline-flex items-center justify-center px-4 py-2 bg-orange text-white text-sm font-medium rounded-lg hover:bg-orange/90 disabled:opacity-50 transition-all shadow-sm"
+                            className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-orange text-white text-sm font-medium rounded-lg hover:bg-orange/90 disabled:opacity-50 transition-all shadow-sm"
                         >
                             <LuSave className="w-4 h-4 mr-2" />
                             {passwordSaving ? 'Updating...' : 'Update Password'}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import api from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
-import { LuCalendar, LuMessageCircle } from 'react-icons/lu';
+import { LuCalendar, LuMessageCircle, LuFileText } from 'react-icons/lu';
 import Link from 'next/link';
 
 function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) {
@@ -12,6 +12,7 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
     const [interviewDate, setInterviewDate] = useState(app.interviewDate ? app.interviewDate.slice(0, 16) : '');
     const [meetingLink, setMeetingLink] = useState(app.meetingLink || '');
     const [isUpdating, setIsUpdating] = useState(false);
+    const [downloadingResume, setDownloadingResume] = useState(false);
     
     const isValidUrl = (urlString: string) => {
         if (!urlString) return true; // Optional
@@ -20,6 +21,31 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
             return url.protocol === "http:" || url.protocol === "https:";
         } catch (_) {
             return false;
+        }
+    };
+
+    const handleDownloadResume = async () => {
+        try {
+            setDownloadingResume(true);
+            const response = await api.get(`/applications/download-resume/${app.id}`, {
+                responseType: 'blob'
+            });
+            const contentType = (response.headers['content-type'] as string) || 'application/pdf';
+            const blob = new Blob([response.data], { type: contentType });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const applicantName = (app.seeker?.user?.fullName || 'Applicant').replace(/[^a-zA-Z0-9_-]/g, '_');
+            link.setAttribute('download', `${applicantName}_Resume.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+        } catch (error) {
+            console.error("Failed to download resume", error);
+            alert("Failed to download resume. Please try again.");
+        } finally {
+            setDownloadingResume(false);
         }
     };
 
@@ -47,16 +73,16 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
     return (
         <div className="bg-warmwhite p-6 rounded-lg shadow-md border border-gray-200">
             <div className="flex justify-between items-start mb-4">
-                <div>
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        {app.seeker?.user?.fullName || 'Unknown Applicant'}
+                <div className="min-w-0 flex-1 mr-2">
+                    <h2 className="text-xl font-bold flex flex-wrap items-center gap-2">
+                        <span className="truncate">{app.seeker?.user?.fullName || 'Unknown Applicant'}</span>
                         {app.seeker?.verificationStatus === 'Verified' && (
                             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1 border border-green-200" title="Identity Verified">
                                 ✓ Verified
                             </span>
                         )}
                     </h2>
-                    <p className="text-gray-600 text-sm">{app.seeker?.user?.email}</p>
+                    <p className="text-gray-600 text-sm truncate">{app.seeker?.user?.email}</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                     <span className={`px-2 py-1 rounded text-xs font-bold ${
@@ -105,11 +131,15 @@ function ApplicationCard({ app, onUpdate }: { app: any, onUpdate: () => void }) 
 
             {app.resumeUrl && (
                 <div className="mb-4">
-                    <a href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${app.resumeUrl}`} 
-                       target="_blank" rel="noopener noreferrer" 
-                       className="text-orange hover:underline text-sm font-medium">
-                        View Resume
-                    </a>
+                    <button
+                        type="button"
+                        onClick={handleDownloadResume}
+                        disabled={downloadingResume}
+                        className="inline-flex items-center text-orange hover:text-orange/80 text-sm font-medium disabled:opacity-50"
+                    >
+                        <LuFileText className="w-4 h-4 mr-1.5" />
+                        {downloadingResume ? 'Downloading Resume...' : 'Download Resume'}
+                    </button>
                 </div>
             )}
 
@@ -212,7 +242,7 @@ export default function JobApplicationsPage() {
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
     return (
-        <div className="max-w-6xl mx-auto p-6 my-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-2xl font-bold mb-6">Job Applications</h1>
             
             {applications.length === 0 ? (

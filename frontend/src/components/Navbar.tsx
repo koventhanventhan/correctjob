@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useAuthStore } from '../store/authStore';
-import { LuBriefcase, LuLogOut, LuUser as UserIcon, LuMenu, LuX } from 'react-icons/lu';
+import { LuBriefcase, LuMenu, LuX } from 'react-icons/lu';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import api from '@/services/api';
@@ -17,7 +17,7 @@ const roleToPath: Record<string, string> = {
 
 const roleToProfilePath: Record<string, string> = {
     Admin: '/admin/settings',
-    Employer: '/employer/profile',
+    Employer: '/employer/company-profile',
     JobSeeker: '/seeker/profile',
 };
 
@@ -75,7 +75,7 @@ export default function Navbar() {
                         )}
                     </div>
                     
-                    {/* Mobile LuMenu Button */}
+                    {/* Mobile Menu Button */}
                     <div className="flex items-center sm:hidden">
                         <button
                             type="button"
@@ -93,7 +93,7 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile LuMenu */}
+            {/* Mobile Menu */}
             {isMobileMenuOpen && (
                 <div className="sm:hidden border-t border-gray-200">
                     <div className="pt-2 pb-3 space-y-1">
@@ -154,9 +154,9 @@ export default function Navbar() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="ml-3">
-                                        <div className="text-base font-medium text-charcoal">{user.fullName}</div>
-                                        <div className="text-sm font-medium text-gray-500">{user.email}</div>
+                                    <div className="ml-3 min-w-0 flex-1">
+                                        <div className="text-base font-medium text-charcoal truncate">{user.fullName}</div>
+                                        <div className="text-sm font-medium text-gray-500 truncate">{user.email}</div>
                                     </div>
                                 </div>
                                 <div className="mt-3 space-y-1">
@@ -174,6 +174,42 @@ export default function Navbar() {
                                     >
                                         My Profile
                                     </Link>
+                                    {user.role === 'Employer' && (
+                                        <>
+                                            <Link
+                                                href="/employer/post-job"
+                                                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 hover:text-charcoal hover:bg-peach hover:border-gray-300"
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                            >
+                                                Post a Job
+                                            </Link>
+                                            <Link
+                                                href="/employer/manage-jobs"
+                                                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 hover:text-charcoal hover:bg-peach hover:border-gray-300"
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                            >
+                                                Manage Jobs
+                                            </Link>
+                                        </>
+                                    )}
+                                    {user.role === 'JobSeeker' && (
+                                        <>
+                                            <Link
+                                                href="/seeker/applied-jobs"
+                                                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 hover:text-charcoal hover:bg-peach hover:border-gray-300"
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                            >
+                                                Applied Jobs
+                                            </Link>
+                                            <Link
+                                                href="/seeker/saved-jobs"
+                                                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 hover:text-charcoal hover:bg-peach hover:border-gray-300"
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                            >
+                                                Saved Jobs
+                                            </Link>
+                                        </>
+                                    )}
                                     <button
                                         onClick={handleLogout}
                                         className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-red-600 hover:text-red-800 hover:bg-red-50 hover:border-red-300"

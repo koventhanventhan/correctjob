@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 import api from '@/services/api';
 
 function AuthRehydrator({ children }: { children: React.ReactNode }) {
-    const { setAuth, setInitializing, isInitializing, token } = useAuthStore();
+    const { setAuth, setInitializing, token } = useAuthStore();
 
     useEffect(() => {
         const initializeAuth = async () => {
@@ -28,7 +28,7 @@ function AuthRehydrator({ children }: { children: React.ReactNode }) {
                 });
 
                 setAuth(meRes.data, newToken);
-            } catch (error) {
+            } catch {
                 // Not authenticated, that's fine
             } finally {
                 setInitializing(false);

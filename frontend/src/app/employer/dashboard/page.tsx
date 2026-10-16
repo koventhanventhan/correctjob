@@ -43,23 +43,23 @@ export default function EmployerDashboard() {
     return (
         <div className="min-h-screen bg-warmwhite">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div>
                         <h1 className="text-3xl font-display font-bold text-charcoal">Employer Dashboard</h1>
                         <p className="text-gray-600 mt-1">Manage your job postings and applicants.</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <Link href="/employer/settings" className="text-gray-600 hover:text-orange flex items-center gap-1 font-medium bg-white px-4 py-2 rounded-md shadow-sm border border-gray-200">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <Link href="/employer/settings" className="text-gray-600 hover:text-orange flex items-center justify-center gap-1 font-medium bg-white px-4 py-2 rounded-md shadow-sm border border-gray-200 flex-1 sm:flex-none text-sm">
                             <LuSettings className="w-4 h-4" /> Settings
                         </Link>
-                        <Link href="/employer/post-job" className="bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 transition-colors shadow-sm">
+                        <Link href="/employer/post-job" className="bg-orange text-white px-4 py-2 rounded-md font-medium hover:bg-orange/90 transition-colors shadow-sm flex-1 sm:flex-none text-center text-sm">
                             Post New Job
                         </Link>
                     </div>
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>

@@ -66,8 +66,8 @@ export default function SavedJobs() {
                                                     <LuBuilding className="h-6 w-6 text-gray-400" />
                                                 )}
                                             </div>
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-charcoal hover:text-orange">
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-lg font-semibold text-charcoal hover:text-orange truncate">
                                                     <Link href={`/jobs/${job.id}`}>{job.title}</Link>
                                                 </h3>
                                                 <div className="mt-1 flex items-center flex-wrap gap-4 text-sm text-gray-500">

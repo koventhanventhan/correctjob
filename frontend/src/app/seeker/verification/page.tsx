@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/services/api';
-import { LuUploadCloud, LuCheckCircle, LuXCircle, LuClock } from 'react-icons/lu';
+import { LuCloudUpload, LuCircleCheck, LuCircleX, LuClock } from 'react-icons/lu';
 import { useRouter } from 'next/navigation';
 
 export default function VerificationPage() {
@@ -78,10 +78,10 @@ export default function VerificationPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <div className="flex items-center gap-4 mb-6">
                     <div className="flex-shrink-0">
-                        {status === 'Verified' && <LuCheckCircle className="w-12 h-12 text-green-500" />}
+                        {status === 'Verified' && <LuCircleCheck className="w-12 h-12 text-green-500" />}
                         {status === 'Pending' && <LuClock className="w-12 h-12 text-yellow-500" />}
-                        {status === 'Rejected' && <LuXCircle className="w-12 h-12 text-red-500" />}
-                        {status === 'NotSubmitted' && <LuUploadCloud className="w-12 h-12 text-gray-400" />}
+                        {status === 'Rejected' && <LuCircleX className="w-12 h-12 text-red-500" />}
+                        {status === 'NotSubmitted' && <LuCloudUpload className="w-12 h-12 text-gray-400" />}
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-charcoal">
@@ -130,7 +130,7 @@ export default function VerificationPage() {
                         <button 
                             type="submit" 
                             disabled={!frontFile || uploading}
-                            className="bg-orange text-white px-6 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50"
+                            className="w-full sm:w-auto bg-orange text-white px-6 py-2 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50 text-center"
                         >
                             {uploading ? 'Uploading...' : 'Submit Verification Request'}
                         </button>

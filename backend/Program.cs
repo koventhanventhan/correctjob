@@ -7,7 +7,30 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using HireConnect.API.Services.Payment;
 
+// Load .env file if present
+var currentDir = Directory.GetCurrentDirectory();
+var envPath = File.Exists(Path.Combine(currentDir, ".env")) 
+    ? Path.Combine(currentDir, ".env") 
+    : (File.Exists(Path.Combine(currentDir, "..", ".env")) ? Path.Combine(currentDir, "..", ".env") : null);
+
+if (envPath != null)
+{
+    foreach (var line in File.ReadAllLines(envPath))
+    {
+        var trimmed = line.Trim();
+        if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#")) continue;
+        var separatorIdx = trimmed.IndexOf('=');
+        if (separatorIdx > 0)
+        {
+            var envKey = trimmed.Substring(0, separatorIdx).Trim();
+            var envVal = trimmed.Substring(separatorIdx + 1).Trim();
+            Environment.SetEnvironmentVariable(envKey, envVal);
+        }
+    }
+}
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 builder.Services.AddControllers()
@@ -147,7 +170,18 @@ if (!Directory.Exists(uploadsDir))
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
-    RequestPath = "/uploads"
+    RequestPath = "/uploads",
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.Context.Request.Path.Value?.ToLowerInvariant() ?? "";
+        // Resume files & ID verification cards are sensitive and must only be accessed through authorized endpoints
+        if (path.StartsWith("/resumes") || path.StartsWith("/id-cards") || path.StartsWith("/idcards"))
+        {
+            ctx.Context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            ctx.Context.Response.ContentLength = 0;
+            ctx.Context.Response.Body = Stream.Null;
+        }
+    }
 });
 
 app.UseAuthentication();
