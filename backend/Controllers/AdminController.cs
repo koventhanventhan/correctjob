@@ -85,6 +85,8 @@ namespace HireConnect.API.Controllers
                     j.IsPaid,
                     j.Deadline,
                     j.CreatedAt,
+                    j.ClosedByAdmin,
+                    j.PublishedAt,
                     Company = j.Company == null ? null : new
                     {
                         j.Company.Id,
@@ -127,7 +129,19 @@ namespace HireConnect.API.Controllers
                 return BadRequest(new { message = $"Invalid status '{status}'. Allowed statuses are: {string.Join(", ", allowedStatuses)}" });
             }
 
-            job.Status = matchedStatus; 
+            job.Status = matchedStatus;
+            if (matchedStatus == "Published" && job.PublishedAt == null)
+            {
+                job.PublishedAt = DateTime.UtcNow;
+            }
+            if (matchedStatus == "Closed")
+            {
+                job.ClosedByAdmin = true;
+            }
+            else
+            {
+                job.ClosedByAdmin = false;
+            }
             await _context.SaveChangesAsync();
             return Ok(new
             {

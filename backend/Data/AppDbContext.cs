@@ -199,7 +199,12 @@ namespace HireConnect.API.Data
                 .OnDelete(DeleteBehavior.SetNull);
 
             builder.Entity<JobView>()
-                .HasIndex(v => new { v.JobId, v.ViewedDate });
+                .HasIndex(v => new { v.JobId, v.ViewedDate, v.UserId })
+                .IsUnique();
+
+            builder.Entity<JobView>()
+                .HasIndex(v => new { v.JobId, v.ViewedDate, v.IpHash })
+                .IsUnique();
 
             // Seed Data for Categories and Skills
             builder.Entity<Category>().HasData(

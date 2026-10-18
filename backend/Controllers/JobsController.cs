@@ -12,10 +12,12 @@ namespace HireConnect.API.Controllers
     public class JobsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public JobsController(AppDbContext context)
+        public JobsController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -170,6 +172,8 @@ namespace HireConnect.API.Controllers
                     Status = j.Status,
                     CreatedAt = j.CreatedAt,
                     IsPaid = j.IsPaid,
+                    ClosedByAdmin = j.ClosedByAdmin,
+                    PublishedAt = j.PublishedAt,
                     Company = j.Company == null ? null : new JobCompanyDto
                     {
                         Id = j.Company.Id,
@@ -236,6 +240,7 @@ namespace HireConnect.API.Controllers
             {
                 var today = DateTime.UtcNow.Date;
                 var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                var ipHash = ComputeIpHash(ip);
 
                 bool alreadyViewed;
                 if (!string.IsNullOrEmpty(userId))
@@ -250,21 +255,31 @@ namespace HireConnect.API.Controllers
                     alreadyViewed = await _context.JobViews.AnyAsync(v => 
                         v.JobId == id && 
                         v.ViewedDate == today && 
-                        v.IpAddress == ip && 
-                        v.UserId == null);
+                        v.IpHash == ipHash);
                 }
 
                 if (!alreadyViewed)
                 {
-                    _context.JobViews.Add(new JobView
+                    try
                     {
-                        JobId = id,
-                        UserId = string.IsNullOrEmpty(userId) ? null : userId,
-                        IpAddress = ip.Length > 50 ? ip.Substring(0, 50) : ip,
-                        ViewedDate = today,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    await _context.SaveChangesAsync();
+                        _context.JobViews.Add(new JobView
+                        {
+                            JobId = id,
+                            UserId = string.IsNullOrEmpty(userId) ? null : userId,
+                            IpHash = ipHash,
+                            ViewedDate = today,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        // Concurrency duplicate insert caught by unique index
+                        foreach (var entry in ex.Entries)
+                        {
+                            entry.State = EntityState.Detached;
+                        }
+                    }
                 }
             }
 
@@ -291,6 +306,8 @@ namespace HireConnect.API.Controllers
                 Status = job.Status,
                 CreatedAt = job.CreatedAt,
                 IsPaid = job.IsPaid,
+                ClosedByAdmin = job.ClosedByAdmin,
+                PublishedAt = job.PublishedAt,
                 ViewsCount = viewsCount,
                 ApplicantsCount = applicantsCount,
                 Company = job.Company == null ? null : new JobCompanyDto
@@ -592,6 +609,8 @@ namespace HireConnect.API.Controllers
                     Status = j.Status,
                     CreatedAt = j.CreatedAt,
                     IsPaid = j.IsPaid,
+                    ClosedByAdmin = j.ClosedByAdmin,
+                    PublishedAt = j.PublishedAt,
                     ViewsCount = j.Views.Count,
                     ApplicantsCount = j.Applications.Count,
                     Company = j.Company == null ? null : new JobCompanyDto
@@ -821,7 +840,21 @@ namespace HireConnect.API.Controllers
                 return BadRequest(new { message = "Job is already closed." });
             }
 
+            // Employer can only close Published jobs. Admin can close jobs in any status.
+            if (!isAdmin && job.Status != "Published")
+            {
+                return BadRequest(new { message = $"Employers can only close published jobs. Current status is '{job.Status}'." });
+            }
+
             job.Status = "Closed";
+            if (isAdmin)
+            {
+                job.ClosedByAdmin = true;
+            }
+            else
+            {
+                job.ClosedByAdmin = false;
+            }
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Job closed successfully.", status = job.Status });
@@ -844,6 +877,30 @@ namespace HireConnect.API.Controllers
             if (job.Status != "Closed")
             {
                 return BadRequest(new { message = $"Only closed jobs can be reopened. This job is currently '{job.Status}'." });
+            }
+
+            if (!isAdmin)
+            {
+                // Employer reopening requirements
+                if (job.ClosedByAdmin)
+                {
+                    return BadRequest(new { message = "This job was closed by an administrator and cannot be reopened by an employer." });
+                }
+
+                if (!job.PublishedAt.HasValue)
+                {
+                    return BadRequest(new { message = "Job must have been previously published to be reopened." });
+                }
+
+                if (!job.IsPaid)
+                {
+                    return BadRequest(new { message = "Job must be paid before it can be reopened." });
+                }
+
+                if (job.Company.VerificationStatus != "Verified" || !job.Company.IsApproved)
+                {
+                    return BadRequest(new { message = "Company must be verified and approved to reopen jobs." });
+                }
             }
 
             // Expired deadline check: if deadline is expired, require a new future deadline
@@ -870,6 +927,15 @@ namespace HireConnect.API.Controllers
             }
 
             job.Status = "Published";
+            if (isAdmin)
+            {
+                job.ClosedByAdmin = false;
+            }
+            if (job.PublishedAt == null)
+            {
+                job.PublishedAt = DateTime.UtcNow;
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new
@@ -994,6 +1060,8 @@ namespace HireConnect.API.Controllers
                     : DateTime.UtcNow.AddDays(30),
                 Status = "Draft",
                 IsPaid = false,
+                ClosedByAdmin = false,
+                PublishedAt = null,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -1062,6 +1130,8 @@ namespace HireConnect.API.Controllers
                 Status = job.Status,
                 CreatedAt = job.CreatedAt,
                 IsPaid = job.IsPaid,
+                ClosedByAdmin = job.ClosedByAdmin,
+                PublishedAt = job.PublishedAt,
                 ViewsCount = job.Views?.Count ?? 0,
                 ApplicantsCount = job.Applications?.Count ?? 0,
                 Company = job.Company == null ? null : new JobCompanyDto
@@ -1094,6 +1164,17 @@ namespace HireConnect.API.Controllers
                         OrderIndex = q.OrderIndex
                     }).ToList() ?? new List<ScreeningQuestionResponseDto>()
             };
+        }
+
+        private string ComputeIpHash(string ipAddress)
+        {
+            var salt = _configuration["Security:IpHashSalt"] 
+                       ?? _configuration["Jwt:Key"] 
+                       ?? "HireConnect_Default_IpHash_Salt_2026";
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = System.Text.Encoding.UTF8.GetBytes(ipAddress + ":" + salt);
+            var hashBytes = sha256.ComputeHash(bytes);
+            return Convert.ToHexString(hashBytes).ToLowerInvariant();
         }
 
         private static readonly HashSet<string> AllowedQuestionTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -1199,6 +1280,8 @@ namespace HireConnect.API.Controllers
         public string Status { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public bool IsPaid { get; set; }
+        public bool ClosedByAdmin { get; set; }
+        public DateTime? PublishedAt { get; set; }
         public int ViewsCount { get; set; }
         public int ApplicantsCount { get; set; }
         public JobCompanyDto? Company { get; set; }

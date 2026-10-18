@@ -7,11 +7,24 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace HireConnect.API.Migrations
 {
     /// <inheritdoc />
-    public partial class AddJobViews : Migration
+    public partial class AddJobSecurityAndViews : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<bool>(
+                name: "ClosedByAdmin",
+                table: "Jobs",
+                type: "tinyint(1)",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "PublishedAt",
+                table: "Jobs",
+                type: "datetime(6)",
+                nullable: true);
+
             migrationBuilder.CreateTable(
                 name: "JobViews",
                 columns: table => new
@@ -21,7 +34,7 @@ namespace HireConnect.API.Migrations
                     JobId = table.Column<int>(type: "int", nullable: false),
                     UserId = table.Column<string>(type: "varchar(450)", maxLength: 450, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    IpAddress = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                    IpHash = table.Column<string>(type: "varchar(64)", maxLength: 64, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ViewedDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
@@ -45,9 +58,16 @@ namespace HireConnect.API.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
-                name: "IX_JobViews_JobId_ViewedDate",
+                name: "IX_JobViews_JobId_ViewedDate_IpHash",
                 table: "JobViews",
-                columns: new[] { "JobId", "ViewedDate" });
+                columns: new[] { "JobId", "ViewedDate", "IpHash" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_JobViews_JobId_ViewedDate_UserId",
+                table: "JobViews",
+                columns: new[] { "JobId", "ViewedDate", "UserId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_JobViews_UserId",
@@ -60,6 +80,14 @@ namespace HireConnect.API.Migrations
         {
             migrationBuilder.DropTable(
                 name: "JobViews");
+
+            migrationBuilder.DropColumn(
+                name: "ClosedByAdmin",
+                table: "Jobs");
+
+            migrationBuilder.DropColumn(
+                name: "PublishedAt",
+                table: "Jobs");
         }
     }
 }

@@ -41,6 +41,10 @@ namespace HireConnect.API.Models
         [MaxLength(50)]
         public string Status { get; set; } = "Draft"; // Draft, PendingApproval, Approved, Published, Closed
 
+        public bool ClosedByAdmin { get; set; } = false;
+
+        public DateTime? PublishedAt { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public bool IsPaid { get; set; } = false;

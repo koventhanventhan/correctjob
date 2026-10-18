@@ -316,6 +316,9 @@ namespace HireConnect.API.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("ClosedByAdmin")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("CompanyId")
                         .HasColumnType("int");
 
@@ -348,6 +351,9 @@ namespace HireConnect.API.Migrations
                     b.Property<string>("Location")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Requirements")
                         .HasColumnType("longtext");
@@ -486,10 +492,10 @@ namespace HireConnect.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("IpAddress")
+                    b.Property<string>("IpHash")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
 
                     b.Property<int>("JobId")
                         .HasColumnType("int");
@@ -505,7 +511,11 @@ namespace HireConnect.API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("JobId", "ViewedDate");
+                    b.HasIndex("JobId", "ViewedDate", "IpHash")
+                        .IsUnique();
+
+                    b.HasIndex("JobId", "ViewedDate", "UserId")
+                        .IsUnique();
 
                     b.ToTable("JobViews");
                 });

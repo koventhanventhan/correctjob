@@ -12,8 +12,9 @@ namespace HireConnect.API.Models
         [MaxLength(450)]
         public string? UserId { get; set; }
 
-        [MaxLength(50)]
-        public string IpAddress { get; set; } = string.Empty;
+        [Required]
+        [MaxLength(64)]
+        public string IpHash { get; set; } = string.Empty;
 
         public DateTime ViewedDate { get; set; } = DateTime.UtcNow.Date;
 

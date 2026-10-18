@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using HireConnect.API.Services.Payment;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // Load .env file if present
 var currentDir = Directory.GetCurrentDirectory();
@@ -132,14 +133,31 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure ForwardedHeaders for reverse proxy / load balancer real IP detection
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    var allowAllProxies = builder.Configuration.GetValue<bool>("ForwardedHeaders:AllowAllProxies", true);
+    if (allowAllProxies)
+    {
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    }
+});
+
 var app = builder.Build();
 
-// Auto-apply migrations and seed roles
+app.UseForwardedHeaders();
+
+// Seed roles and admin user (explicit migrations via dotnet ef database update)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();
+    if (builder.Configuration.GetValue<bool>("Database:AutoMigrate", false))
+    {
+        context.Database.Migrate();
+    }
 
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     string[] roles = { "Admin", "Employer", "JobSeeker" };
