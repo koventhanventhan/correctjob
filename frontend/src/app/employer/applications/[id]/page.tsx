@@ -67,6 +67,18 @@ const STATUS_TABS = [
     { key: 'Withdrawn', label: 'Withdrawn' }
 ];
 
+function toLocalDatetimeString(dateInput?: string | Date | null): string {
+    if (!dateInput) return '';
+    const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 export default function JobApplicationsPage() {
     const { user } = useAuthStore();
     const router = useRouter();
@@ -131,7 +143,7 @@ export default function JobApplicationsPage() {
             (appsRes.data || []).forEach((a: ApplicationItem) => {
                 initialNotes[a.id] = a.employerNotes || '';
                 initialForms[a.id] = {
-                    date: a.interviewDate ? a.interviewDate.slice(0, 16) : '',
+                    date: toLocalDatetimeString(a.interviewDate),
                     link: a.meetingLink || ''
                 };
             });
@@ -211,7 +223,7 @@ export default function JobApplicationsPage() {
 
         const formData = interviewForms[app.id] || { date: '', link: '' };
         if (newStatus === 'Interview') {
-            const dateToUse = formData.date || (app.interviewDate ? new Date(app.interviewDate).toISOString() : '');
+            const dateToUse = formData.date || (app.interviewDate ? toLocalDatetimeString(app.interviewDate) : '');
             if (!dateToUse) {
                 alert('Interview date and time is required when scheduling an interview.');
                 return;
@@ -249,6 +261,15 @@ export default function JobApplicationsPage() {
             });
 
             setApplications(prev => prev.map(a => a.id === app.id ? { ...a, ...res.data } : a));
+            if (res.data?.interviewDate) {
+                setInterviewForms(prev => ({
+                    ...prev,
+                    [app.id]: {
+                        date: toLocalDatetimeString(res.data.interviewDate),
+                        link: res.data.meetingLink || prev[app.id]?.link || ''
+                    }
+                }));
+            }
         } catch (error: any) {
             console.error('Status update failed', error);
             alert(error.response?.data?.message || 'Failed to update application status.');
@@ -892,7 +913,7 @@ export default function JobApplicationsPage() {
                                                                 </label>
                                                                 <input
                                                                     type="datetime-local"
-                                                                    min={new Date().toISOString().slice(0, 16)}
+                                                                    min={toLocalDatetimeString(new Date())}
                                                                     value={form.date}
                                                                     onChange={(e) => setInterviewForms({
                                                                         ...interviewForms,

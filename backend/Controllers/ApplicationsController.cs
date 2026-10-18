@@ -935,40 +935,123 @@ namespace HireConnect.API.Controllers
             var dtStart = startTime.ToString("yyyyMMddTHHmmssZ");
             var dtEnd = endTime.ToString("yyyyMMddTHHmmssZ");
 
-            var description = $"You have an interview scheduled for the position of {application.Job.Title} at {application.Job.Company.CompanyName}.";
-            var location = "To be decided / Online";
+            var cleanJobTitle = StripCrLf(application.Job.Title);
+            var cleanCompanyName = StripCrLf(application.Job.Company.CompanyName);
+            var summary = $"Interview: {cleanJobTitle} at {cleanCompanyName}";
+            var description = $"You have an interview scheduled for the position of {cleanJobTitle} at {cleanCompanyName}.";
+            var location = "Online";
 
-            if (!string.IsNullOrEmpty(application.MeetingLink))
+            if (!string.IsNullOrWhiteSpace(application.MeetingLink))
             {
-                description += $"\\n\\nMeeting Link: {application.MeetingLink}";
-                location = application.MeetingLink;
+                var cleanLink = StripCrLf(application.MeetingLink);
+                description += $"\n\nMeeting Link: {cleanLink}";
+                location = cleanLink;
             }
 
-            var icsContent = $@"BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//HireConnect//EN
-CALSCALE:GREGORIAN
-METHOD:REQUEST
-BEGIN:VEVENT
-DTSTAMP:{dtStamp}
-DTSTART:{dtStart}
-DTEND:{dtEnd}
-SUMMARY:Interview for {application.Job.Title} at {application.Job.Company.CompanyName}
-DESCRIPTION:{description}
-LOCATION:{location}
-UID:{Guid.NewGuid()}
-STATUS:CONFIRMED
-BEGIN:VALARM
-TRIGGER:-PT15M
-ACTION:DISPLAY
-DESCRIPTION:Reminder
-END:VALARM
-END:VEVENT
-END:VCALENDAR";
+            var lines = new List<string>
+            {
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//HireConnect//EN",
+                "CALSCALE:GREGORIAN",
+                "METHOD:REQUEST",
+                "BEGIN:VEVENT",
+                $"DTSTAMP:{dtStamp}",
+                $"DTSTART:{dtStart}",
+                $"DTEND:{dtEnd}",
+                $"SUMMARY:{EscapeIcsText(summary)}",
+                $"DESCRIPTION:{EscapeIcsText(description)}",
+                $"LOCATION:{EscapeIcsText(location)}",
+                $"UID:{Guid.NewGuid()}@hireconnect.com",
+                "STATUS:CONFIRMED",
+                "SEQUENCE:0",
+                "BEGIN:VALARM",
+                "TRIGGER:-PT15M",
+                "ACTION:DISPLAY",
+                "DESCRIPTION:Reminder",
+                "END:VALARM",
+                "END:VEVENT",
+                "END:VCALENDAR"
+            };
 
-            // Return as a file download
+            var icsContent = string.Join("\r\n", lines.Select(FoldIcsLine)) + "\r\n";
             var bytes = System.Text.Encoding.UTF8.GetBytes(icsContent);
-            return File(bytes, "text/calendar", $"Interview_{application.Job.Title.Replace(" ", "_")}.ics");
+
+            var safeTitle = System.Text.RegularExpressions.Regex.Replace(cleanJobTitle, @"[^a-zA-Z0-9_\-]", "_");
+            safeTitle = System.Text.RegularExpressions.Regex.Replace(safeTitle, @"_+", "_").Trim('_');
+            if (string.IsNullOrEmpty(safeTitle)) safeTitle = "Job";
+            if (safeTitle.Length > 50) safeTitle = safeTitle.Substring(0, 50).TrimEnd('_');
+            var safeFileName = $"Interview_{safeTitle}.ics";
+
+            return File(bytes, "text/calendar; charset=utf-8", safeFileName);
+        }
+
+        private static string StripCrLf(string? text)
+        {
+            if (string.IsNullOrEmpty(text)) return string.Empty;
+            return text.Replace("\r", "").Replace("\n", " ").Trim();
+        }
+
+        private static string EscapeIcsText(string? text)
+        {
+            if (string.IsNullOrEmpty(text)) return string.Empty;
+            return text
+                .Replace("\\", "\\\\")
+                .Replace(";", "\\;")
+                .Replace(",", "\\,")
+                .Replace("\r\n", "\\n")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\n");
+        }
+
+        private static string FoldIcsLine(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return string.Empty;
+            var utf8 = System.Text.Encoding.UTF8;
+            var lineBytes = utf8.GetBytes(line);
+            if (lineBytes.Length <= 75)
+            {
+                return line;
+            }
+
+            var sb = new System.Text.StringBuilder();
+            int charIndex = 0;
+            bool isFirstLine = true;
+
+            while (charIndex < line.Length)
+            {
+                int maxBytes = isFirstLine ? 75 : 74;
+                int nextChar = charIndex;
+                int byteAccum = 0;
+
+                while (nextChar < line.Length)
+                {
+                    int charByteCount = utf8.GetByteCount(line.Substring(nextChar, 1));
+                    if (byteAccum + charByteCount > maxBytes)
+                    {
+                        break;
+                    }
+                    byteAccum += charByteCount;
+                    nextChar++;
+                }
+
+                if (nextChar == charIndex)
+                {
+                    nextChar++;
+                }
+
+                var chunk = line.Substring(charIndex, nextChar - charIndex);
+                if (!isFirstLine)
+                {
+                    sb.Append("\r\n ");
+                }
+                sb.Append(chunk);
+
+                charIndex = nextChar;
+                isFirstLine = false;
+            }
+
+            return sb.ToString();
         }
 
         [HttpGet("{id}/messages")]
