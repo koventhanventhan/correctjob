@@ -2,8 +2,20 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { LuMapPin, LuBriefcase, LuSearch, LuFilter, LuBell } from 'react-icons/lu';
-import { useState, useCallback, useEffect, Suspense } from 'react';
+import { 
+    LuMapPin, 
+    LuBriefcase, 
+    LuSearch, 
+    LuFilter, 
+    LuBell, 
+    LuChevronLeft, 
+    LuChevronRight,
+    LuGlobe,
+    LuClock,
+    LuArrowUpDown,
+    LuX
+} from 'react-icons/lu';
+import { useState, useCallback, Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
@@ -19,9 +31,13 @@ function JobsContent() {
     const [maxSalary, setMaxSalary] = useState(searchParams.get('maxSalary') || '');
     const [experience, setExperience] = useState(searchParams.get('experience') || '');
     const [jobType, setJobType] = useState(searchParams.get('jobType') || '');
+    const [remote, setRemote] = useState(searchParams.get('remote') === 'true');
+    const [datePosted, setDatePosted] = useState(searchParams.get('datePosted') || '');
+    const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'newest');
 
     const { user } = useAuthStore();
     const [alertMsg, setAlertMsg] = useState('');
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     const createQueryString = useCallback(
         (params: Record<string, string>) => {
@@ -35,8 +51,8 @@ function JobsContent() {
         [searchParams]
     );
 
-    const applyFilters = (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
+    const applyFilters = (newPage?: number) => {
+        const targetPage = newPage !== undefined ? newPage : 1;
         router.push(pathname + '?' + createQueryString({
             keyword: searchTerm,
             location,
@@ -44,17 +60,34 @@ function JobsContent() {
             minSalary,
             maxSalary,
             experience,
-            jobType
+            jobType,
+            remote: remote ? 'true' : '',
+            datePosted,
+            sortBy,
+            page: targetPage > 1 ? targetPage.toString() : ''
         }));
     };
 
-    // Apply filters when checkboxes change
-    useEffect(() => {
-        if (jobType !== (searchParams.get('jobType') || '')) {
-            applyFilters();
-        }
-    }, [jobType]);
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        applyFilters(1);
+    };
 
+    const clearAllFilters = () => {
+        setSearchTerm('');
+        setLocation('');
+        setCategory('');
+        setMinSalary('');
+        setMaxSalary('');
+        setExperience('');
+        setJobType('');
+        setRemote(false);
+        setDatePosted('');
+        setSortBy('newest');
+        router.push(pathname);
+    };
+
+    // Current active query values from URL
     const currentKeyword = searchParams.get('keyword') || '';
     const currentLocation = searchParams.get('location') || '';
     const currentCategory = searchParams.get('category') || '';
@@ -62,9 +95,26 @@ function JobsContent() {
     const currentMinSalary = searchParams.get('minSalary') || '';
     const currentMaxSalary = searchParams.get('maxSalary') || '';
     const currentExperience = searchParams.get('experience') || '';
+    const currentRemote = searchParams.get('remote') === 'true';
+    const currentDatePosted = searchParams.get('datePosted') || '';
+    const currentSortBy = searchParams.get('sortBy') || 'newest';
+    const currentPage = parseInt(searchParams.get('page') || '1', 10);
 
     const { data, isLoading } = useQuery({
-        queryKey: ['jobs', currentKeyword, currentLocation, currentCategory, currentJobType, currentMinSalary, currentMaxSalary, currentExperience],
+        queryKey: [
+            'jobs', 
+            currentKeyword, 
+            currentLocation, 
+            currentCategory, 
+            currentJobType, 
+            currentMinSalary, 
+            currentMaxSalary, 
+            currentExperience,
+            currentRemote,
+            currentDatePosted,
+            currentSortBy,
+            currentPage
+        ],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (currentKeyword) params.append('keyword', currentKeyword);
@@ -74,6 +124,11 @@ function JobsContent() {
             if (currentMinSalary) params.append('minSalary', currentMinSalary);
             if (currentMaxSalary) params.append('maxSalary', currentMaxSalary);
             if (currentExperience) params.append('experience', currentExperience);
+            if (currentRemote) params.append('remote', 'true');
+            if (currentDatePosted) params.append('datePosted', currentDatePosted);
+            if (currentSortBy) params.append('sortBy', currentSortBy);
+            params.append('page', currentPage.toString());
+            params.append('pageSize', '12');
             
             const res = await api.get(`/jobs?${params.toString()}`);
             return res.data;
@@ -91,41 +146,63 @@ function JobsContent() {
     const createAlertMutation = useMutation({
         mutationFn: async () => {
             const res = await api.post('/jobalerts', { 
-                keyword: currentKeyword,
+                keyword: currentKeyword || (currentCategory ? 'Category Alert' : 'General Alert'),
                 location: currentLocation || undefined,
-                categoryId: currentCategory ? parseInt(currentCategory) : undefined,
+                categoryId: currentCategory ? parseInt(currentCategory, 10) : undefined,
                 jobType: currentJobType || undefined
             });
             return res.data;
         },
         onSuccess: () => {
-            setAlertMsg('Alert created!');
-            setTimeout(() => setAlertMsg(''), 3000);
+            setAlertMsg('Alert created successfully! We will email you new matching jobs.');
+            setTimeout(() => setAlertMsg(''), 4000);
         },
         onError: () => {
             setAlertMsg('Failed to create alert.');
-            setTimeout(() => setAlertMsg(''), 3000);
+            setTimeout(() => setAlertMsg(''), 4000);
         }
     });
 
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const hasAnyFilter = Boolean(
+        currentKeyword || 
+        currentLocation || 
+        currentCategory || 
+        currentJobType || 
+        currentMinSalary || 
+        currentMaxSalary || 
+        currentExperience ||
+        currentRemote ||
+        currentDatePosted ||
+        (currentSortBy && currentSortBy !== 'newest')
+    );
 
-    const hasAnyFilter = currentKeyword || currentLocation || currentCategory || currentJobType || currentMinSalary || currentMaxSalary || currentExperience;
+    const totalJobs = data?.pagination?.totalCount || 0;
+    const totalPages = data?.pagination?.totalPages || 1;
 
     return (
         <div className="min-h-screen bg-warmwhite py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 
-                <div className="mb-4 flex flex-col md:flex-row gap-4 items-end justify-between">
-                    <h1 className="text-4xl font-display font-bold text-charcoal">Find Jobs</h1>
+                {/* Header */}
+                <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl sm:text-4xl font-display font-bold text-charcoal">Find Jobs</h1>
+                        <p className="text-gray-600 mt-1">Explore verified opportunities tailored for your career path</p>
+                    </div>
+                    {totalJobs > 0 && (
+                        <div className="text-sm font-medium text-gray-500">
+                            Showing <span className="font-bold text-charcoal">{totalJobs}</span> available {totalJobs === 1 ? 'job' : 'jobs'}
+                        </div>
+                    )}
                 </div>
 
-                {/* Sticky Command Center */}
-                <div className="sticky top-16 z-40 bg-warmwhite py-4 mb-8 border-b border-gray-200">
+                {/* Sticky Search & Filter Command Center */}
+                <div className="sticky top-16 z-30 bg-warmwhite py-4 mb-8 border-b border-gray-200">
                     <div className="flex justify-between lg:hidden mb-4">
                         <button 
+                            type="button"
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className="w-full bg-peach text-charcoal font-bold py-3 rounded-md flex items-center justify-center gap-2 border border-transparent hover:border-orange transition-colors"
+                            className="w-full bg-peach text-charcoal font-bold py-3 rounded-md flex items-center justify-center gap-2 border border-gray-300 hover:border-orange transition-colors"
                         >
                             <LuFilter className="h-5 w-5" />
                             {isFilterOpen ? 'Hide Filters' : 'Show Filters & Search'}
@@ -133,36 +210,36 @@ function JobsContent() {
                     </div>
 
                     <form 
-                        onSubmit={applyFilters} 
+                        onSubmit={handleFormSubmit} 
                         className={`flex-col gap-4 ${isFilterOpen ? 'flex' : 'hidden lg:flex'}`}
                     >
-                        {/* Primary Row */}
-                        <div className="flex flex-col lg:flex-row gap-4 lg:items-center w-full">
-                            <div className="relative flex-1">
+                        {/* Primary Search Bar */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 w-full">
+                            <div className="relative sm:col-span-2 lg:col-span-4">
                                 <LuSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                                 <input 
                                     type="text" 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Keywords or Job Title..."
-                                    className="pl-10 pr-4 py-3 w-full bg-white border border-gray-200 rounded-md focus:ring-orange focus:border-orange outline-none text-charcoal"
+                                    placeholder="Keywords, title, or skills..."
+                                    className="pl-10 pr-4 py-2.5 w-full bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none text-charcoal text-sm"
                                 />
                             </div>
-                            <div className="relative flex-1">
+                            <div className="relative sm:col-span-1 lg:col-span-3">
                                 <LuMapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                                 <input 
                                     type="text" 
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
-                                    placeholder="Location..."
-                                    className="pl-10 pr-4 py-3 w-full bg-white border border-gray-200 rounded-md focus:ring-orange focus:border-orange outline-none text-charcoal"
+                                    placeholder="City, state, or location..."
+                                    className="pl-10 pr-4 py-2.5 w-full bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none text-charcoal text-sm"
                                 />
                             </div>
-                            <div className="flex-1">
+                            <div className="sm:col-span-1 lg:col-span-3">
                                 <select 
                                     value={category}
                                     onChange={(e) => setCategory(e.target.value)}
-                                    className="w-full bg-white border border-gray-200 rounded-md px-4 py-3 text-charcoal focus:ring-orange focus:border-orange outline-none appearance-none"
+                                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2.5 text-charcoal text-sm focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none"
                                 >
                                     <option value="">All Categories</option>
                                     {categories?.map((c: any) => (
@@ -170,106 +247,259 @@ function JobsContent() {
                                     ))}
                                 </select>
                             </div>
-                            <button type="submit" className="bg-orange text-white font-bold px-8 py-3 rounded-md hover:bg-orange/90 whitespace-nowrap transition-colors shadow-sm">
-                                Update Search
-                            </button>
+                            <div className="sm:col-span-2 lg:col-span-2 flex gap-2">
+                                <button 
+                                    type="submit" 
+                                    className="w-full bg-orange text-white font-semibold py-2.5 px-4 rounded-md hover:bg-orange/90 whitespace-nowrap transition-colors shadow-sm text-sm"
+                                >
+                                    Search
+                                </button>
+                            </div>
                         </div>
                         
-                        {/* Secondary Row (Advanced Filters) */}
-                        <div className="flex flex-wrap gap-4 items-center w-full text-sm">
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-charcoal">Job Type:</span>
-                                <select value={jobType} onChange={(e) => setJobType(e.target.value)} className="bg-white border border-gray-200 rounded p-1.5 focus:ring-orange focus:border-orange outline-none text-charcoal">
-                                    <option value="">Any</option>
-                                    {['Full-time', 'Part-time', 'Contract', 'Remote', 'Internship'].map((type) => (
-                                        <option key={type} value={type}>{type}</option>
-                                    ))}
+                        {/* Secondary Filter Controls */}
+                        <div className="flex flex-wrap gap-3 items-center w-full pt-3 border-t border-gray-200/60 text-xs sm:text-sm">
+                            {/* Sort By */}
+                            <div className="flex items-center gap-1.5 bg-white border border-gray-300 rounded-md px-2.5 py-1.5">
+                                <LuArrowUpDown className="w-4 h-4 text-gray-400 shrink-0" />
+                                <label className="text-gray-500 font-medium whitespace-nowrap">Sort:</label>
+                                <select 
+                                    value={sortBy} 
+                                    onChange={(e) => {
+                                        setSortBy(e.target.value);
+                                        // Auto apply on sort change
+                                        router.push(pathname + '?' + createQueryString({ sortBy: e.target.value, page: '1' }));
+                                    }}
+                                    className="bg-transparent border-none text-charcoal font-medium outline-none cursor-pointer pr-1"
+                                >
+                                    <option value="newest">Newest first</option>
+                                    <option value="relevance">Relevance</option>
+                                    <option value="salaryHigh">Highest Salary</option>
+                                    <option value="salaryLow">Lowest Salary</option>
                                 </select>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-charcoal">Experience (Yrs):</span>
-                                <input type="number" min="0" value={experience} onChange={(e) => setExperience(e.target.value)} className="w-16 bg-white border border-gray-200 rounded p-1.5 focus:ring-orange focus:border-orange outline-none text-charcoal" />
+
+                            {/* Date Posted */}
+                            <div className="flex items-center gap-1.5 bg-white border border-gray-300 rounded-md px-2.5 py-1.5">
+                                <LuClock className="w-4 h-4 text-gray-400 shrink-0" />
+                                <label className="text-gray-500 font-medium whitespace-nowrap">Listed:</label>
+                                <select 
+                                    value={datePosted} 
+                                    onChange={(e) => {
+                                        setDatePosted(e.target.value);
+                                        router.push(pathname + '?' + createQueryString({ datePosted: e.target.value, page: '1' }));
+                                    }}
+                                    className="bg-transparent border-none text-charcoal font-medium outline-none cursor-pointer pr-1"
+                                >
+                                    <option value="">Any time</option>
+                                    <option value="24h">Past 24 hours</option>
+                                    <option value="7d">Past 7 days</option>
+                                    <option value="30d">Past 30 days</option>
+                                </select>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-charcoal">Min Salary (₹):</span>
-                                <input type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} className="w-24 bg-white border border-gray-200 rounded p-1.5 focus:ring-orange focus:border-orange outline-none text-charcoal" />
+
+                            {/* Job Type (Full-time, Part-time, Contract, Casual, Internship) */}
+                            <div className="flex items-center gap-1.5 bg-white border border-gray-300 rounded-md px-2.5 py-1.5">
+                                <LuBriefcase className="w-4 h-4 text-gray-400 shrink-0" />
+                                <label className="text-gray-500 font-medium whitespace-nowrap">Work Type:</label>
+                                <select 
+                                    value={jobType} 
+                                    onChange={(e) => {
+                                        setJobType(e.target.value);
+                                        router.push(pathname + '?' + createQueryString({ jobType: e.target.value, page: '1' }));
+                                    }}
+                                    className="bg-transparent border-none text-charcoal font-medium outline-none cursor-pointer pr-1"
+                                >
+                                    <option value="">All Work Types</option>
+                                    <option value="Full-time">Full-time</option>
+                                    <option value="Part-time">Part-time</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Casual">Casual / Temporary</option>
+                                    <option value="Internship">Internship</option>
+                                </select>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-charcoal">Max Salary (₹):</span>
-                                <input type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} className="w-24 bg-white border border-gray-200 rounded p-1.5 focus:ring-orange focus:border-orange outline-none text-charcoal" />
+
+                            {/* Remote Only Toggle */}
+                            <label className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs sm:text-sm font-medium cursor-pointer transition-colors ${
+                                remote 
+                                    ? 'bg-orange text-white border-orange shadow-sm' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                            }`}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={remote} 
+                                    onChange={(e) => {
+                                        setRemote(e.target.checked);
+                                        router.push(pathname + '?' + createQueryString({ remote: e.target.checked ? 'true' : '', page: '1' }));
+                                    }}
+                                    className="sr-only" 
+                                />
+                                <LuGlobe className="w-4 h-4" />
+                                <span>Remote only</span>
+                            </label>
+
+                            {/* Min Salary Input */}
+                            <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-md px-2 py-1.5">
+                                <span className="text-gray-500 font-medium">Min ₹:</span>
+                                <input 
+                                    type="number" 
+                                    min="0"
+                                    step="5000"
+                                    value={minSalary} 
+                                    onChange={(e) => setMinSalary(e.target.value)} 
+                                    placeholder="e.g. 50000" 
+                                    className="w-20 bg-transparent outline-none text-charcoal" 
+                                />
                             </div>
+
+                            {/* Max Salary Input */}
+                            <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-md px-2 py-1.5">
+                                <span className="text-gray-500 font-medium">Max ₹:</span>
+                                <input 
+                                    type="number" 
+                                    min="0"
+                                    step="5000"
+                                    value={maxSalary} 
+                                    onChange={(e) => setMaxSalary(e.target.value)} 
+                                    placeholder="e.g. 150000" 
+                                    className="w-20 bg-transparent outline-none text-charcoal" 
+                                />
+                            </div>
+
+                            {/* Clear All Filters */}
+                            {hasAnyFilter && (
+                                <button
+                                    type="button"
+                                    onClick={clearAllFilters}
+                                    className="inline-flex items-center gap-1 text-gray-500 hover:text-red-600 font-medium px-2 py-1.5 transition-colors cursor-pointer"
+                                >
+                                    <LuX className="w-4 h-4" />
+                                    <span>Clear filters</span>
+                                </button>
+                            )}
                         </div>
                     </form>
                 </div>
 
-                {user?.role === 'JobSeeker' && hasAnyFilter && (
-                    <div className="mb-6 flex flex-col sm:flex-row items-center justify-between bg-peach p-4 rounded-md gap-4">
+                {/* Job Alert Banner */}
+                {user?.role === 'JobSeeker' && (
+                    <div className="mb-6 flex flex-col sm:flex-row items-center justify-between bg-peach/70 border border-peach p-4 rounded-lg gap-4">
                         <div className="flex items-center text-charcoal">
-                            <LuBell className="w-5 h-5 mr-2 text-orange" />
-                            <span>
-                                Get notified when new jobs match 
-                                {currentKeyword && <strong> "{currentKeyword}"</strong>}
-                                {currentLocation && <span> in <strong>{currentLocation}</strong></span>}
-                                {currentJobType && <span> for <strong>{currentJobType}</strong></span>}
-                            </span>
+                            <div className="h-9 w-9 bg-orange/10 text-orange rounded-full flex items-center justify-center mr-3 shrink-0">
+                                <LuBell className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-charcoal text-sm">Save this search as an Email Alert</h4>
+                                <p className="text-xs text-gray-600 mt-0.5">
+                                    {hasAnyFilter ? (
+                                        <>
+                                            Get instant email notifications when new jobs matching your filters are published.
+                                        </>
+                                    ) : (
+                                        <>
+                                            Get daily updates of the top new opportunities directly in your inbox.
+                                        </>
+                                    )}
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            {alertMsg && <span className="text-sm font-medium text-orange">{alertMsg}</span>}
+                        <div className="flex items-center gap-3 shrink-0">
+                            {alertMsg && <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded">{alertMsg}</span>}
                             <button
+                                type="button"
                                 onClick={() => createAlertMutation.mutate()}
-                                disabled={createAlertMutation.isPending || !currentKeyword}
-                                title={!currentKeyword ? "Keyword is required for job alerts" : ""}
-                                className="bg-warmwhite text-charcoal border border-transparent px-4 py-2 rounded-md hover:border-orange font-medium text-sm disabled:opacity-50 whitespace-nowrap transition-colors"
+                                disabled={createAlertMutation.isPending}
+                                className="bg-orange text-white px-4 py-2 rounded-md hover:bg-orange/90 font-medium text-xs whitespace-nowrap transition-colors shadow-sm disabled:opacity-50"
                             >
-                                {createAlertMutation.isPending ? 'Creating...' : 'Create Alert'}
+                                {createAlertMutation.isPending ? 'Saving...' : 'Save Search & Alert'}
                             </button>
                         </div>
                     </div>
                 )}
 
+                {/* Job List */}
                 <div className="max-w-5xl">
-                    {/* Job List (Unboxed Rows) */}
-                    <div className="space-y-0">
+                    <div className="space-y-3">
                         {isLoading ? (
-                            <div className="py-12 text-gray-500">Loading jobs...</div>
+                            <div className="py-20 text-center text-gray-500">
+                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange mb-3"></div>
+                                <p>Finding matching jobs...</p>
+                            </div>
                         ) : data?.data?.length === 0 ? (
-                            <div className="py-12 border-b border-gray-200">
-                                <h3 className="text-lg font-display font-medium text-charcoal">No jobs found</h3>
-                                <p className="text-gray-500 mt-1">Try adjusting your search filters.</p>
+                            <div className="py-16 text-center bg-white rounded-lg border border-gray-200 p-8">
+                                <LuBriefcase className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                <h3 className="text-xl font-display font-semibold text-charcoal">No matching jobs found</h3>
+                                <p className="text-gray-500 mt-2 max-w-md mx-auto text-sm">
+                                    We couldn't find any jobs matching your current filters. Try broadening your keywords, clearing some filters, or checking back soon.
+                                </p>
                                 <button 
-                                    onClick={() => router.push(pathname)} 
-                                    className="mt-4 text-orange hover:underline font-bold"
+                                    onClick={clearAllFilters} 
+                                    className="mt-5 inline-flex items-center justify-center bg-orange text-white px-5 py-2.5 rounded-md font-medium text-sm hover:bg-orange/90 transition-colors shadow-sm"
                                 >
-                                    Clear all filters
+                                    Reset all filters
                                 </button>
                             </div>
                         ) : (
                             data?.data?.map((job: any) => (
-                                <div key={job.id} className="py-8 border-b border-gray-200 hover:bg-peach/40 transition-colors group px-4 -mx-4 rounded-lg">
+                                <div 
+                                    key={job.id} 
+                                    className="p-5 sm:p-6 bg-white border border-gray-200/80 rounded-xl hover:border-orange/60 hover:shadow-md transition-all group"
+                                >
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                                        <div>
-                                            <h2 className="text-2xl font-display font-bold text-charcoal group-hover:text-orange transition-colors">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-peach text-charcoal">
+                                                    {job.category?.name || 'General'}
+                                                </span>
+                                                {job.jobType && (
+                                                    <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                                                        {job.jobType}
+                                                    </span>
+                                                )}
+                                                {(job.location?.toLowerCase().includes('remote') || job.jobType?.toLowerCase().includes('remote')) && (
+                                                    <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                                                        <LuGlobe className="w-3 h-3" /> Remote
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <h2 className="text-xl font-display font-bold text-charcoal group-hover:text-orange transition-colors">
                                                 <Link href={`/jobs/${job.id}`}>{job.title}</Link>
                                             </h2>
-                                            <p className="text-gray-600 mt-1 font-semibold">{job.company?.companyName}</p>
                                             
-                                            <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500">
+                                            <p className="text-sm text-gray-600 mt-1 font-medium">
+                                                {job.company?.companyName}
+                                            </p>
+                                            
+                                            <div className="flex flex-wrap gap-4 mt-3 text-xs sm:text-sm text-gray-500">
                                                 <span className="flex items-center gap-1">
-                                                    <LuMapPin className="h-4 w-4" /> {job.location}
+                                                    <LuMapPin className="h-4 w-4 text-gray-400" /> {job.location || 'Location not specified'}
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                    <LuBriefcase className="h-4 w-4" /> {job.jobType}
+                                                    <LuClock className="h-4 w-4 text-gray-400" /> Listed {new Date(job.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-3">
-                                            {job.salaryMin && job.salaryMax && (
-                                                <span className="inline-flex items-center px-3 py-1 rounded text-sm font-bold bg-green-100 text-green-800">
-                                                    ₹{job.salaryMin} - ₹{job.salaryMax}
-                                                </span>
+
+                                            {job.description && (
+                                                <p className="text-xs sm:text-sm text-gray-600 mt-3 line-clamp-2">
+                                                    {job.description}
+                                                </p>
                                             )}
-                                            <Link href={`/jobs/${job.id}`} className="mt-2 text-orange font-bold hover:underline">
-                                                Apply Now
+                                        </div>
+
+                                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                                            {job.salaryMin ? (
+                                                <span className="inline-flex items-center px-3 py-1 rounded-md text-xs sm:text-sm font-bold bg-green-50 text-green-700 border border-green-200">
+                                                    ₹{job.salaryMin.toLocaleString()} {job.salaryMax ? `- ₹${job.salaryMax.toLocaleString()}` : '+'}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-gray-400 italic">Competitive</span>
+                                            )}
+                                            <Link 
+                                                href={`/jobs/${job.id}`} 
+                                                className="inline-flex items-center justify-center bg-orange text-white px-5 py-2 rounded-md font-semibold text-xs sm:text-sm hover:bg-orange/90 transition-colors shadow-sm"
+                                            >
+                                                View & Apply
                                             </Link>
                                         </div>
                                     </div>
@@ -277,6 +507,33 @@ function JobsContent() {
                             ))
                         )}
                     </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="mt-8 bg-white px-6 py-4 rounded-xl border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="text-sm text-gray-600">
+                                Page <span className="font-semibold text-charcoal">{currentPage}</span> of <span className="font-semibold text-charcoal">{totalPages}</span> ({totalJobs} total results)
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => applyFilters(Math.max(1, currentPage - 1))}
+                                    disabled={currentPage <= 1}
+                                    className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-charcoal bg-white hover:bg-peach disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <LuChevronLeft className="w-4 h-4" /> Previous
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => applyFilters(Math.min(totalPages, currentPage + 1))}
+                                    disabled={currentPage >= totalPages}
+                                    className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-charcoal bg-white hover:bg-peach disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Next <LuChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -285,7 +542,7 @@ function JobsContent() {
 
 export default function JobsPage() {
     return (
-        <Suspense fallback={<div className="text-center py-12">Loading...</div>}>
+        <Suspense fallback={<div className="text-center py-12">Loading jobs...</div>}>
             <JobsContent />
         </Suspense>
     );

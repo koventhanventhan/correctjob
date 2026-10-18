@@ -19,16 +19,26 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetJobs([FromQuery] int page = 1, [FromQuery] int pageSize = 12, 
-            [FromQuery] string? keyword = null, [FromQuery] string? location = null, 
-            [FromQuery] int? category = null, [FromQuery] decimal? minSalary = null, 
-            [FromQuery] decimal? maxSalary = null, [FromQuery] int? experience = null, 
-            [FromQuery] string? jobType = null, [FromQuery] bool? remote = null,
+        public async Task<IActionResult> GetJobs(
+            [FromQuery] int page = 1, 
+            [FromQuery] int pageSize = 12, 
+            [FromQuery] string? keyword = null, 
+            [FromQuery] string? location = null, 
+            [FromQuery] int? category = null, 
+            [FromQuery] decimal? minSalary = null, 
+            [FromQuery] decimal? maxSalary = null, 
+            [FromQuery] int? experience = null, 
+            [FromQuery] string? jobType = null, 
+            [FromQuery] bool? remote = null,
+            [FromQuery] string? datePosted = null,
+            [FromQuery] string? sortBy = "newest",
             [FromQuery] int? companyId = null)
         {
             var query = _context.Jobs
                 .Include(j => j.Company)
                 .Include(j => j.Category)
+                .Include(j => j.JobSkills)
+                .ThenInclude(js => js.Skill)
                 .AsQueryable();
 
             var isAdmin = User.IsInRole("Admin");
@@ -50,11 +60,13 @@ namespace HireConnect.API.Controllers
             // Filters
             if (!string.IsNullOrEmpty(keyword))
             {
-                query = query.Where(j => j.Title.Contains(keyword) || j.Description.Contains(keyword));
+                var kw = keyword.Trim();
+                query = query.Where(j => j.Title.Contains(kw) || j.Description.Contains(kw));
             }
             if (!string.IsNullOrEmpty(location))
             {
-                query = query.Where(j => j.Location!.Contains(location));
+                var loc = location.Trim();
+                query = query.Where(j => j.Location != null && j.Location.Contains(loc));
             }
             if (category.HasValue)
             {
@@ -62,11 +74,11 @@ namespace HireConnect.API.Controllers
             }
             if (minSalary.HasValue)
             {
-                query = query.Where(j => j.SalaryMax >= minSalary.Value);
+                query = query.Where(j => (j.SalaryMax ?? j.SalaryMin ?? 0) >= minSalary.Value);
             }
             if (maxSalary.HasValue)
             {
-                query = query.Where(j => j.SalaryMin <= maxSalary.Value);
+                query = query.Where(j => (j.SalaryMin ?? j.SalaryMax ?? 0) <= maxSalary.Value);
             }
             if (experience.HasValue)
             {
@@ -80,14 +92,101 @@ namespace HireConnect.API.Controllers
             {
                 query = query.Where(j => j.CompanyId == companyId.Value);
             }
+            if (remote.HasValue && remote.Value)
+            {
+                query = query.Where(j => (j.Location != null && j.Location.Contains("Remote")) || 
+                                         (j.JobType != null && j.JobType.Contains("Remote")) || 
+                                         (j.Description != null && j.Description.Contains("Remote")));
+            }
+            if (!string.IsNullOrEmpty(datePosted))
+            {
+                var now = DateTime.UtcNow;
+                if (datePosted.Equals("24h", StringComparison.OrdinalIgnoreCase))
+                {
+                    var threshold = now.AddHours(-24);
+                    query = query.Where(j => j.CreatedAt >= threshold);
+                }
+                else if (datePosted.Equals("7d", StringComparison.OrdinalIgnoreCase))
+                {
+                    var threshold = now.AddDays(-7);
+                    query = query.Where(j => j.CreatedAt >= threshold);
+                }
+                else if (datePosted.Equals("30d", StringComparison.OrdinalIgnoreCase))
+                {
+                    var threshold = now.AddDays(-30);
+                    query = query.Where(j => j.CreatedAt >= threshold);
+                }
+            }
+
+            // Sorting
+            if (!string.IsNullOrEmpty(sortBy))
+            {
+                if (sortBy.Equals("salaryHigh", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.OrderByDescending(j => j.SalaryMax ?? j.SalaryMin ?? 0);
+                }
+                else if (sortBy.Equals("salaryLow", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.OrderBy(j => j.SalaryMin ?? j.SalaryMax ?? 0);
+                }
+                else if (sortBy.Equals("relevance", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(keyword))
+                {
+                    query = query.OrderByDescending(j => j.Title.Contains(keyword)).ThenByDescending(j => j.CreatedAt);
+                }
+                else
+                {
+                    query = query.OrderByDescending(j => j.CreatedAt);
+                }
+            }
+            else
+            {
+                query = query.OrderByDescending(j => j.CreatedAt);
+            }
 
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
             var jobs = await query
-                .OrderByDescending(j => j.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(j => new JobResponseDto
+                {
+                    Id = j.Id,
+                    CompanyId = j.CompanyId,
+                    Title = j.Title,
+                    Description = j.Description,
+                    Requirements = j.Requirements,
+                    Responsibilities = j.Responsibilities,
+                    Location = j.Location,
+                    SalaryMin = j.SalaryMin,
+                    SalaryMax = j.SalaryMax,
+                    ExperienceMin = j.ExperienceMin,
+                    ExperienceMax = j.ExperienceMax,
+                    JobType = j.JobType,
+                    CategoryId = j.CategoryId,
+                    Deadline = j.Deadline,
+                    Status = j.Status,
+                    CreatedAt = j.CreatedAt,
+                    IsPaid = j.IsPaid,
+                    Company = j.Company == null ? null : new JobCompanyDto
+                    {
+                        Id = j.Company.Id,
+                        CompanyName = j.Company.CompanyName,
+                        LogoUrl = j.Company.LogoUrl,
+                        Location = j.Company.Location,
+                        Industry = j.Company.Industry,
+                        Website = j.Company.Website,
+                        Description = j.Company.Description,
+                        CompanySize = j.Company.CompanySize,
+                        IsApproved = j.Company.IsApproved
+                    },
+                    Category = j.Category == null ? null : new JobCategoryDto
+                    {
+                        Id = j.Category.Id,
+                        Name = j.Category.Name
+                    },
+                    Skills = j.JobSkills.Select(js => js.Skill.Name).ToList()
+                })
                 .ToListAsync();
 
             return Ok(new
@@ -128,7 +227,46 @@ namespace HireConnect.API.Controllers
                 }
             }
 
-            return Ok(job);
+            var dto = new JobResponseDto
+            {
+                Id = job.Id,
+                CompanyId = job.CompanyId,
+                Title = job.Title,
+                Description = job.Description,
+                Requirements = job.Requirements,
+                Responsibilities = job.Responsibilities,
+                Location = job.Location,
+                SalaryMin = job.SalaryMin,
+                SalaryMax = job.SalaryMax,
+                ExperienceMin = job.ExperienceMin,
+                ExperienceMax = job.ExperienceMax,
+                JobType = job.JobType,
+                CategoryId = job.CategoryId,
+                Deadline = job.Deadline,
+                Status = job.Status,
+                CreatedAt = job.CreatedAt,
+                IsPaid = job.IsPaid,
+                Company = job.Company == null ? null : new JobCompanyDto
+                {
+                    Id = job.Company.Id,
+                    CompanyName = job.Company.CompanyName,
+                    LogoUrl = job.Company.LogoUrl,
+                    Location = job.Company.Location,
+                    Industry = job.Company.Industry,
+                    Website = job.Company.Website,
+                    Description = job.Company.Description,
+                    CompanySize = job.Company.CompanySize,
+                    IsApproved = job.Company.IsApproved
+                },
+                Category = job.Category == null ? null : new JobCategoryDto
+                {
+                    Id = job.Category.Id,
+                    Name = job.Category.Name
+                },
+                Skills = job.JobSkills.Select(js => js.Skill.Name).ToList()
+            };
+
+            return Ok(dto);
         }
 
         [HttpGet("my-jobs")]
@@ -139,6 +277,8 @@ namespace HireConnect.API.Controllers
             var query = _context.Jobs
                 .Include(j => j.Company)
                 .Include(j => j.Category)
+                .Include(j => j.JobSkills)
+                .ThenInclude(js => js.Skill)
                 .Where(j => j.Company.EmployerId == userId)
                 .AsQueryable();
 
@@ -149,6 +289,44 @@ namespace HireConnect.API.Controllers
                 .OrderByDescending(j => j.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(j => new JobResponseDto
+                {
+                    Id = j.Id,
+                    CompanyId = j.CompanyId,
+                    Title = j.Title,
+                    Description = j.Description,
+                    Requirements = j.Requirements,
+                    Responsibilities = j.Responsibilities,
+                    Location = j.Location,
+                    SalaryMin = j.SalaryMin,
+                    SalaryMax = j.SalaryMax,
+                    ExperienceMin = j.ExperienceMin,
+                    ExperienceMax = j.ExperienceMax,
+                    JobType = j.JobType,
+                    CategoryId = j.CategoryId,
+                    Deadline = j.Deadline,
+                    Status = j.Status,
+                    CreatedAt = j.CreatedAt,
+                    IsPaid = j.IsPaid,
+                    Company = j.Company == null ? null : new JobCompanyDto
+                    {
+                        Id = j.Company.Id,
+                        CompanyName = j.Company.CompanyName,
+                        LogoUrl = j.Company.LogoUrl,
+                        Location = j.Company.Location,
+                        Industry = j.Company.Industry,
+                        Website = j.Company.Website,
+                        Description = j.Company.Description,
+                        CompanySize = j.Company.CompanySize,
+                        IsApproved = j.Company.IsApproved
+                    },
+                    Category = j.Category == null ? null : new JobCategoryDto
+                    {
+                        Id = j.Category.Id,
+                        Name = j.Category.Name
+                    },
+                    Skills = j.JobSkills.Select(js => js.Skill.Name).ToList()
+                })
                 .ToListAsync();
 
             return Ok(new
@@ -208,6 +386,16 @@ namespace HireConnect.API.Controllers
             
             if (job == null) return NotFound();
             if (job.Company.EmployerId != userId) return Forbid(); // Ownership check
+
+            if (job.Status != "Draft" && job.Status != "Rejected" && job.Status != "Published")
+            {
+                return BadRequest(new { message = $"Cannot edit job while in '{job.Status}' status. Only Draft, Rejected, or Published jobs can be edited." });
+            }
+
+            if (job.Status == "Published")
+            {
+                job.Status = "PendingApproval";
+            }
 
             job.Title = model.Title;
             job.Description = model.Description;
@@ -279,5 +467,48 @@ namespace HireConnect.API.Controllers
         public string? JobType { get; set; }
         public int CategoryId { get; set; }
         public DateTime? Deadline { get; set; }
+    }
+
+    public class JobResponseDto
+    {
+        public int Id { get; set; }
+        public int CompanyId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string? Requirements { get; set; }
+        public string? Responsibilities { get; set; }
+        public string? Location { get; set; }
+        public decimal? SalaryMin { get; set; }
+        public decimal? SalaryMax { get; set; }
+        public int? ExperienceMin { get; set; }
+        public int? ExperienceMax { get; set; }
+        public string? JobType { get; set; }
+        public int CategoryId { get; set; }
+        public DateTime? Deadline { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public bool IsPaid { get; set; }
+        public JobCompanyDto? Company { get; set; }
+        public JobCategoryDto? Category { get; set; }
+        public List<string> Skills { get; set; } = new();
+    }
+
+    public class JobCompanyDto
+    {
+        public int Id { get; set; }
+        public string CompanyName { get; set; } = string.Empty;
+        public string? LogoUrl { get; set; }
+        public string? Location { get; set; }
+        public string? Industry { get; set; }
+        public string? Website { get; set; }
+        public string? Description { get; set; }
+        public string? CompanySize { get; set; }
+        public bool IsApproved { get; set; }
+    }
+
+    public class JobCategoryDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 }
