@@ -47,9 +47,11 @@ namespace HireConnect.API.Models
 
         public bool IsApproved { get; set; } = false;
 
+        [System.Text.Json.Serialization.JsonIgnore]
         [MaxLength(255)]
         public string? IdCardFrontUrl { get; set; }
 
+        [System.Text.Json.Serialization.JsonIgnore]
         [MaxLength(255)]
         public string? IdCardBackUrl { get; set; }
 

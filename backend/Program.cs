@@ -38,6 +38,32 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver
+        {
+            Modifiers =
+            {
+                typeInfo =>
+                {
+                    if (typeInfo.Kind == System.Text.Json.Serialization.Metadata.JsonTypeInfoKind.Object)
+                    {
+                        foreach (var prop in typeInfo.Properties)
+                        {
+                            var name = prop.Name;
+                            if (name.Equals("passwordHash", StringComparison.OrdinalIgnoreCase) ||
+                                name.Equals("securityStamp", StringComparison.OrdinalIgnoreCase) ||
+                                name.Equals("concurrencyStamp", StringComparison.OrdinalIgnoreCase) ||
+                                name.Equals("normalizedEmail", StringComparison.OrdinalIgnoreCase) ||
+                                name.Equals("normalizedUserName", StringComparison.OrdinalIgnoreCase) ||
+                                name.Equals("accessFailedCount", StringComparison.OrdinalIgnoreCase) ||
+                                name.Equals("lockoutEnd", StringComparison.OrdinalIgnoreCase))
+                            {
+                                prop.ShouldSerialize = (obj, val) => false;
+                            }
+                        }
+                    }
+                }
+            }
+        };
     });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

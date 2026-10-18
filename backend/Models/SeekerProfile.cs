@@ -33,7 +33,10 @@ namespace HireConnect.API.Models
         [MaxLength(255)]
         public string? PortfolioUrl { get; set; }
 
+        [System.Text.Json.Serialization.JsonIgnore]
         public string? IdCardFrontUrl { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
         public string? IdCardBackUrl { get; set; }
         public string VerificationStatus { get; set; } = "NotSubmitted"; // NotSubmitted, Pending, Verified, Rejected
         public string? VerificationNotes { get; set; }

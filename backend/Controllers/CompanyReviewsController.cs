@@ -95,7 +95,15 @@ namespace HireConnect.API.Controllers
             _context.CompanyReviews.Add(review);
             await _context.SaveChangesAsync();
 
-            return Ok(review);
+            return Ok(new
+            {
+                review.Id,
+                review.CompanyId,
+                review.Rating,
+                review.Headline,
+                review.Description,
+                review.CreatedAt
+            });
         }
 
         // Admin Endpoints for Moderation
@@ -140,7 +148,12 @@ namespace HireConnect.API.Controllers
             review.IsHidden = !review.IsHidden;
             await _context.SaveChangesAsync();
 
-            return Ok(review);
+            return Ok(new
+            {
+                review.Id,
+                review.IsHidden,
+                message = "Visibility updated successfully."
+            });
         }
     }
 

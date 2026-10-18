@@ -255,6 +255,54 @@ namespace HireConnect.API.Controllers
                 .OrderByDescending(a => a.AppliedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.JobId,
+                    a.SeekerId,
+                    a.Status,
+                    a.Rating,
+                    a.CoverLetter,
+                    a.ResumeUrl,
+                    a.MatchScore,
+                    a.MatchExplanation,
+                    a.AppliedAt,
+                    a.UpdatedAt,
+                    a.InterviewDate,
+                    a.MeetingLink,
+                    Job = a.Job == null ? null : new
+                    {
+                        a.Job.Id,
+                        a.Job.Title,
+                        a.Job.Location,
+                        a.Job.JobType,
+                        a.Job.Status,
+                        a.Job.SalaryMin,
+                        a.Job.SalaryMax,
+                        Company = a.Job.Company == null ? null : new
+                        {
+                            a.Job.Company.Id,
+                            a.Job.Company.CompanyName,
+                            a.Job.Company.LogoUrl,
+                            a.Job.Company.Location,
+                            a.Job.Company.Industry,
+                            a.Job.Company.Website
+                        }
+                    },
+                    Answers = a.Answers.Select(ans => new
+                    {
+                        ans.Id,
+                        ans.QuestionId,
+                        ans.AnswerText,
+                        Question = ans.Question == null ? null : new
+                        {
+                            ans.Question.Id,
+                            ans.Question.QuestionText,
+                            ans.Question.QuestionType,
+                            ans.Question.IdealAnswer
+                        }
+                    }).ToList()
+                })
                 .ToListAsync();
 
             return Ok(new { data = applications, totalCount });
@@ -338,13 +386,15 @@ namespace HireConnect.API.Controllers
             var applications = await _context.Applications
                 .Include(a => a.Seeker)
                 .ThenInclude(s => s.User)
+                .Include(a => a.Seeker.Skills)
                 .Include(a => a.Answers)
                 .ThenInclude(ans => ans.Question)
                 .Where(a => a.JobId == jobId)
                 .OrderByDescending(a => a.AppliedAt)
                 .ToListAsync();
 
-            return Ok(applications);
+            var responseList = applications.Select(a => MapToEmployerApplicationDto(a)).ToList();
+            return Ok(responseList);
         }
 
         [HttpGet("{id}")]
@@ -359,6 +409,7 @@ namespace HireConnect.API.Controllers
                 .ThenInclude(j => j.Company)
                 .Include(a => a.Seeker)
                 .ThenInclude(s => s.User)
+                .Include(a => a.Seeker.Skills)
                 .Include(a => a.Answers)
                 .ThenInclude(ans => ans.Question)
                 .FirstOrDefaultAsync(a => a.Id == id);
@@ -386,7 +437,56 @@ namespace HireConnect.API.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            return Ok(application);
+            return Ok(MapToEmployerApplicationDto(application));
+        }
+
+        private static object MapToEmployerApplicationDto(Application a)
+        {
+            return new
+            {
+                a.Id,
+                a.JobId,
+                a.SeekerId,
+                a.Status,
+                a.Rating,
+                a.EmployerNotes,
+                a.CoverLetter,
+                a.ResumeUrl,
+                a.MatchScore,
+                a.MatchExplanation,
+                a.AppliedAt,
+                a.UpdatedAt,
+                a.InterviewDate,
+                a.MeetingLink,
+                Seeker = a.Seeker == null ? null : new
+                {
+                    a.Seeker.Id,
+                    a.Seeker.CareerTitle,
+                    a.Seeker.Location,
+                    a.Seeker.ResumeUrl,
+                    a.Seeker.VerificationStatus,
+                    Skills = a.Seeker.Skills?.Select(s => s.SkillName).ToList() ?? new List<string>(),
+                    User = a.Seeker.User == null ? null : new
+                    {
+                        a.Seeker.User.FullName,
+                        a.Seeker.User.Email,
+                        a.Seeker.User.PhoneNumber
+                    }
+                },
+                Answers = (a.Answers ?? Enumerable.Empty<ApplicationAnswer>()).Select(ans => new
+                {
+                    ans.Id,
+                    ans.QuestionId,
+                    ans.AnswerText,
+                    Question = ans.Question == null ? null : new
+                    {
+                        ans.Question.Id,
+                        ans.Question.QuestionText,
+                        ans.Question.QuestionType,
+                        ans.Question.IdealAnswer
+                    }
+                }).ToList()
+            };
         }
 
         [HttpPost("{id}/mark-viewed")]

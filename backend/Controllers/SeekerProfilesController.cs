@@ -42,7 +42,30 @@ namespace HireConnect.API.Controllers
                 return Ok(new { });
             }
 
-            return Ok(profile);
+            return Ok(new
+            {
+                profile.Id,
+                profile.UserId,
+                profile.CareerTitle,
+                profile.Bio,
+                profile.Experience,
+                profile.Education,
+                profile.Location,
+                profile.ResumeUrl,
+                profile.ResumeText,
+                profile.LinkedInUrl,
+                profile.PortfolioUrl,
+                profile.VerificationStatus,
+                profile.VerificationNotes,
+                profile.VerifiedAt,
+                profile.IsOpenToWork,
+                WorkHistories = profile.WorkHistories.Select(w => new { w.Id, w.JobTitle, w.Company, w.Location, w.StartDate, w.EndDate, w.IsCurrent, w.Description }),
+                Educations = profile.Educations.Select(e => new { e.Id, e.Degree, e.Institution, e.FieldOfStudy, e.StartDate, e.EndDate, e.IsCurrent }),
+                Skills = profile.Skills.Select(s => new { s.Id, s.SkillName, s.YearsExperience }),
+                Languages = profile.Languages.Select(l => new { l.Id, l.Language, l.Proficiency }),
+                Certifications = profile.Certifications.Select(c => new { c.Id, c.Name, c.IssuingOrganization, c.IssueDate, c.ExpiryDate, c.CredentialUrl }),
+                Resumes = profile.Resumes.Select(r => new { r.Id, r.Title, r.FileUrl, r.FileName, r.IsDefault, r.UploadedAt })
+            });
         }
 
         [HttpPut("me")]
@@ -71,7 +94,20 @@ namespace HireConnect.API.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Ok(existing);
+            return Ok(new
+            {
+                existing.Id,
+                existing.UserId,
+                existing.CareerTitle,
+                existing.Bio,
+                existing.Experience,
+                existing.Education,
+                existing.Location,
+                existing.LinkedInUrl,
+                existing.PortfolioUrl,
+                existing.IsOpenToWork,
+                existing.VerificationStatus
+            });
         }
         
         [HttpPost("resume")]

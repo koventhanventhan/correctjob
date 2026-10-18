@@ -40,7 +40,15 @@ namespace HireConnect.API.Controllers
             _context.JobAlerts.Add(alert);
             await _context.SaveChangesAsync();
 
-            return Ok(alert);
+            return Ok(new
+            {
+                alert.Id,
+                alert.Keyword,
+                alert.Location,
+                alert.CategoryId,
+                alert.JobType,
+                alert.CreatedAt
+            });
         }
 
         [HttpGet("my-alerts")]
@@ -52,6 +60,16 @@ namespace HireConnect.API.Controllers
                 .Include(a => a.Category)
                 .Where(a => a.SeekerId == userId)
                 .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.Keyword,
+                    a.Location,
+                    a.CategoryId,
+                    CategoryName = a.Category != null ? a.Category.Name : null,
+                    a.JobType,
+                    a.CreatedAt
+                })
                 .ToListAsync();
 
             return Ok(alerts);

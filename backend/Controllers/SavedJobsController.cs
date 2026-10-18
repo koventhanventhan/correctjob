@@ -75,6 +75,33 @@ namespace HireConnect.API.Controllers
                 .OrderByDescending(s => s.SavedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.JobId,
+                    s.SeekerId,
+                    s.SavedAt,
+                    Job = s.Job == null ? null : new
+                    {
+                        s.Job.Id,
+                        s.Job.Title,
+                        s.Job.Location,
+                        s.Job.JobType,
+                        s.Job.SalaryMin,
+                        s.Job.SalaryMax,
+                        s.Job.Status,
+                        s.Job.Deadline,
+                        s.Job.CreatedAt,
+                        Company = s.Job.Company == null ? null : new
+                        {
+                            s.Job.Company.Id,
+                            s.Job.Company.CompanyName,
+                            s.Job.Company.LogoUrl,
+                            s.Job.Company.Location,
+                            s.Job.Company.Industry
+                        }
+                    }
+                })
                 .ToListAsync();
 
             return Ok(new { data = savedJobs, totalCount });

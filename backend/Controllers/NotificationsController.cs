@@ -26,6 +26,14 @@ namespace HireConnect.API.Controllers
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedAt)
                 .Take(50) // limit for safety
+                .Select(n => new
+                {
+                    n.Id,
+                    n.Title,
+                    n.Message,
+                    n.IsRead,
+                    n.CreatedAt
+                })
                 .ToListAsync();
 
             return Ok(notifications);
@@ -52,7 +60,7 @@ namespace HireConnect.API.Controllers
             notification.IsRead = true;
             await _context.SaveChangesAsync();
 
-            return Ok(notification);
+            return Ok(new { notification.Id, notification.IsRead, notification.Title });
         }
 
         [HttpPatch("read-all")]
