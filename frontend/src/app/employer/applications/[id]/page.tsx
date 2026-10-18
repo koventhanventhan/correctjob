@@ -13,7 +13,8 @@ import {
     LuSearch, 
     LuX, 
     LuArrowLeft, 
-    LuSparkles 
+    LuSparkles,
+    LuVideo
 } from 'react-icons/lu';
 import Link from 'next/link';
 
@@ -209,9 +210,33 @@ export default function JobApplicationsPage() {
         }
 
         const formData = interviewForms[app.id] || { date: '', link: '' };
-        if (newStatus === 'Interview' && !formData.date && !app.interviewDate) {
-            alert('Please select an interview date and time.');
-            return;
+        if (newStatus === 'Interview') {
+            const dateToUse = formData.date || (app.interviewDate ? new Date(app.interviewDate).toISOString() : '');
+            if (!dateToUse) {
+                alert('Interview date and time is required when scheduling an interview.');
+                return;
+            }
+
+            if (formData.date && new Date(formData.date).getTime() < Date.now() - 60000) {
+                alert('Interview date and time cannot be in the past.');
+                return;
+            }
+
+            const linkToUse = formData.link?.trim() || app.meetingLink?.trim() || '';
+            if (!linkToUse) {
+                alert('Meeting link is required when scheduling an interview.');
+                return;
+            }
+
+            if (!/^https?:\/\//i.test(linkToUse)) {
+                alert('Meeting link must be a valid HTTP or HTTPS URL (e.g. https://meet.google.com/abc).');
+                return;
+            }
+
+            if (/[<>"'`]/.test(linkToUse)) {
+                alert('Meeting link contains invalid or unsafe characters.');
+                return;
+            }
         }
 
         try {
@@ -220,7 +245,7 @@ export default function JobApplicationsPage() {
                 status: newStatus,
                 confirmTransition: true,
                 interviewDate: newStatus === 'Interview' && formData.date ? new Date(formData.date).toISOString() : undefined,
-                meetingLink: newStatus === 'Interview' ? formData.link : undefined
+                meetingLink: newStatus === 'Interview' ? formData.link?.trim() : undefined
             });
 
             setApplications(prev => prev.map(a => a.id === app.id ? { ...a, ...res.data } : a));
@@ -683,10 +708,11 @@ export default function JobApplicationsPage() {
 
                                             <Link
                                                 href={`/chat/${app.id}`}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-peach hover:bg-peach/80 text-charcoal transition-colors border border-peach/80"
+                                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-charcoal hover:bg-black text-white shadow-sm hover:shadow transition-all"
+                                                title="Message candidate directly"
                                             >
-                                                <LuMessageCircle className="w-3.5 h-3.5" />
-                                                <span>Chat</span>
+                                                <LuMessageCircle className="w-3.5 h-3.5 text-orange" />
+                                                <span>Message</span>
                                             </Link>
                                         </div>
                                     </div>
@@ -746,6 +772,30 @@ export default function JobApplicationsPage() {
                                     {/* Expanded Section: Screening Questions, Cover Letter, Notes, Status Change */}
                                     {isExpanded && (
                                         <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 animate-fadeIn">
+                                            {/* Prominent Candidate Messaging Action */}
+                                            <div className="bg-gradient-to-r from-orange/10 via-peach/30 to-amber-50 border border-orange/30 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-orange/20 text-orange flex items-center justify-center shrink-0">
+                                                        <LuMessageCircle className="w-5 h-5 text-orange" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-bold text-charcoal uppercase tracking-wider">
+                                                            Direct Candidate Messaging
+                                                        </h4>
+                                                        <p className="text-xs text-gray-600 mt-0.5">
+                                                            Chat directly with {seekerInfo.fullName} regarding interviews, screening, or updates.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Link
+                                                    href={`/chat/${app.id}`}
+                                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-charcoal hover:bg-black text-white text-xs font-bold rounded-lg shadow hover:shadow-md transition-all shrink-0"
+                                                >
+                                                    <LuMessageCircle className="w-4 h-4 text-orange" />
+                                                    <span>Open Message Chat</span>
+                                                </Link>
+                                            </div>
+
                                             {/* Screening Questions Display */}
                                             {app.answers && app.answers.length > 0 ? (
                                                 <div className="bg-peach/30 rounded-lg p-3.5 border border-peach/70">
@@ -836,11 +886,13 @@ export default function JobApplicationsPage() {
                                                     {app.status === 'Interview' && (
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                                                             <div>
-                                                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                                                                    Interview Date & Time
+                                                                <label className="block text-[11px] font-semibold text-gray-700 mb-1 flex items-center justify-between">
+                                                                    <span>Interview Date & Time <span className="text-rose-500">*</span></span>
+                                                                    <span className="text-[10px] text-gray-400 font-normal">No past dates</span>
                                                                 </label>
                                                                 <input
                                                                     type="datetime-local"
+                                                                    min={new Date().toISOString().slice(0, 16)}
                                                                     value={form.date}
                                                                     onChange={(e) => setInterviewForms({
                                                                         ...interviewForms,
@@ -851,11 +903,11 @@ export default function JobApplicationsPage() {
                                                             </div>
                                                             <div>
                                                                 <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                                                                    Meeting Link (Google Meet, Zoom, etc.)
+                                                                    Meeting Link (Google Meet, Zoom, etc.) <span className="text-rose-500">*</span>
                                                                 </label>
                                                                 <input
-                                                                    type="text"
-                                                                    placeholder="https://meet.google.com/..."
+                                                                    type="url"
+                                                                    placeholder="https://meet.google.com/xyz-abcd-efg"
                                                                     value={form.link}
                                                                     onChange={(e) => setInterviewForms({
                                                                         ...interviewForms,
@@ -868,10 +920,11 @@ export default function JobApplicationsPage() {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleStatusChange(app, 'Interview', true)}
-                                                                    disabled={updatingStatusId === app.id || !form.date}
-                                                                    className="px-4 py-2 bg-orange text-white text-xs font-semibold rounded-lg hover:bg-orange/90 transition-colors disabled:opacity-50"
+                                                                    disabled={updatingStatusId === app.id || !form.date || !form.link?.trim()}
+                                                                    className="px-4 py-2 bg-orange text-white text-xs font-semibold rounded-lg hover:bg-orange/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5 shadow-sm"
                                                                 >
-                                                                    {updatingStatusId === app.id ? 'Updating...' : 'Save Interview Details'}
+                                                                    <LuVideo className="w-3.5 h-3.5" />
+                                                                    <span>{updatingStatusId === app.id ? 'Updating...' : 'Save & Schedule Interview'}</span>
                                                                 </button>
                                                             </div>
                                                         </div>

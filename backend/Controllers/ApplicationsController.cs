@@ -591,20 +591,43 @@ namespace HireConnect.API.Controllers
 
             if (targetStatus == "Interview")
             {
-                if (!model.InterviewDate.HasValue && !application.InterviewDate.HasValue)
+                var effectiveDate = model.InterviewDate ?? application.InterviewDate;
+                if (!effectiveDate.HasValue)
                 {
-                    return BadRequest(new { message = "Interview date is required when scheduling an interview." });
+                    return BadRequest(new { message = "Interview date and time is required when scheduling an interview." });
                 }
 
-                if (!string.IsNullOrEmpty(model.MeetingLink))
+                // Disallow past dates (allow 2-minute buffer for network latency)
+                if (model.InterviewDate.HasValue && model.InterviewDate.Value < DateTime.UtcNow.AddMinutes(-2))
                 {
-                    if (!Uri.TryCreate(model.MeetingLink, UriKind.Absolute, out Uri? uriResult) 
-                        || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
-                    {
-                        return BadRequest(new { message = "Meeting link must be a valid HTTP or HTTPS URL." });
-                    }
-                    application.MeetingLink = model.MeetingLink;
+                    return BadRequest(new { message = "Interview date and time cannot be in the past." });
                 }
+
+                var effectiveLink = !string.IsNullOrWhiteSpace(model.MeetingLink) ? model.MeetingLink.Trim() : application.MeetingLink?.Trim();
+                if (string.IsNullOrWhiteSpace(effectiveLink))
+                {
+                    return BadRequest(new { message = "Meeting link is required when scheduling an interview." });
+                }
+
+                if (effectiveLink.Length > 2000)
+                {
+                    return BadRequest(new { message = "Meeting link cannot exceed 2000 characters." });
+                }
+
+                // XSS and safe URI validation
+                if (effectiveLink.Contains('<') || effectiveLink.Contains('>') || effectiveLink.Contains('"') || effectiveLink.Contains('\'') || effectiveLink.Contains('`'))
+                {
+                    return BadRequest(new { message = "Meeting link contains invalid or unsafe characters." });
+                }
+
+                if (!Uri.TryCreate(effectiveLink, UriKind.Absolute, out Uri? uriResult) 
+                    || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+                {
+                    return BadRequest(new { message = "Meeting link must be a valid HTTP or HTTPS URL." });
+                }
+
+                application.InterviewDate = effectiveDate;
+                application.MeetingLink = effectiveLink;
             }
 
             if (model.Rating.HasValue)
@@ -621,28 +644,63 @@ namespace HireConnect.API.Controllers
                 application.EmployerNotes = model.EmployerNotes;
             }
 
-            if (model.InterviewDate.HasValue)
+            if (model.InterviewDate.HasValue && targetStatus != "Interview")
             {
                 application.InterviewDate = model.InterviewDate;
             }
 
             var previousStatus = application.Status;
+            var isInterviewDetailsChanged = targetStatus == "Interview" && (model.InterviewDate.HasValue || !string.IsNullOrWhiteSpace(model.MeetingLink));
+
             application.Status = targetStatus;
             application.UpdatedAt = DateTime.UtcNow;
 
-            if (previousStatus != targetStatus)
+            if (previousStatus != targetStatus || (previousStatus == "Interview" && isInterviewDetailsChanged))
             {
-                var notification = new Notification
+                if (targetStatus == "Interview" && application.InterviewDate.HasValue)
                 {
-                    UserId = application.Seeker.UserId,
-                    Title = "Application Status Updated",
-                    Message = $"Your application for {application.Job.Title} at {application.Job.Company.CompanyName} has been updated to: {targetStatus}."
-                };
-                _context.Notifications.Add(notification);
+                    var interviewDateUtc = application.InterviewDate.Value.ToUniversalTime();
+                    var formattedDate = interviewDateUtc.ToString("dd MMM yyyy");
+                    var formattedTime = interviewDateUtc.ToString("hh:mm tt");
+                    
+                    var notifTitle = previousStatus == "Interview" && !string.Equals(previousStatus, targetStatus, StringComparison.OrdinalIgnoreCase) 
+                        ? "Interview Scheduled" 
+                        : (previousStatus == "Interview" ? "Interview Details Updated" : "Interview Scheduled");
+                    
+                    var notifMessage = $"Your interview for {application.Job.Title} at {application.Job.Company.CompanyName} has been scheduled for {formattedDate} at {formattedTime} UTC. Meeting Link: {application.MeetingLink}";
+
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = application.Seeker.UserId,
+                        Title = notifTitle,
+                        Message = notifMessage
+                    });
+                }
+                else
+                {
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = application.Seeker.UserId,
+                        Title = "Application Status Updated",
+                        Message = $"Your application for {application.Job.Title} at {application.Job.Company.CompanyName} has been updated to: {targetStatus}."
+                    });
+                }
             }
 
             await _context.SaveChangesAsync();
-            return Ok(application);
+            return Ok(new
+            {
+                id = application.Id,
+                jobId = application.JobId,
+                seekerId = application.SeekerId,
+                status = application.Status,
+                rating = application.Rating,
+                employerNotes = application.EmployerNotes,
+                interviewDate = application.InterviewDate,
+                meetingLink = application.MeetingLink,
+                updatedAt = application.UpdatedAt,
+                message = "Application status updated successfully."
+            });
         }
 
         [HttpPatch("{id}/rating")]

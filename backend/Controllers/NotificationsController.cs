@@ -18,6 +18,7 @@ namespace HireConnect.API.Controllers
             _context = context;
         }
 
+        [HttpGet]
         [HttpGet("my-notifications")]
         public async Task<IActionResult> GetMyNotifications()
         {
