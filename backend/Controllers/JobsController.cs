@@ -628,9 +628,9 @@ namespace HireConnect.API.Controllers
             return Ok(job);
         }
 
-        [HttpDelete("{id}")]
+        [HttpPost("{id}/close")]
         [Authorize(Roles = "Employer,Admin")]
-        public async Task<IActionResult> DeleteJob(int id)
+        public async Task<IActionResult> CloseJob(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var isAdmin = User.IsInRole("Admin");
@@ -638,7 +638,26 @@ namespace HireConnect.API.Controllers
             var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == id);
             if (job == null) return NotFound();
 
-            if (!isAdmin && job.Company.EmployerId != userId) return Forbid(); // Ownership check
+            // Ownership check: employers can only close their own jobs
+            if (!isAdmin && job.Company.EmployerId != userId) return Forbid();
+
+            if (job.Status == "Closed")
+            {
+                return BadRequest(new { message = "Job is already closed." });
+            }
+
+            job.Status = "Closed";
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Job closed successfully.", status = job.Status });
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteJob(int id)
+        {
+            var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == id);
+            if (job == null) return NotFound();
 
             // 1. Clean up Applications & their children (Answers, Messages)
             var applications = await _context.Applications.Where(a => a.JobId == id).ToListAsync();

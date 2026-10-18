@@ -12,7 +12,7 @@ export default function ManageJobsPage() {
     
     const [jobs, setJobs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [closingId, setClosingId] = useState<number | null>(null);
 
     const fetchJobs = async () => {
         try {
@@ -33,20 +33,20 @@ export default function ManageJobsPage() {
         fetchJobs();
     }, [user, router]);
 
-    const handleDeleteJob = async (jobId: number, title: string) => {
-        if (!window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+    const handleCloseJob = async (jobId: number, title: string) => {
+        if (!window.confirm(`Are you sure you want to close "${title}"? Candidates will no longer be able to apply.`)) {
             return;
         }
 
-        setDeletingId(jobId);
+        setClosingId(jobId);
         try {
-            await api.delete(`/Jobs/${jobId}`);
-            setJobs(prev => prev.filter(j => j.id !== jobId));
+            await api.post(`/Jobs/${jobId}/close`);
+            setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: 'Closed' } : j));
         } catch (error: any) {
-            console.error("Failed to delete job", error);
-            alert(error.response?.data?.message || "Failed to delete the job.");
+            console.error("Failed to close job", error);
+            alert(error.response?.data?.message || "Failed to close the job.");
         } finally {
-            setDeletingId(null);
+            setClosingId(null);
         }
     };
 
@@ -57,7 +57,7 @@ export default function ManageJobsPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-charcoal">Manage Jobs</h1>
-                    <p className="text-sm text-gray-500 mt-1">View, edit, or delete your posted job opportunities.</p>
+                    <p className="text-sm text-gray-500 mt-1">View, edit, or close your posted job opportunities.</p>
                 </div>
                 <Link href="/employer/post-job" className="bg-orange text-white px-4 py-2 rounded-lg font-medium hover:bg-orange/90 transition-colors shadow-sm text-sm">
                     Post New Job
@@ -90,6 +90,7 @@ export default function ManageJobsPage() {
                                         <td className="p-4">
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium inline-block ${
                                                 job.status === 'Published' ? 'bg-green-100 text-green-800' : 
+                                                job.status === 'Closed' ? 'bg-gray-100 text-gray-700' :
                                                 job.status === 'Draft' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-800'
                                             }`}>
                                                 {job.status}
@@ -105,14 +106,18 @@ export default function ManageJobsPage() {
                                             <Link href={`/employer/applications/${job.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
                                                 Applicants
                                             </Link>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleDeleteJob(job.id, job.title)}
-                                                disabled={deletingId === job.id}
-                                                className="text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
-                                            >
-                                                {deletingId === job.id ? 'Deleting...' : 'Delete'}
-                                            </button>
+                                            {job.status !== 'Closed' ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCloseJob(job.id, job.title)}
+                                                    disabled={closingId === job.id}
+                                                    className="text-amber-600 hover:text-amber-800 font-medium disabled:opacity-50"
+                                                >
+                                                    {closingId === job.id ? 'Closing...' : 'Close Job'}
+                                                </button>
+                                            ) : (
+                                                <span className="text-gray-400 font-medium text-xs">Closed</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

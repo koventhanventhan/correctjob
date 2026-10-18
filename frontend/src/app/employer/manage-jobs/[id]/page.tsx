@@ -29,12 +29,14 @@ export default function EditJobPage() {
         deadline: ''
     });
 
-    const [deleting, setDeleting] = useState(false);
+    const [status, setStatus] = useState<string>('Draft');
+    const [closing, setClosing] = useState(false);
 
     const fetchJob = async () => {
         try {
             const res = await api.get(`/Jobs/${id}`);
             const job = res.data;
+            setStatus(job.status || 'Draft');
             setFormData({
                 title: job.title || '',
                 description: job.description || '',
@@ -68,19 +70,20 @@ export default function EditJobPage() {
         }
     }, [user, router, id]);
 
-    const handleDelete = async () => {
-        if (!window.confirm(`Are you sure you want to delete this job post? This action cannot be undone.`)) {
+    const handleClose = async () => {
+        if (!window.confirm(`Are you sure you want to close this job post? Candidates will no longer be able to apply.`)) {
             return;
         }
-        setDeleting(true);
+        setClosing(true);
         try {
-            await api.delete(`/Jobs/${id}`);
-            alert("Job deleted successfully.");
+            await api.post(`/Jobs/${id}/close`);
+            setStatus('Closed');
+            alert("Job closed successfully.");
             router.push('/employer/manage-jobs');
         } catch (error: any) {
-            console.error("Failed to delete job", error);
-            alert(error.response?.data?.message || "Failed to delete the job.");
-            setDeleting(false);
+            console.error("Failed to close job", error);
+            alert(error.response?.data?.message || "Failed to close the job.");
+            setClosing(false);
         }
     };
 
@@ -195,17 +198,23 @@ export default function EditJobPage() {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                    <button disabled={saving || deleting} type="submit" className="flex-1 bg-orange text-white font-bold py-3 px-4 rounded-lg hover:bg-orange/90 disabled:opacity-50 transition-colors shadow-sm">
+                    <button disabled={saving || closing} type="submit" className="flex-1 bg-orange text-white font-bold py-3 px-4 rounded-lg hover:bg-orange/90 disabled:opacity-50 transition-colors shadow-sm">
                         {saving ? 'Updating...' : 'Update Job'}
                     </button>
-                    <button 
-                        type="button" 
-                        onClick={handleDelete} 
-                        disabled={saving || deleting} 
-                        className="sm:w-auto px-6 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
-                    >
-                        {deleting ? 'Deleting...' : 'Delete Job'}
-                    </button>
+                    {status !== 'Closed' ? (
+                        <button 
+                            type="button" 
+                            onClick={handleClose} 
+                            disabled={saving || closing} 
+                            className="sm:w-auto px-6 bg-amber-600 text-white font-bold py-3 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors shadow-sm"
+                        >
+                            {closing ? 'Closing...' : 'Close Job'}
+                        </button>
+                    ) : (
+                        <span className="self-center px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg">
+                            Job is Closed
+                        </span>
+                    )}
                 </div>
             </form>
         </div>
