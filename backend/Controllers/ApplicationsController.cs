@@ -165,6 +165,8 @@ namespace HireConnect.API.Controllers
             var query = _context.Applications
                 .Include(a => a.Job)
                 .ThenInclude(j => j.Company)
+                .Include(a => a.Answers)
+                .ThenInclude(ans => ans.Question)
                 .Where(a => a.Seeker.UserId == userId);
 
             var totalCount = await query.CountAsync();
@@ -175,6 +177,48 @@ namespace HireConnect.API.Controllers
                 .ToListAsync();
 
             return Ok(new { data = applications, totalCount });
+        }
+
+        [HttpPost("{id}/withdraw")]
+        [Authorize(Roles = "JobSeeker")]
+        public async Task<IActionResult> WithdrawApplication(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var seeker = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (seeker == null) return Forbid();
+
+            var application = await _context.Applications
+                .Include(a => a.Job)
+                .ThenInclude(j => j.Company)
+                .FirstOrDefaultAsync(a => a.Id == id && a.SeekerId == seeker.Id);
+
+            if (application == null) return NotFound(new { message = "Application not found." });
+
+            if (application.Status == "Withdrawn")
+            {
+                return BadRequest(new { message = "Application is already withdrawn." });
+            }
+
+            if (application.Status == "Selected" || application.Status == "Hired")
+            {
+                return BadRequest(new { message = "Cannot withdraw an accepted or hired application directly. Please contact the employer." });
+            }
+
+            application.Status = "Withdrawn";
+            application.UpdatedAt = DateTime.UtcNow;
+
+            if (application.Job?.Company?.EmployerId != null)
+            {
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = application.Job.Company.EmployerId,
+                    Title = "Application Withdrawn",
+                    Message = $"An applicant has withdrawn their application for '{application.Job.Title}'."
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Application withdrawn successfully." });
         }
 
         [HttpGet("check/{jobId}")]
