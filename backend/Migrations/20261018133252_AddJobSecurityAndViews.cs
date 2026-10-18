@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
@@ -25,6 +25,8 @@ namespace HireConnect.API.Migrations
                 type: "datetime(6)",
                 nullable: true);
 
+            migrationBuilder.Sql("UPDATE Jobs SET PublishedAt = CreatedAt WHERE PublishedAt IS NULL AND (Status = 'Published' OR (Status = 'Closed' AND IsPaid = 1));");
+
             migrationBuilder.CreateTable(
                 name: "JobViews",
                 columns: table => new
@@ -34,7 +36,7 @@ namespace HireConnect.API.Migrations
                     JobId = table.Column<int>(type: "int", nullable: false),
                     UserId = table.Column<string>(type: "varchar(450)", maxLength: 450, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    IpHash = table.Column<string>(type: "varchar(64)", maxLength: 64, nullable: false)
+                    IpHash = table.Column<string>(type: "varchar(64)", maxLength: 64, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ViewedDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)

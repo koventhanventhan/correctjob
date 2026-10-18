@@ -145,6 +145,24 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     }
 });
 
+// Validate or initialize Security:IpHashSalt
+var ipHashSalt = builder.Configuration["Security:IpHashSalt"];
+if (string.IsNullOrWhiteSpace(ipHashSalt))
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        var randomBytes = new byte[32];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        var generatedSalt = Convert.ToHexString(randomBytes).ToLowerInvariant();
+        builder.Configuration["Security:IpHashSalt"] = generatedSalt;
+    }
+    else
+    {
+        throw new InvalidOperationException("Missing required configuration 'Security:IpHashSalt'. Set Security__IpHashSalt in environment variables.");
+    }
+}
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();

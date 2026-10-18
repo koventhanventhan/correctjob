@@ -239,8 +239,6 @@ namespace HireConnect.API.Controllers
             if (!isOwnJob)
             {
                 var today = DateTime.UtcNow.Date;
-                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-                var ipHash = ComputeIpHash(ip);
 
                 bool alreadyViewed;
                 if (!string.IsNullOrEmpty(userId))
@@ -249,35 +247,62 @@ namespace HireConnect.API.Controllers
                         v.JobId == id && 
                         v.ViewedDate == today && 
                         v.UserId == userId);
+
+                    if (!alreadyViewed)
+                    {
+                        try
+                        {
+                            _context.JobViews.Add(new JobView
+                            {
+                                JobId = id,
+                                UserId = userId,
+                                IpHash = null,
+                                ViewedDate = today,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                            await _context.SaveChangesAsync();
+                        }
+                        catch (DbUpdateException ex)
+                        {
+                            // Concurrency duplicate insert caught by unique index
+                            foreach (var entry in ex.Entries)
+                            {
+                                entry.State = EntityState.Detached;
+                            }
+                        }
+                    }
                 }
                 else
                 {
+                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var ipHash = ComputeIpHash(ip);
+
                     alreadyViewed = await _context.JobViews.AnyAsync(v => 
                         v.JobId == id && 
                         v.ViewedDate == today && 
                         v.IpHash == ipHash);
-                }
 
-                if (!alreadyViewed)
-                {
-                    try
+                    if (!alreadyViewed)
                     {
-                        _context.JobViews.Add(new JobView
+                        try
                         {
-                            JobId = id,
-                            UserId = string.IsNullOrEmpty(userId) ? null : userId,
-                            IpHash = ipHash,
-                            ViewedDate = today,
-                            CreatedAt = DateTime.UtcNow
-                        });
-                        await _context.SaveChangesAsync();
-                    }
-                    catch (DbUpdateException ex)
-                    {
-                        // Concurrency duplicate insert caught by unique index
-                        foreach (var entry in ex.Entries)
+                            _context.JobViews.Add(new JobView
+                            {
+                                JobId = id,
+                                UserId = null,
+                                IpHash = ipHash,
+                                ViewedDate = today,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                            await _context.SaveChangesAsync();
+                        }
+                        catch (DbUpdateException ex)
                         {
-                            entry.State = EntityState.Detached;
+                            // Concurrency duplicate insert caught by unique index
+                            foreach (var entry in ex.Entries)
+                            {
+                                entry.State = EntityState.Detached;
+                            }
                         }
                     }
                 }
@@ -1168,9 +1193,11 @@ namespace HireConnect.API.Controllers
 
         private string ComputeIpHash(string ipAddress)
         {
-            var salt = _configuration["Security:IpHashSalt"] 
-                       ?? _configuration["Jwt:Key"] 
-                       ?? "HireConnect_Default_IpHash_Salt_2026";
+            var salt = _configuration["Security:IpHashSalt"];
+            if (string.IsNullOrWhiteSpace(salt))
+            {
+                throw new InvalidOperationException("Missing required configuration 'Security:IpHashSalt'.");
+            }
             using var sha256 = System.Security.Cryptography.SHA256.Create();
             var bytes = System.Text.Encoding.UTF8.GetBytes(ipAddress + ":" + salt);
             var hashBytes = sha256.ComputeHash(bytes);

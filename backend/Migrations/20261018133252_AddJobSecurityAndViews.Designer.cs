@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HireConnect.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261018130632_AddJobSecurityAndViews")]
+    [Migration("20261018133252_AddJobSecurityAndViews")]
     partial class AddJobSecurityAndViews
     {
         /// <inheritdoc />
@@ -496,7 +496,6 @@ namespace HireConnect.API.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("IpHash")
-                        .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)");
 

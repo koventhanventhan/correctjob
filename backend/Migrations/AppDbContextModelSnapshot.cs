@@ -493,7 +493,6 @@ namespace HireConnect.API.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("IpHash")
-                        .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)");
 
