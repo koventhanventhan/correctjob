@@ -223,6 +223,43 @@ namespace HireConnect.API.Controllers
             var job = await _context.Jobs.FindAsync(id);
             if (job == null) return NotFound();
 
+            // 1. Clean up Applications & their children (Answers, Messages)
+            var applications = await _context.Applications.Where(a => a.JobId == id).ToListAsync();
+            if (applications.Any())
+            {
+                var appIds = applications.Select(a => a.Id).ToList();
+                var answers = await _context.ApplicationAnswers.Where(ans => appIds.Contains(ans.ApplicationId)).ToListAsync();
+                _context.ApplicationAnswers.RemoveRange(answers);
+
+                var messages = await _context.Messages.Where(m => appIds.Contains(m.ApplicationId)).ToListAsync();
+                _context.Messages.RemoveRange(messages);
+
+                _context.Applications.RemoveRange(applications);
+            }
+
+            // 2. Clean up Screening Questions & any remaining answers
+            var questions = await _context.JobScreeningQuestions.Where(q => q.JobId == id).ToListAsync();
+            if (questions.Any())
+            {
+                var qIds = questions.Select(q => q.Id).ToList();
+                var remainingAnswers = await _context.ApplicationAnswers.Where(ans => qIds.Contains(ans.QuestionId)).ToListAsync();
+                _context.ApplicationAnswers.RemoveRange(remainingAnswers);
+
+                _context.JobScreeningQuestions.RemoveRange(questions);
+            }
+
+            // 3. Clean up SavedJobs
+            var savedJobs = await _context.SavedJobs.Where(sj => sj.JobId == id).ToListAsync();
+            _context.SavedJobs.RemoveRange(savedJobs);
+
+            // 4. Clean up JobSkills
+            var jobSkills = await _context.JobSkills.Where(js => js.JobId == id).ToListAsync();
+            _context.JobSkills.RemoveRange(jobSkills);
+
+            // 5. Clean up Reports
+            var reports = await _context.Reports.Where(r => r.JobId == id).ToListAsync();
+            _context.Reports.RemoveRange(reports);
+
             _context.Jobs.Remove(job);
             await _context.SaveChangesAsync();
             return NoContent();

@@ -65,7 +65,7 @@ namespace HireConnect.API.Data
                 .HasOne(a => a.Job)
                 .WithMany(j => j.Applications)
                 .HasForeignKey(a => a.JobId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Application -> SeekerProfile relationship
             builder.Entity<Application>()
@@ -175,7 +175,7 @@ namespace HireConnect.API.Data
                 .HasOne(a => a.Question)
                 .WithMany(q => q.Answers)
                 .HasForeignKey(a => a.QuestionId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             // SeekerResume -> SeekerProfile
             builder.Entity<SeekerResume>()

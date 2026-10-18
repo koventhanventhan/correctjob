@@ -83,6 +83,52 @@ namespace HireConnect.API.Controllers
                 }
             }
 
+            // 1. Fetch Job's screening questions
+            var jobQuestions = await _context.JobScreeningQuestions
+                .Where(q => q.JobId == job.Id)
+                .ToListAsync();
+
+            // 2. Parse candidate's submitted answers
+            var answers = new List<AnswerInputDto>();
+            if (!string.IsNullOrWhiteSpace(model.AnswersJson))
+            {
+                try
+                {
+                    var parsed = System.Text.Json.JsonSerializer.Deserialize<List<AnswerInputDto>>(
+                        model.AnswersJson,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                    );
+                    if (parsed != null)
+                    {
+                        answers = parsed;
+                    }
+                }
+                catch
+                {
+                    return BadRequest(new { message = "Invalid answers JSON format." });
+                }
+            }
+
+            // (2) Validate QuestionId: Answer oda QuestionId antha job ku sondhamaanathaa nu check pannu
+            var jobQuestionIds = jobQuestions.Select(q => q.Id).ToHashSet();
+            foreach (var a in answers)
+            {
+                if (!jobQuestionIds.Contains(a.QuestionId))
+                {
+                    return BadRequest(new { message = $"Screening question ID {a.QuestionId} does not belong to this job." });
+                }
+            }
+
+            // (1) Validate IsRequired: antha job oda IsRequired=true screening questions ku bathil irukkanum, illana 400
+            foreach (var q in jobQuestions.Where(q => q.IsRequired))
+            {
+                var candidateAnswer = answers.FirstOrDefault(a => a.QuestionId == q.Id);
+                if (candidateAnswer == null || string.IsNullOrWhiteSpace(candidateAnswer.AnswerText))
+                {
+                    return BadRequest(new { message = $"Please answer the required screening question: \"{q.QuestionText}\"" });
+                }
+            }
+
             var application = new Application
             {
                 JobId = job.Id,
@@ -104,33 +150,22 @@ namespace HireConnect.API.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Save screening question answers if present
-            if (!string.IsNullOrWhiteSpace(model.AnswersJson))
+            // Save screening question answers
+            if (answers.Any())
             {
-                try
+                foreach (var a in answers)
                 {
-                    var answers = System.Text.Json.JsonSerializer.Deserialize<List<AnswerInputDto>>(
-                        model.AnswersJson,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                    );
-                    if (answers != null && answers.Any())
+                    if (!string.IsNullOrWhiteSpace(a.AnswerText))
                     {
-                        foreach (var a in answers)
+                        _context.ApplicationAnswers.Add(new ApplicationAnswer
                         {
-                            if (!string.IsNullOrWhiteSpace(a.AnswerText))
-                            {
-                                _context.ApplicationAnswers.Add(new ApplicationAnswer
-                                {
-                                    ApplicationId = application.Id,
-                                    QuestionId = a.QuestionId,
-                                    AnswerText = a.AnswerText.Trim()
-                                });
-                            }
-                        }
-                        await _context.SaveChangesAsync();
+                            ApplicationId = application.Id,
+                            QuestionId = a.QuestionId,
+                            AnswerText = a.AnswerText.Trim()
+                        });
                     }
                 }
-                catch { }
+                await _context.SaveChangesAsync();
             }
             
             var appId = application.Id;
