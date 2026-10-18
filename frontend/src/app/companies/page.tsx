@@ -4,6 +4,7 @@ import api from '@/services/api';
 import Link from 'next/link';
 import { LuBuilding, LuMapPin, LuSearch } from 'react-icons/lu';
 import { useState } from 'react';
+import { getFileUrl } from '@/utils/fileUrl';
 
 export default function CompaniesPage() {
     const [search, setSearch] = useState('');
@@ -55,7 +56,7 @@ export default function CompaniesPage() {
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="h-16 w-16 bg-peach rounded flex items-center justify-center border border-gray-200 shrink-0">
                                             {company.logoUrl ? (
-                                                <img src={company.logoUrl} alt={company.companyName} className="h-12 w-12 object-contain" />
+                                                <img src={getFileUrl(company.logoUrl)} alt={company.companyName} className="h-12 w-12 object-contain" />
                                             ) : (
                                                 <LuBuilding className="h-8 w-8 text-gray-400" />
                                             )}

@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { LuBuilding, LuMapPin, LuGlobe, LuBriefcase, LuIndianRupee, LuClock, LuStar, LuMessageSquare } from 'react-icons/lu';
+import { LuBuilding, LuMapPin, LuGlobe, LuBriefcase, LuIndianRupee, LuClock, LuStar, LuMessageSquare, LuSparkles } from 'react-icons/lu';
+import { FaLinkedin, FaTwitter, FaFacebook } from 'react-icons/fa';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { getFileUrl } from '@/utils/fileUrl';
 
 export default function CompanyDetailsPage() {
     const params = useParams();
@@ -80,11 +82,20 @@ export default function CompanyDetailsPage() {
                 
                 {/* Header */}
                 <div className="bg-warmwhite p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 mb-6 relative overflow-hidden">
-                    <div className="h-32 bg-orange absolute top-0 left-0 right-0"></div>
-                    <div className="relative mt-16 flex flex-col md:flex-row md:items-end gap-6">
-                        <div className="h-32 w-32 bg-warmwhite rounded-lg p-2 shadow border border-gray-200 flex items-center justify-center shrink-0">
+                    <div className="h-36 sm:h-44 absolute top-0 left-0 right-0 overflow-hidden bg-gradient-to-r from-orange to-amber-500">
+                        {company.bannerUrl && (
+                            <img 
+                                src={getFileUrl(company.bannerUrl)} 
+                                alt="Company Banner" 
+                                className="w-full h-full object-cover" 
+                            />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                    </div>
+                    <div className="relative mt-20 sm:mt-24 flex flex-col md:flex-row md:items-end gap-6">
+                        <div className="h-28 w-28 sm:h-32 sm:w-32 bg-warmwhite rounded-xl p-2 shadow border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
                             {company.logoUrl ? (
-                                <img src={company.logoUrl} alt={company.companyName} className="h-full w-full object-contain" />
+                                <img src={getFileUrl(company.logoUrl)} alt={company.companyName} className="h-full w-full object-contain" />
                             ) : (
                                 <LuBuilding className="h-16 w-16 text-gray-400" />
                             )}
@@ -100,15 +111,52 @@ export default function CompanyDetailsPage() {
                                         </span>
                                     )}
                                 </h1>
-                                <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
+                                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
                                     <span className="flex items-center gap-1"><LuMapPin className="h-4 w-4 text-gray-400" /> {company.location || 'Location not specified'}</span>
                                     <span className="flex items-center gap-1"><LuBriefcase className="h-4 w-4 text-gray-400" /> {company.industry || 'Industry not specified'}</span>
                                     {company.website && (
-                                        <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-orange hover:underline">
+                                        <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-orange hover:underline font-medium">
                                             <LuGlobe className="h-4 w-4" /> Website
                                         </a>
                                     )}
                                 </div>
+                                {(company.linkedinUrl || company.twitterUrl || company.facebookUrl) && (
+                                    <div className="flex items-center gap-2 mt-2.5">
+                                        {company.linkedinUrl && (
+                                            <a 
+                                                href={company.linkedinUrl.startsWith('http') ? company.linkedinUrl : `https://${company.linkedinUrl}`} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="text-[#0A66C2] hover:opacity-80 p-1.5 rounded-full bg-blue-50 transition-opacity" 
+                                                title="LinkedIn"
+                                            >
+                                                <FaLinkedin className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                        {company.twitterUrl && (
+                                            <a 
+                                                href={company.twitterUrl.startsWith('http') ? company.twitterUrl : `https://${company.twitterUrl}`} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="text-[#1DA1F2] hover:opacity-80 p-1.5 rounded-full bg-sky-50 transition-opacity" 
+                                                title="Twitter / X"
+                                            >
+                                                <FaTwitter className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                        {company.facebookUrl && (
+                                            <a 
+                                                href={company.facebookUrl.startsWith('http') ? company.facebookUrl : `https://${company.facebookUrl}`} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="text-[#1877F2] hover:opacity-80 p-1.5 rounded-full bg-blue-50 transition-opacity" 
+                                                title="Facebook"
+                                            >
+                                                <FaFacebook className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             
                             {user?.role === 'JobSeeker' && !showReviewForm && (
@@ -197,6 +245,18 @@ export default function CompanyDetailsPage() {
                                 {company.description || 'No description provided by the company.'}
                             </div>
                         </div>
+
+                        {company.benefits && (
+                            <div className="bg-warmwhite p-6 md:p-8 rounded-lg shadow-sm border border-gray-200">
+                                <div className="flex items-center gap-2 border-b pb-2 mb-4">
+                                    <LuSparkles className="w-5 h-5 text-orange" />
+                                    <h2 className="text-xl font-display font-bold text-charcoal">Benefits & Culture</h2>
+                                </div>
+                                <div className="prose max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                    {company.benefits}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Reviews Section */}
                         <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -312,6 +372,28 @@ export default function CompanyDetailsPage() {
                                             <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline break-all">
                                                 {company.website}
                                             </a>
+                                        </dd>
+                                    </div>
+                                )}
+                                {(company.linkedinUrl || company.twitterUrl || company.facebookUrl) && (
+                                    <div>
+                                        <dt className="text-gray-500 font-medium mb-1.5">Social Profiles</dt>
+                                        <dd className="flex flex-col gap-1.5">
+                                            {company.linkedinUrl && (
+                                                <a href={company.linkedinUrl.startsWith('http') ? company.linkedinUrl : `https://${company.linkedinUrl}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#0A66C2] hover:underline flex items-center gap-1.5">
+                                                    <FaLinkedin className="w-4 h-4" /> LinkedIn
+                                                </a>
+                                            )}
+                                            {company.twitterUrl && (
+                                                <a href={company.twitterUrl.startsWith('http') ? company.twitterUrl : `https://${company.twitterUrl}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#1DA1F2] hover:underline flex items-center gap-1.5">
+                                                    <FaTwitter className="w-4 h-4" /> Twitter / X
+                                                </a>
+                                            )}
+                                            {company.facebookUrl && (
+                                                <a href={company.facebookUrl.startsWith('http') ? company.facebookUrl : `https://${company.facebookUrl}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#1877F2] hover:underline flex items-center gap-1.5">
+                                                    <FaFacebook className="w-4 h-4" /> Facebook
+                                                </a>
+                                            )}
                                         </dd>
                                     </div>
                                 )}

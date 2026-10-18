@@ -17,10 +17,24 @@ namespace HireConnect.API.Models
         [MaxLength(255)]
         public string? LogoUrl { get; set; }
 
+        [MaxLength(255)]
+        public string? BannerUrl { get; set; }
+
         public string? Description { get; set; }
+
+        public string? Benefits { get; set; }
 
         [MaxLength(255)]
         public string? Website { get; set; }
+
+        [MaxLength(255)]
+        public string? LinkedinUrl { get; set; }
+
+        [MaxLength(255)]
+        public string? TwitterUrl { get; set; }
+
+        [MaxLength(255)]
+        public string? FacebookUrl { get; set; }
 
         [MaxLength(100)]
         public string? Industry { get; set; }

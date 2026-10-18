@@ -31,6 +31,7 @@ namespace HireConnect.API.Controllers
                 .OrderBy(c => c.CompanyName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(c => MapToDto(c))
                 .ToListAsync();
 
             return Ok(new { data = companies, totalCount });
@@ -52,7 +53,7 @@ namespace HireConnect.API.Controllers
                 }
             }
 
-            return Ok(company);
+            return Ok(MapToDto(company));
         }
 
         [HttpGet("my-company")]
@@ -63,7 +64,7 @@ namespace HireConnect.API.Controllers
             var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
             
             if (company == null) return NotFound();
-            return Ok(company);
+            return Ok(MapToDto(company));
         }
 
         [HttpPost]
@@ -72,24 +73,28 @@ namespace HireConnect.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var existing = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
-            if (existing != null) return BadRequest("You already have a company profile.");
+            if (existing != null) return BadRequest(new { message = "You already have a company profile." });
 
             var company = new Company
             {
                 EmployerId = userId!,
                 CompanyName = model.CompanyName,
                 Description = model.Description,
+                Benefits = model.Benefits,
                 Industry = model.Industry,
                 Location = model.Location,
                 CompanySize = model.CompanySize,
                 Website = model.Website,
+                LinkedinUrl = model.LinkedinUrl,
+                TwitterUrl = model.TwitterUrl,
+                FacebookUrl = model.FacebookUrl,
                 IsApproved = false // Needs Admin approval
             };
 
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
 
-            return Ok(company);
+            return Ok(MapToDto(company));
         }
 
         [HttpPut("{id}")]
@@ -104,13 +109,71 @@ namespace HireConnect.API.Controllers
 
             company.CompanyName = model.CompanyName;
             company.Description = model.Description;
+            company.Benefits = model.Benefits;
             company.Industry = model.Industry;
             company.Location = model.Location;
             company.CompanySize = model.CompanySize;
             company.Website = model.Website;
+            company.LinkedinUrl = model.LinkedinUrl;
+            company.TwitterUrl = model.TwitterUrl;
+            company.FacebookUrl = model.FacebookUrl;
 
             await _context.SaveChangesAsync();
-            return Ok(company);
+            return Ok(MapToDto(company));
+        }
+
+        [HttpPost("upload-logo")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> UploadLogo(IFormFile? file)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
+            if (company == null) return NotFound(new { message = "Company profile not found." });
+
+            var uploadedFile = file ?? Request.Form.Files.FirstOrDefault();
+            if (uploadedFile == null || uploadedFile.Length == 0)
+                return BadRequest(new { message = "No file uploaded." });
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var ext = Path.GetExtension(uploadedFile.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                return BadRequest(new { message = "Only JPG, PNG, and WebP images are allowed." });
+
+            if (uploadedFile.Length > 2 * 1024 * 1024)
+                return BadRequest(new { message = "Logo file size cannot exceed 2MB." });
+
+            var url = await _fileStorage.UploadFileAsync(uploadedFile, "company-logos");
+            company.LogoUrl = url;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { logoUrl = url });
+        }
+
+        [HttpPost("upload-banner")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> UploadBanner(IFormFile? file)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
+            if (company == null) return NotFound(new { message = "Company profile not found." });
+
+            var uploadedFile = file ?? Request.Form.Files.FirstOrDefault();
+            if (uploadedFile == null || uploadedFile.Length == 0)
+                return BadRequest(new { message = "No file uploaded." });
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var ext = Path.GetExtension(uploadedFile.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                return BadRequest(new { message = "Only JPG, PNG, and WebP images are allowed." });
+
+            if (uploadedFile.Length > 5 * 1024 * 1024)
+                return BadRequest(new { message = "Banner file size cannot exceed 5MB." });
+
+            var url = await _fileStorage.UploadFileAsync(uploadedFile, "company-banners");
+            company.BannerUrl = url;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { bannerUrl = url });
         }
 
         [HttpPost("verify-identity")]
@@ -182,15 +245,64 @@ namespace HireConnect.API.Controllers
 
             return PhysicalFile(filePath, contentType, Path.GetFileName(filePath));
         }
+
+        private static CompanyResponseDto MapToDto(Company c)
+        {
+            return new CompanyResponseDto
+            {
+                Id = c.Id,
+                EmployerId = c.EmployerId,
+                CompanyName = c.CompanyName,
+                LogoUrl = c.LogoUrl,
+                BannerUrl = c.BannerUrl,
+                Description = c.Description,
+                Benefits = c.Benefits,
+                Website = c.Website,
+                LinkedinUrl = c.LinkedinUrl,
+                TwitterUrl = c.TwitterUrl,
+                FacebookUrl = c.FacebookUrl,
+                Industry = c.Industry,
+                CompanySize = c.CompanySize,
+                Location = c.Location,
+                IsApproved = c.IsApproved,
+                VerificationStatus = c.VerificationStatus,
+                CreatedAt = c.CreatedAt
+            };
+        }
     }
 
     public class CompanyDto
     {
         public string CompanyName { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public string? Benefits { get; set; }
         public string? Industry { get; set; }
         public string? Location { get; set; }
         public string? CompanySize { get; set; }
         public string? Website { get; set; }
+        public string? LinkedinUrl { get; set; }
+        public string? TwitterUrl { get; set; }
+        public string? FacebookUrl { get; set; }
+    }
+
+    public class CompanyResponseDto
+    {
+        public int Id { get; set; }
+        public string EmployerId { get; set; } = string.Empty;
+        public string CompanyName { get; set; } = string.Empty;
+        public string? LogoUrl { get; set; }
+        public string? BannerUrl { get; set; }
+        public string? Description { get; set; }
+        public string? Benefits { get; set; }
+        public string? Website { get; set; }
+        public string? LinkedinUrl { get; set; }
+        public string? TwitterUrl { get; set; }
+        public string? FacebookUrl { get; set; }
+        public string? Industry { get; set; }
+        public string? CompanySize { get; set; }
+        public string? Location { get; set; }
+        public bool IsApproved { get; set; }
+        public string VerificationStatus { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
     }
 }

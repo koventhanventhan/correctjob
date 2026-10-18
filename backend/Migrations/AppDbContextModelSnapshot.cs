@@ -176,6 +176,13 @@ namespace HireConnect.API.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BannerUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Benefits")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("CompanyName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -195,6 +202,10 @@ namespace HireConnect.API.Migrations
                         .IsRequired()
                         .HasColumnType("varchar(255)");
 
+                    b.Property<string>("FacebookUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
                     b.Property<string>("IdCardBackUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
@@ -210,11 +221,19 @@ namespace HireConnect.API.Migrations
                     b.Property<bool>("IsApproved")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<string>("LinkedinUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
                     b.Property<string>("Location")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
                     b.Property<string>("LogoUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("TwitterUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 

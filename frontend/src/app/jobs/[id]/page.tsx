@@ -19,6 +19,7 @@ import {
 } from 'react-icons/lu';
 import { useState } from 'react';
 import Link from 'next/link';
+import { getFileUrl } from '@/utils/fileUrl';
 
 export default function JobDetailsPage() {
     const params = useParams();
@@ -223,7 +224,7 @@ export default function JobDetailsPage() {
                         <div className="flex items-start gap-4">
                             <div className="h-16 w-16 bg-peach rounded-xl flex items-center justify-center flex-shrink-0 border border-gray-200 shadow-inner">
                                 {job.company?.logoUrl ? (
-                                    <img src={job.company.logoUrl} alt={job.company.companyName} className="h-12 w-12 object-contain" />
+                                    <img src={getFileUrl(job.company.logoUrl)} alt={job.company.companyName} className="h-12 w-12 object-contain" />
                                 ) : (
                                     <LuBuilding className="h-8 w-8 text-gray-400" />
                                 )}
@@ -459,7 +460,7 @@ export default function JobDetailsPage() {
                                             </div>
                                             {simJob.company?.logoUrl && (
                                                 <img 
-                                                    src={simJob.company.logoUrl} 
+                                                    src={getFileUrl(simJob.company.logoUrl)} 
                                                     alt={simJob.company.companyName} 
                                                     className="w-10 h-10 object-contain rounded-lg border border-gray-100 flex-shrink-0" 
                                                 />
