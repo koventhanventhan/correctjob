@@ -55,6 +55,9 @@ namespace HireConnect.API.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("varchar(2000)");
 
+                    b.Property<int?>("Rating")
+                        .HasColumnType("int");
+
                     b.Property<string>("ResumeUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");

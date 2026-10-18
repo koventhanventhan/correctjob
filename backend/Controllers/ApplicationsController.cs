@@ -4,6 +4,7 @@ using HireConnect.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 namespace HireConnect.API.Controllers
@@ -16,6 +17,23 @@ namespace HireConnect.API.Controllers
         private readonly IFileStorageService _fileStorage;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IResumeExtractorService _extractor;
+
+        public static readonly string[] AllowedStatuses = { "Applied", "Viewed", "Shortlisted", "Interview", "Hired", "Rejected", "Withdrawn" };
+
+        private static string NormalizeStatus(string? status)
+        {
+            var trimmed = status?.Trim() ?? string.Empty;
+            if (string.Equals(trimmed, "Under Review", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "UnderReview", StringComparison.OrdinalIgnoreCase))
+                return "Viewed";
+            if (string.Equals(trimmed, "Interview Scheduled", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "InterviewScheduled", StringComparison.OrdinalIgnoreCase))
+                return "Interview";
+            if (string.Equals(trimmed, "Selected", StringComparison.OrdinalIgnoreCase))
+                return "Hired";
+
+            return AllowedStatuses.FirstOrDefault(s => string.Equals(s, trimmed, StringComparison.OrdinalIgnoreCase)) ?? trimmed;
+        }
 
         public ApplicationsController(AppDbContext context, IFileStorageService fileStorage, IServiceScopeFactory scopeFactory, IResumeExtractorService extractor)
         {
@@ -323,9 +341,85 @@ namespace HireConnect.API.Controllers
                 .Include(a => a.Answers)
                 .ThenInclude(ans => ans.Question)
                 .Where(a => a.JobId == jobId)
+                .OrderByDescending(a => a.AppliedAt)
                 .ToListAsync();
 
             return Ok(applications);
+        }
+
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetApplication(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Admin");
+
+            var application = await _context.Applications
+                .Include(a => a.Job)
+                .ThenInclude(j => j.Company)
+                .Include(a => a.Seeker)
+                .ThenInclude(s => s.User)
+                .Include(a => a.Answers)
+                .ThenInclude(ans => ans.Question)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (application == null) return NotFound();
+
+            bool isSeeker = application.Seeker.UserId == userId;
+            bool isEmployer = application.Job.Company.EmployerId == userId;
+
+            if (!isAdmin && !isSeeker && !isEmployer) return Forbid();
+
+            // Auto-set "Viewed" when employer opens an application that is currently "Applied"
+            if (isEmployer && application.Status == "Applied")
+            {
+                application.Status = "Viewed";
+                application.UpdatedAt = DateTime.UtcNow;
+
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = application.Seeker.UserId,
+                    Title = "Application Viewed",
+                    Message = $"Your application for '{application.Job.Title}' at {application.Job.Company.CompanyName} has been viewed by the employer."
+                });
+
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(application);
+        }
+
+        [HttpPost("{id}/mark-viewed")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> MarkApplicationViewed(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var application = await _context.Applications
+                .Include(a => a.Job)
+                .ThenInclude(j => j.Company)
+                .Include(a => a.Seeker)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (application == null) return NotFound();
+            if (application.Job.Company.EmployerId != userId) return Forbid();
+
+            if (application.Status == "Applied")
+            {
+                application.Status = "Viewed";
+                application.UpdatedAt = DateTime.UtcNow;
+
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = application.Seeker.UserId,
+                    Title = "Application Viewed",
+                    Message = $"Your application for '{application.Job.Title}' at {application.Job.Company.CompanyName} has been viewed by the employer."
+                });
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Application marked as viewed.", status = application.Status });
+            }
+
+            return Ok(new { message = "Application already processed.", status = application.Status });
         }
 
         [HttpGet("employer-stats")]
@@ -344,7 +438,7 @@ namespace HireConnect.API.Controllers
                 {
                     TotalApplications = g.Count(),
                     NewApplications = g.Count(a => a.Status == "Applied"),
-                    Interviewing = g.Count(a => a.Status == "Shortlisted" || a.Status == "Interview Scheduled")
+                    Interviewing = g.Count(a => a.Status == "Shortlisted" || a.Status == "Interview" || a.Status == "Interview Scheduled")
                 })
                 .FirstOrDefaultAsync();
 
@@ -368,43 +462,262 @@ namespace HireConnect.API.Controllers
             if (application == null) return NotFound();
             if (application.Job.Company.EmployerId != userId) return Forbid(); // Ownership check
 
-            if (model.Status == "Interview Scheduled" && !model.InterviewDate.HasValue)
+            var targetStatus = NormalizeStatus(model.Status);
+            if (!AllowedStatuses.Contains(targetStatus))
             {
-                return BadRequest(new { message = "Interview date is required when scheduling an interview." });
+                return BadRequest(new { message = $"Invalid status '{model.Status}'. Allowed statuses are: {string.Join(", ", AllowedStatuses)}" });
             }
 
-            if (model.Status == "Interview Scheduled" && !string.IsNullOrEmpty(model.MeetingLink))
+            if (targetStatus == "Withdrawn")
             {
-                if (!Uri.TryCreate(model.MeetingLink, UriKind.Absolute, out Uri? uriResult) 
-                    || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+                return BadRequest(new { message = "Employers cannot set application status to Withdrawn." });
+            }
+
+            // Cannot modify a withdrawn application
+            if (application.Status == "Withdrawn")
+            {
+                return BadRequest(new { message = "Cannot change the status of a withdrawn application." });
+            }
+
+            // Transition validation: confirm required when changing from Hired or Rejected
+            if ((application.Status == "Hired" || application.Status == "Rejected") && application.Status != targetStatus && !model.ConfirmTransition)
+            {
+                return BadRequest(new
                 {
-                    return BadRequest(new { message = "Meeting link must be a valid HTTP or HTTPS URL." });
-                }
-                application.MeetingLink = model.MeetingLink;
+                    message = $"Application is currently '{application.Status}'. Please confirm to change its status to '{targetStatus}'.",
+                    requiresConfirmation = true
+                });
             }
 
-            application.Status = model.Status;
-            if (!string.IsNullOrEmpty(model.EmployerNotes))
+            if (targetStatus == "Interview")
+            {
+                if (!model.InterviewDate.HasValue && !application.InterviewDate.HasValue)
+                {
+                    return BadRequest(new { message = "Interview date is required when scheduling an interview." });
+                }
+
+                if (!string.IsNullOrEmpty(model.MeetingLink))
+                {
+                    if (!Uri.TryCreate(model.MeetingLink, UriKind.Absolute, out Uri? uriResult) 
+                        || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+                    {
+                        return BadRequest(new { message = "Meeting link must be a valid HTTP or HTTPS URL." });
+                    }
+                    application.MeetingLink = model.MeetingLink;
+                }
+            }
+
+            if (model.Rating.HasValue)
+            {
+                if (model.Rating.Value < 1 || model.Rating.Value > 5)
+                {
+                    return BadRequest(new { message = "Rating must be between 1 and 5." });
+                }
+                application.Rating = model.Rating.Value;
+            }
+
+            if (model.EmployerNotes != null)
+            {
                 application.EmployerNotes = model.EmployerNotes;
-            
-            // Only update InterviewDate if it's provided or if status changed to Interview Scheduled
+            }
+
             if (model.InterviewDate.HasValue)
             {
                 application.InterviewDate = model.InterviewDate;
             }
 
+            var previousStatus = application.Status;
+            application.Status = targetStatus;
             application.UpdatedAt = DateTime.UtcNow;
 
-            var notification = new Notification
+            if (previousStatus != targetStatus)
             {
-                UserId = application.Seeker.UserId,
-                Title = "Application Status Updated",
-                Message = $"Your application for {application.Job.Title} at {application.Job.Company.CompanyName} has been updated to: {model.Status}."
-            };
-            _context.Notifications.Add(notification);
+                var notification = new Notification
+                {
+                    UserId = application.Seeker.UserId,
+                    Title = "Application Status Updated",
+                    Message = $"Your application for {application.Job.Title} at {application.Job.Company.CompanyName} has been updated to: {targetStatus}."
+                };
+                _context.Notifications.Add(notification);
+            }
 
             await _context.SaveChangesAsync();
             return Ok(application);
+        }
+
+        [HttpPatch("{id}/rating")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> UpdateRating(int id, [FromBody] UpdateRatingDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var application = await _context.Applications
+                .Include(a => a.Job)
+                .ThenInclude(j => j.Company)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (application == null) return NotFound();
+            if (application.Job.Company.EmployerId != userId) return Forbid();
+
+            if (model.Rating.HasValue && (model.Rating.Value < 1 || model.Rating.Value > 5))
+            {
+                return BadRequest(new { message = "Rating must be between 1 and 5." });
+            }
+
+            application.Rating = model.Rating;
+            application.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = application.Id, rating = application.Rating });
+        }
+
+        [HttpPatch("{id}/notes")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> UpdateNotes(int id, [FromBody] UpdateNotesDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var application = await _context.Applications
+                .Include(a => a.Job)
+                .ThenInclude(j => j.Company)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (application == null) return NotFound();
+            if (application.Job.Company.EmployerId != userId) return Forbid();
+
+            application.EmployerNotes = model.EmployerNotes;
+            application.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = application.Id, notes = application.EmployerNotes });
+        }
+
+        [HttpPost("bulk-status")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> BulkUpdateStatus([FromBody] BulkStatusDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (model.ApplicationIds == null || model.ApplicationIds.Count == 0)
+            {
+                return BadRequest(new { message = "No application IDs provided." });
+            }
+
+            if (model.ApplicationIds.Count > 100)
+            {
+                return BadRequest(new { message = "A maximum of 100 applications can be updated in a single bulk request." });
+            }
+
+            var targetStatus = NormalizeStatus(model.Status);
+            if (!AllowedStatuses.Contains(targetStatus) || targetStatus == "Withdrawn")
+            {
+                return BadRequest(new { message = $"Invalid target status '{model.Status}'. Allowed bulk statuses are: Shortlisted, Rejected, Viewed, Interview, Hired." });
+            }
+
+            var applications = await _context.Applications
+                .Include(a => a.Job)
+                .ThenInclude(j => j.Company)
+                .Include(a => a.Seeker)
+                .Where(a => model.ApplicationIds.Contains(a.Id))
+                .ToListAsync();
+
+            // Ownership check: every application must belong to a job owned by this employer
+            var unauthorized = applications.Where(a => a.Job.Company.EmployerId != userId).ToList();
+            if (unauthorized.Any())
+            {
+                return Forbid();
+            }
+
+            var updatedIds = new List<int>();
+            var skippedList = new List<object>();
+
+            var existingIds = applications.Select(a => a.Id).ToHashSet();
+            var missingIds = model.ApplicationIds.Where(id => !existingIds.Contains(id)).Distinct().ToList();
+            foreach (var missingId in missingIds)
+            {
+                skippedList.Add(new
+                {
+                    applicationId = missingId,
+                    currentStatus = "NotFound",
+                    reason = "Application ID not found."
+                });
+            }
+
+            foreach (var app in applications)
+            {
+                // 1. Never update Withdrawn applications
+                if (app.Status == "Withdrawn")
+                {
+                    skippedList.Add(new
+                    {
+                        applicationId = app.Id,
+                        currentStatus = app.Status,
+                        reason = "Application was withdrawn by candidate and cannot be updated."
+                    });
+                    continue;
+                }
+
+                // 2. If already in target status, skip
+                if (app.Status == targetStatus)
+                {
+                    skippedList.Add(new
+                    {
+                        applicationId = app.Id,
+                        currentStatus = app.Status,
+                        reason = $"Application is already in '{targetStatus}' status."
+                    });
+                    continue;
+                }
+
+                // 3. Regress check: Shortlisted/Interview/Hired cannot regress to Viewed/Applied
+                if ((app.Status == "Shortlisted" || app.Status == "Interview" || app.Status == "Hired") &&
+                    (targetStatus == "Viewed" || targetStatus == "Applied"))
+                {
+                    skippedList.Add(new
+                    {
+                        applicationId = app.Id,
+                        currentStatus = app.Status,
+                        reason = $"Cannot regress application status from '{app.Status}' to '{targetStatus}'."
+                    });
+                    continue;
+                }
+
+                // 4. Transition validation: changing away from Hired or Rejected requires confirmTransition=true
+                if ((app.Status == "Hired" || app.Status == "Rejected") && !model.ConfirmTransition)
+                {
+                    skippedList.Add(new
+                    {
+                        applicationId = app.Id,
+                        currentStatus = app.Status,
+                        reason = $"Application is currently '{app.Status}'. Changing away from Hired/Rejected requires confirmTransition=true."
+                    });
+                    continue;
+                }
+
+                app.Status = targetStatus;
+                if (!string.IsNullOrWhiteSpace(model.EmployerNotes))
+                {
+                    app.EmployerNotes = model.EmployerNotes;
+                }
+                app.UpdatedAt = DateTime.UtcNow;
+
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = app.Seeker.UserId,
+                    Title = "Application Status Updated",
+                    Message = $"Your application for {app.Job.Title} at {app.Job.Company.CompanyName} has been updated to: {targetStatus}."
+                });
+
+                updatedIds.Add(app.Id);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                updatedCount = updatedIds.Count,
+                updatedIds,
+                skippedCount = skippedList.Count,
+                skipped = skippedList,
+                message = $"Successfully updated {updatedIds.Count} applications to '{targetStatus}'." + (skippedList.Count > 0 ? $" {skippedList.Count} application(s) were skipped." : "")
+            });
         }
 
         // Resume access control endpoint
@@ -453,7 +766,7 @@ namespace HireConnect.API.Controllers
 
             if (application == null) return NotFound();
             if (application.Seeker.UserId != userId) return Forbid();
-            if (application.Status != "Interview Scheduled" || !application.InterviewDate.HasValue)
+            if ((application.Status != "Interview" && application.Status != "Interview Scheduled") || !application.InterviewDate.HasValue)
             {
                 return BadRequest(new { message = "No interview scheduled for this application." });
             }
@@ -571,7 +884,28 @@ END:VCALENDAR";
     {
         public string Status { get; set; } = string.Empty;
         public string? EmployerNotes { get; set; }
+        public int? Rating { get; set; }
         public DateTime? InterviewDate { get; set; }
         public string? MeetingLink { get; set; }
+        public bool ConfirmTransition { get; set; } = false;
+    }
+
+    public class UpdateRatingDto
+    {
+        [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5.")]
+        public int? Rating { get; set; }
+    }
+
+    public class UpdateNotesDto
+    {
+        public string? EmployerNotes { get; set; }
+    }
+
+    public class BulkStatusDto
+    {
+        public List<int> ApplicationIds { get; set; } = new();
+        public string Status { get; set; } = string.Empty;
+        public string? EmployerNotes { get; set; }
+        public bool ConfirmTransition { get; set; } = false;
     }
 }

@@ -267,17 +267,19 @@ export default function SeekerDashboard() {
                                     
                                     <div className="flex flex-col items-start md:items-end gap-2">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            app.status === 'Applied' ? 'bg-peach text-charcoal' :
+                                            app.status === 'Applied' ? 'bg-blue-50 text-blue-700' :
+                                            app.status === 'Viewed' ? 'bg-cyan-50 text-cyan-700' :
                                             app.status === 'Shortlisted' ? 'bg-yellow-100 text-yellow-800' :
-                                            app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
-                                            app.status === 'Selected' ? 'bg-green-100 text-green-800' :
+                                            (app.status === 'Interview' || app.status === 'Interview Scheduled') ? 'bg-purple-100 text-purple-800' :
+                                            (app.status === 'Hired' || app.status === 'Selected') ? 'bg-green-100 text-green-800' :
                                             app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                            app.status === 'Withdrawn' ? 'bg-gray-100 text-gray-700' :
                                             'bg-peach text-charcoal'
                                         }`}>
                                             {app.status}
                                         </span>
 
-                                        {app.status === 'Interview Scheduled' && app.interviewDate && (
+                                        {(app.status === 'Interview' || app.status === 'Interview Scheduled') && app.interviewDate && (
                                             <div className="flex flex-col items-start md:items-end gap-1 mt-2">
                                                 <span className="flex items-center gap-1 text-sm font-medium text-purple-700 bg-purple-50 px-2 py-1 rounded">
                                                     <CalendarIcon className="h-4 w-4" /> 

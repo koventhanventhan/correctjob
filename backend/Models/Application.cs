@@ -20,6 +20,9 @@ namespace HireConnect.API.Models
         public string Status { get; set; } = "Applied"; // Applied, UnderReview, Shortlisted, InterviewScheduled, Selected, Rejected
 
         public string? EmployerNotes { get; set; }
+        
+        [Range(1, 5)]
+        public int? Rating { get; set; }
 
         public DateTime? InterviewDate { get; set; }
 
