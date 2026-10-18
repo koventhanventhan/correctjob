@@ -1,60 +1,135 @@
 # HireConnect
 
-A production-quality job portal web application.
+HireConnect is a modern, full-featured Job Portal web application connecting job seekers and employers with comprehensive administrative oversight.
+
+---
 
 ## Tech Stack
-- **Backend**: .NET 8 Web API, Entity Framework Core, MySQL, ASP.NET Core Identity, JWT Auth.
-- **Frontend**: Next.js (App Router), React, TypeScript, Tailwind CSS, Zustand, React Hook Form, Zod, TanStack Query.
 
-## Project Structure
-- `backend/`: The .NET 8 Web API project.
-- `frontend/`: The Next.js React application.
+- **Backend**:
+  - .NET 8 Web API
+  - Entity Framework Core 8 with Pomelo MySQL Provider
+  - ASP.NET Core Identity (with brute-force lockout protection)
+  - JWT Authentication with HTTP-only Refresh Tokens
+  - SignalR (Real-time Messaging)
+  - PayHere Payment Gateway integration
+- **Frontend**:
+  - Next.js (App Router, Turbopack)
+  - React, TypeScript
+  - Tailwind CSS
+  - Zustand (Client State Management)
+  - React Hook Form & Zod (Form Validation)
+  - TanStack Query (Data Fetching & Caching)
+  - Lucide React & React Icons
+
+---
+
+## Ports & Endpoints
+
+| Service | Protocol | Local URL | Description |
+|---|---|---|---|
+| **Frontend** | HTTP | `http://localhost:3000` | Next.js Client Application |
+| **Backend API** | HTTP | `http://localhost:5189` | ASP.NET Core Web API |
+| **Backend API (SSL)** | HTTPS | `https://localhost:7200` | Optional HTTPS profile |
+| **API Base URL** | HTTP | `http://localhost:5189/api` | REST API Root (Matches `api.ts` fallback) |
+| **Swagger UI** | HTTP | `http://localhost:5189/swagger` | Interactive API documentation |
+
+---
+
+## Environment Variables
+
+### 1. Backend (`backend/appsettings.json` or environment variables)
+
+You can configure settings via `appsettings.json` or by creating a `.env` file in `backend/` (refer to `backend/.env.example`):
+
+| Variable / Key | Default / Example | Description |
+|---|---|---|
+| `ConnectionStrings__DefaultConnection` | `Server=localhost;Port=3306;Database=HireConnectDB;User=root;Password=;` | MySQL connection string |
+| `Jwt__Key` | *(Secret 32+ character key)* | Secret key for signing JWT tokens |
+| `Jwt__Issuer` | `HireConnectAPI` | Valid token issuer |
+| `Jwt__Audience` | `HireConnectClient` | Valid token audience |
+| `Jwt__ExpireMinutes` | `15` | Access token lifespan in minutes |
+| `Jwt__RefreshExpireDays` | `7` | Refresh token lifespan in days |
+| `CookieSettings__SameSite` | `Lax` (dev) / `None` (prod) | Refresh token cookie SameSite policy |
+| `CookieSettings__Secure` | `false` (dev) / `true` (prod) | Refresh token cookie Secure flag |
+| `PayHere__MerchantId` | `1234567` | PayHere payment merchant ID |
+| `PayHere__MerchantSecret` | `your_payhere_secret` | PayHere merchant secret key |
+| `EmailSettings__SmtpHost` | `smtp.example.com` | SMTP host for password resets |
+| `EmailSettings__SmtpPort` | `587` | SMTP port |
+| `EmailSettings__SenderEmail` | `noreply@hireconnect.com` | Sender email address |
+| `EmailSettings__EnableSsl` | `true` | Enable TLS/SSL for SMTP |
+
+### 2. Frontend (`frontend/.env.local`)
+
+| Variable | Default Fallback | Description |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:5189/api` | Base URL of the backend API |
+
+---
 
 ## Local Setup Instructions
 
-### 1. Backend Setup
+### Prerequisites
+- **MySQL Server** (via XAMPP, MySQL Workbench, or Docker) running on port `3306`.
+- **.NET 8 SDK** or newer installed.
+- **Node.js** (v18.x or v20.x+) and `npm`.
 
-1. Open a terminal in the `backend/` directory.
-2. Restore NuGet packages:
+---
+
+### Step 1: Database & Backend Setup
+
+1. **Start MySQL** (e.g. from XAMPP Control Panel start `MySQL`).
+2. Open a terminal in the `backend/` folder:
+   ```bash
+   cd backend
+   ```
+3. Verify your connection string in `appsettings.json` or `.env`:
+   ```json
+   "ConnectionStrings": {
+     "DefaultConnection": "Server=localhost;Port=3306;Database=HireConnectDB;User=root;Password=;"
+   }
+   ```
+4. Restore NuGet packages and apply EF Core database migrations:
    ```bash
    dotnet restore
-   ```
-3. The application is configured to use `MySQL`. Ensure you have MySQL running locally, and the `DefaultConnection` string in `backend/appsettings.json` is correct (e.g., pointing to your root user).
-4. Apply Entity Framework migrations to create the database:
-   ```bash
    dotnet ef database update
    ```
-   *(Note: The `InitialCreate` migration is already generated in the Migrations folder).*
-5. Run the API:
-   ```bash
+   *(This automatically creates the `HireConnectDB` database and tables).*
+5. Run the backend Web API:
    ```bash
    dotnet run
    ```
-   The API will start (usually on `http://localhost:5189` or `https://localhost:7200`).
+   The backend will be available at `http://localhost:5189`. You can view API documentation at `http://localhost:5189/swagger`.
 
-### Production Deployment
-When deploying to production (e.g., Azure App Service), ensure you explicitly set the `ASPNETCORE_ENVIRONMENT` application setting to `Production`. Without it, error responses could leak stack traces to users.
+---
 
-### 2. Frontend Setup
+### Step 2: Frontend Setup
 
-1. Open a terminal in the `frontend/` directory.
-2. Install dependencies:
+1. Open a new terminal in the `frontend/` folder:
+   ```bash
+   cd frontend
+   ```
+2. Install npm dependencies:
    ```bash
    npm install
    ```
-3. Set the API URL. Create a `.env.local` file in `frontend/` (if your backend runs on a different port than `5189`):
+3. (Optional) Create `.env.local` if using a custom backend port:
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:5189/api
    ```
-4. Start the development server:
+4. Start the Next.js development server:
    ```bash
    npm run dev
    ```
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. Open [http://localhost:3000](http://localhost:3000) in your web browser.
 
-## Features Implemented (MVP)
-- **Role-Based Auth**: Secure JWT-based auth with `httpOnly` refresh tokens.
-- **Job Seeker Flow**: Register, search jobs with filters, view job details, apply.
-- **Employer Flow**: Register company, post jobs (with Admin approval workflow), view applicants, manage application status.
-- **Admin Flow**: Dashboard to approve/reject jobs, companies, and block users.
-- **Security**: Strict ownership checks on mutating endpoints (`403 Forbidden` if a user tries to edit someone else's data). Resume files are protected behind authorization.
+---
+
+## Security & Architecture Highlights
+
+- **Brute-Force Account Protection**: ASP.NET Core Identity is configured with a 15-minute account lockout after 5 consecutive failed login attempts.
+- **Concurrent Token Refresh**: Frontend Axios interceptor enforces a single in-flight refresh token request with a shared promise queue and skips refresh on auth routes.
+- **Token Invalidation on Password Change/Reset**: Changing or resetting user password immediately revokes all active refresh tokens for that user.
+- **Config-Driven Cross-Origin Cookies**: Refresh token cookie `SameSite` and `Secure` attributes are dynamically configured for both local HTTP (`Lax`/`false`) and production cross-domain HTTPS (`None`/`true`).
+- **Input Validation & Anti-Tampering**: Resume uploads enforce 5MB limits and PDF/DOC/DOCX extensions. Payment webhooks rigorously verify signatures, currency, amount, and merchant ID.
+- **Sensitive Data Isolation**: Admin and public endpoints return dedicated projections/DTOs, preventing exposure of `PasswordHash` or `SecurityStamp`.

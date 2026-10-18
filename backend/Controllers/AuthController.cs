@@ -21,19 +21,25 @@ namespace HireConnect.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly AppDbContext _context;
         private readonly IFileStorageService _fileStorage;
+        private readonly IEmailService _emailService;
+        private readonly IWebHostEnvironment _environment;
 
         public AuthController(
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IConfiguration configuration,
             AppDbContext context,
-            IFileStorageService fileStorage)
+            IFileStorageService fileStorage,
+            IEmailService emailService,
+            IWebHostEnvironment environment)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _context = context;
             _fileStorage = fileStorage;
+            _emailService = emailService;
+            _environment = environment;
         }
 
         [HttpPost("register")]
@@ -69,7 +75,11 @@ namespace HireConnect.API.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null || !user.IsActive) return Unauthorized(new { message = "Invalid credentials or inactive account" });
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+            var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, lockoutOnFailure: true);
+            if (result.IsLockedOut)
+            {
+                return StatusCode(StatusCodes.Status423Locked, new { message = "Account locked due to multiple failed login attempts. Please try again after 15 minutes." });
+            }
             if (!result.Succeeded) return Unauthorized(new { message = "Invalid credentials" });
 
             var roles = await _userManager.GetRolesAsync(user);
@@ -95,14 +105,7 @@ namespace HireConnect.API.Controllers
             _context.RefreshTokens.Add(refreshTokenEntity);
             await _context.SaveChangesAsync();
 
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                Expires = refreshTokenEntity.ExpiresAt,
-                SameSite = SameSiteMode.Strict
-            };
-            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+            Response.Cookies.Append("refreshToken", refreshToken, GetRefreshTokenCookieOptions(refreshTokenEntity.ExpiresAt));
 
             return Ok(new
             {
@@ -124,7 +127,7 @@ namespace HireConnect.API.Controllers
 
             if (tokenEntity == null || tokenEntity.IsRevoked || tokenEntity.ExpiresAt < DateTime.UtcNow || !tokenEntity.User.IsActive)
             {
-                Response.Cookies.Delete("refreshToken");
+                Response.Cookies.Delete("refreshToken", GetRefreshTokenCookieOptions(DateTime.UtcNow.AddDays(-1)));
                 return Unauthorized(new { message = "Invalid refresh token" });
             }
 
@@ -153,14 +156,7 @@ namespace HireConnect.API.Controllers
             _context.RefreshTokens.Add(newRefreshTokenEntity);
             await _context.SaveChangesAsync();
 
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                Expires = newRefreshTokenEntity.ExpiresAt,
-                SameSite = SameSiteMode.Strict
-            };
-            Response.Cookies.Append("refreshToken", newRefreshToken, cookieOptions);
+            Response.Cookies.Append("refreshToken", newRefreshToken, GetRefreshTokenCookieOptions(newRefreshTokenEntity.ExpiresAt));
 
             return Ok(new
             {
@@ -184,7 +180,7 @@ namespace HireConnect.API.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                Response.Cookies.Delete("refreshToken");
+                Response.Cookies.Delete("refreshToken", GetRefreshTokenCookieOptions(DateTime.UtcNow.AddDays(-1)));
             }
 
             return Ok(new { message = "Logged out successfully" });
@@ -389,21 +385,38 @@ namespace HireConnect.API.Controllers
             var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
+            // Revoke all refresh tokens for this user upon password change
+            var userTokens = await _context.RefreshTokens
+                .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)
+                .ToListAsync();
+            foreach (var rt in userTokens)
+            {
+                rt.IsRevoked = true;
+            }
+            await _userManager.UpdateSecurityStampAsync(user);
+            await _context.SaveChangesAsync();
+
             return Ok(new { message = "Password changed successfully" });
         }
 
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
         {
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null) return Ok(new { message = "If the email exists, a reset link has been sent." });
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                return BadRequest(new { message = "Email is required." });
+            }
 
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            Console.WriteLine($"[Dev Use Only] Password reset token for {model.Email}: {token}");
-            
+            var user = await _userManager.FindByEmailAsync(model.Email.Trim());
+            if (user != null && user.IsActive)
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                await _emailService.SendPasswordResetEmailAsync(user.Email!, token);
+            }
+
+            // Never return token in API response, and no hardcoded Console.WriteLine
             return Ok(new { 
-                message = "If the email exists, a reset link has been sent.",
-                token = token 
+                message = "If the email exists, a reset link has been sent."
             });
         }
 
@@ -416,7 +429,66 @@ namespace HireConnect.API.Controllers
             var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
+            // Revoke all refresh tokens for this user upon password reset
+            var userTokens = await _context.RefreshTokens
+                .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)
+                .ToListAsync();
+            foreach (var rt in userTokens)
+            {
+                rt.IsRevoked = true;
+            }
+            await _userManager.UpdateSecurityStampAsync(user);
+            await _context.SaveChangesAsync();
+
             return Ok(new { message = "Password reset successfully." });
+        }
+
+        private CookieOptions GetRefreshTokenCookieOptions(DateTime? expires = null)
+        {
+            var sameSiteConfig = _configuration["CookieSettings:SameSite"];
+            var secureConfig = _configuration["CookieSettings:Secure"];
+
+            SameSiteMode sameSiteMode;
+            if (!string.IsNullOrEmpty(sameSiteConfig))
+            {
+                if (string.Equals(sameSiteConfig, "None", StringComparison.OrdinalIgnoreCase))
+                    sameSiteMode = SameSiteMode.None;
+                else if (string.Equals(sameSiteConfig, "Strict", StringComparison.OrdinalIgnoreCase))
+                    sameSiteMode = SameSiteMode.Strict;
+                else
+                    sameSiteMode = SameSiteMode.Lax;
+            }
+            else
+            {
+                // In Development over HTTP localhost, default to Lax; in Production, default to None for cross-domain cookie support
+                sameSiteMode = _environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None;
+            }
+
+            bool isSecure;
+            if (!string.IsNullOrEmpty(secureConfig) && bool.TryParse(secureConfig, out var configuredSecure))
+            {
+                isSecure = configuredSecure;
+            }
+            else
+            {
+                // Browsers mandate Secure=true when SameSite=None
+                isSecure = sameSiteMode == SameSiteMode.None || !_environment.IsDevelopment();
+            }
+
+            var options = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = isSecure,
+                SameSite = sameSiteMode,
+                Path = "/"
+            };
+
+            if (expires.HasValue)
+            {
+                options.Expires = expires.Value;
+            }
+
+            return options;
         }
     }
 

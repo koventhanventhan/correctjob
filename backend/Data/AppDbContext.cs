@@ -66,6 +66,11 @@ namespace HireConnect.API.Data
                 .HasForeignKey(a => a.SeekerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Unique index to prevent duplicate applications
+            builder.Entity<Application>()
+                .HasIndex(a => new { a.JobId, a.SeekerId })
+                .IsUnique();
+
             // SavedJob -> Job
             builder.Entity<SavedJob>()
                 .HasOne(sj => sj.Job)

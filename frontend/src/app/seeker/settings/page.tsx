@@ -8,6 +8,7 @@ import {
     LuCheck, LuTriangleAlert, LuEye, LuEyeOff
 } from 'react-icons/lu';
 import Link from 'next/link';
+import { validatePassword, formatIdentityErrors } from '@/utils/passwordValidation';
 
 function MessageBox({ msg }: { msg: { text: string; isError: boolean } | null }) {
     if (!msg) return null;
@@ -174,8 +175,9 @@ export default function SeekerSettings() {
             return;
         }
 
-        if (passwordData.newPassword.length < 6) {
-            setPasswordMsg({ text: 'New password must be at least 6 characters long.', isError: true });
+        const validationError = validatePassword(passwordData.newPassword);
+        if (validationError) {
+            setPasswordMsg({ text: validationError, isError: true });
             setPasswordSaving(false);
             return;
         }
@@ -188,10 +190,7 @@ export default function SeekerSettings() {
             setPasswordMsg({ text: 'Password changed successfully!', isError: false });
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error: any) {
-            const errorMsg =
-                error.response?.data?.message ||
-                error.response?.data?.[0]?.description ||
-                'Failed to change password.';
+            const errorMsg = formatIdentityErrors(error, 'Failed to change password.');
             setPasswordMsg({ text: errorMsg, isError: true });
         } finally {
             setPasswordSaving(false);

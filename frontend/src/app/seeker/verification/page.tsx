@@ -14,6 +14,34 @@ export default function VerificationPage() {
     const [backFile, setBackFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+
+    const handleViewDocument = async (endpoint: string, docKey: string) => {
+        const newTab = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
+        try {
+            setViewingDoc(docKey);
+            const response = await api.get(endpoint, {
+                responseType: 'blob'
+            });
+            const contentType = (response.headers['content-type'] as string) || 'application/octet-stream';
+            const blob = new Blob([response.data], { type: contentType });
+            const url = window.URL.createObjectURL(blob);
+            if (newTab && !newTab.closed) {
+                newTab.location.href = url;
+            } else {
+                window.open(url, '_blank');
+            }
+            setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+        } catch (error) {
+            if (newTab && !newTab.closed) {
+                newTab.close();
+            }
+            console.error("Failed to view document", error);
+            alert("Failed to view document. Please try again.");
+        } finally {
+            setViewingDoc(null);
+        }
+    };
 
     useEffect(() => {
         if (!isInitializing && (!user || user.role !== 'JobSeeker')) {
@@ -96,6 +124,31 @@ export default function VerificationPage() {
                         )}
                         {status === 'Verified' && (
                             <p className="text-gray-600 mt-2">Your identity has been verified. Employers will now see a "Verified" badge next to your name.</p>
+                        )}
+                        {(profile?.idCardFrontUrl || profile?.idCardBackUrl) && (
+                            <div className="mt-3 flex items-center gap-3 text-sm">
+                                <span className="text-gray-600 font-medium">Uploaded Documents:</span>
+                                {profile.idCardFrontUrl && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleViewDocument('/seekerprofiles/id-card/front', 'front')}
+                                        disabled={viewingDoc === 'front'}
+                                        className="text-orange hover:underline font-medium cursor-pointer disabled:opacity-50"
+                                    >
+                                        {viewingDoc === 'front' ? 'Opening...' : 'View Front'}
+                                    </button>
+                                )}
+                                {profile.idCardBackUrl && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleViewDocument('/seekerprofiles/id-card/back', 'back')}
+                                        disabled={viewingDoc === 'back'}
+                                        className="text-orange hover:underline font-medium cursor-pointer disabled:opacity-50"
+                                    >
+                                        {viewingDoc === 'back' ? 'Opening...' : 'View Back'}
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>

@@ -15,11 +15,13 @@ namespace HireConnect.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IPaymentGatewayService _paymentGateway;
+        private readonly IConfiguration _config;
 
-        public PaymentsController(AppDbContext context, IPaymentGatewayService paymentGateway)
+        public PaymentsController(AppDbContext context, IPaymentGatewayService paymentGateway, IConfiguration config)
         {
             _context = context;
             _paymentGateway = paymentGateway;
+            _config = config;
         }
 
         [HttpPost("create-order")]
@@ -61,15 +63,37 @@ namespace HireConnect.API.Controllers
         [Consumes("application/x-www-form-urlencoded")]
         public async Task<IActionResult> Notify([FromForm] PayHereNotifyRequestDto notifyDto)
         {
-            // Verify hash
+            // 1. Verify hash signature
             bool isValid = _paymentGateway.VerifyNotification(notifyDto);
             if (!isValid)
             {
                 return BadRequest(new { message = "Invalid signature." });
             }
 
+            // 2. Verify merchant_id matches configured merchant
+            var configuredMerchantId = _config["PayHere:MerchantId"];
+            if (!string.IsNullOrEmpty(configuredMerchantId) &&
+                !string.Equals(notifyDto.merchant_id, configuredMerchantId, StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { message = "Merchant ID does not match configured merchant." });
+            }
+
+            // 3. Find payment record by OrderId
             var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == notifyDto.order_id);
-            if (payment == null) return NotFound();
+            if (payment == null) return NotFound(new { message = "Payment order not found." });
+
+            // 4. Verify amount matches stored payment
+            if (!decimal.TryParse(notifyDto.payhere_amount, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var notifyAmount) ||
+                Math.Abs(notifyAmount - payment.Amount) > 0.01m)
+            {
+                return BadRequest(new { message = "Payment amount does not match stored order amount." });
+            }
+
+            // 5. Verify currency matches stored payment
+            if (!string.Equals(notifyDto.payhere_currency, payment.Currency, StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { message = "Payment currency does not match stored order currency." });
+            }
 
             if (notifyDto.status_code == "2") // Success
             {

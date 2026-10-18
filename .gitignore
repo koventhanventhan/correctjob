@@ -52,6 +52,9 @@ uploads/
 **/uploads/
 backend/uploads/
 backend/Uploads/
+private_uploads/
+**/private_uploads/
+backend/private_uploads/
 
 # OS Generated Files
 .DS_Store
@@ -70,4 +73,11 @@ desktop.ini
 frontend-deploy.zip
 *.swp
 *.swo
+repopack-output.*
+repomix-output.*
+
+# Test Scripts & Local Tools
+backend/test_*
+**/test_*
+test_*
 

@@ -72,9 +72,10 @@ namespace HireConnect.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("JobId");
-
                     b.HasIndex("SeekerId");
+
+                    b.HasIndex("JobId", "SeekerId")
+                        .IsUnique();
 
                     b.ToTable("Applications");
                 });

@@ -221,6 +221,36 @@ export default function AdminDashboard() {
         }
     };
 
+    const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+
+    const handleViewDocument = async (endpoint: string, docKey: string) => {
+        // Open blank tab immediately to preserve user gesture activation and bypass popup blockers
+        const newTab = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
+        try {
+            setViewingDoc(docKey);
+            const response = await api.get(endpoint, {
+                responseType: 'blob'
+            });
+            const contentType = (response.headers['content-type'] as string) || 'application/octet-stream';
+            const blob = new Blob([response.data], { type: contentType });
+            const url = window.URL.createObjectURL(blob);
+            if (newTab && !newTab.closed) {
+                newTab.location.href = url;
+            } else {
+                window.open(url, '_blank');
+            }
+            setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+        } catch (error) {
+            if (newTab && !newTab.closed) {
+                newTab.close();
+            }
+            console.error("Failed to view document", error);
+            alert("Failed to view document. Please try again.");
+        } finally {
+            setViewingDoc(null);
+        }
+    };
+
     if (isInitializing) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-warmwhite">
@@ -791,10 +821,27 @@ export default function AdminDashboard() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
                                                 {v.idCardFrontUrl && (
-                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/seekerprofiles/id-card/front?profileId=${v.id}`} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline font-medium">Front</a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleViewDocument(`/seekerprofiles/id-card/front?profileId=${v.id}`, `seeker-${v.id}-front`)}
+                                                        disabled={viewingDoc === `seeker-${v.id}-front`}
+                                                        className="text-orange hover:underline font-medium cursor-pointer disabled:opacity-50"
+                                                    >
+                                                        {viewingDoc === `seeker-${v.id}-front` ? 'Opening...' : 'Front'}
+                                                    </button>
                                                 )}
                                                 {v.idCardBackUrl && (
-                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/seekerprofiles/id-card/back?profileId=${v.id}`} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline font-medium">Back</a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleViewDocument(`/seekerprofiles/id-card/back?profileId=${v.id}`, `seeker-${v.id}-back`)}
+                                                        disabled={viewingDoc === `seeker-${v.id}-back`}
+                                                        className="text-orange hover:underline font-medium cursor-pointer disabled:opacity-50"
+                                                    >
+                                                        {viewingDoc === `seeker-${v.id}-back` ? 'Opening...' : 'Back'}
+                                                    </button>
+                                                )}
+                                                {!v.idCardFrontUrl && !v.idCardBackUrl && (
+                                                    <span className="text-gray-400 italic">None</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -857,10 +904,27 @@ export default function AdminDashboard() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
                                                 {v.idCardFrontUrl && (
-                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/companies/id-card/front?companyId=${v.id}`} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline font-medium">Front</a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleViewDocument(`/companies/id-card/front?companyId=${v.id}`, `employer-${v.id}-front`)}
+                                                        disabled={viewingDoc === `employer-${v.id}-front`}
+                                                        className="text-orange hover:underline font-medium cursor-pointer disabled:opacity-50"
+                                                    >
+                                                        {viewingDoc === `employer-${v.id}-front` ? 'Opening...' : 'Front'}
+                                                    </button>
                                                 )}
                                                 {v.idCardBackUrl && (
-                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/companies/id-card/back?companyId=${v.id}`} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline font-medium">Back</a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleViewDocument(`/companies/id-card/back?companyId=${v.id}`, `employer-${v.id}-back`)}
+                                                        disabled={viewingDoc === `employer-${v.id}-back`}
+                                                        className="text-orange hover:underline font-medium cursor-pointer disabled:opacity-50"
+                                                    >
+                                                        {viewingDoc === `employer-${v.id}-back` ? 'Opening...' : 'Back'}
+                                                    </button>
+                                                )}
+                                                {!v.idCardFrontUrl && !v.idCardBackUrl && (
+                                                    <span className="text-gray-400 italic">None</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">

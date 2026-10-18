@@ -12,10 +12,12 @@ namespace HireConnect.API.Controllers
     public class CompaniesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly HireConnect.API.Services.IFileStorageService _fileStorage;
 
-        public CompaniesController(AppDbContext context)
+        public CompaniesController(AppDbContext context, HireConnect.API.Services.IFileStorageService fileStorage)
         {
             _context = context;
+            _fileStorage = fileStorage;
         }
 
         [HttpGet]
@@ -138,23 +140,11 @@ namespace HireConnect.API.Controllers
                 return BadRequest(new { message = "File size cannot exceed 5MB." });
             }
 
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "id-cards");
-            Directory.CreateDirectory(uploadsFolder);
+            var frontUrl = await _fileStorage.UploadFileAsync(front, "id-cards");
+            var backUrl = await _fileStorage.UploadFileAsync(back, "id-cards");
 
-            var frontFileName = $"{Guid.NewGuid()}_{Path.GetFileName(front.FileName)}";
-            var backFileName = $"{Guid.NewGuid()}_{Path.GetFileName(back.FileName)}";
-
-            using (var stream = new FileStream(Path.Combine(uploadsFolder, frontFileName), FileMode.Create))
-            {
-                await front.CopyToAsync(stream);
-            }
-            using (var stream = new FileStream(Path.Combine(uploadsFolder, backFileName), FileMode.Create))
-            {
-                await back.CopyToAsync(stream);
-            }
-
-            company.IdCardFrontUrl = frontFileName;
-            company.IdCardBackUrl = backFileName;
+            company.IdCardFrontUrl = frontUrl;
+            company.IdCardBackUrl = backUrl;
             company.VerificationStatus = "Pending";
             company.VerificationNotes = null;
 
@@ -181,12 +171,8 @@ namespace HireConnect.API.Controllers
             var fileName = side.ToLower() == "front" ? company.IdCardFrontUrl : company.IdCardBackUrl;
             if (string.IsNullOrEmpty(fileName)) return NotFound();
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "id-cards", fileName);
-            if (!System.IO.File.Exists(filePath))
-            {
-                filePath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "IdCards", fileName);
-            }
-            if (!System.IO.File.Exists(filePath)) return NotFound();
+            var filePath = _fileStorage.GetPhysicalFilePath(fileName, "id-cards");
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath)) return NotFound();
 
             var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
             if (!provider.TryGetContentType(filePath, out var contentType))
@@ -194,8 +180,7 @@ namespace HireConnect.API.Controllers
                 contentType = "application/octet-stream";
             }
 
-            var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            return File(fileStream, contentType, fileName);
+            return PhysicalFile(filePath, contentType, Path.GetFileName(filePath));
         }
     }
 

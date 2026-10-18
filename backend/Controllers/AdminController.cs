@@ -3,6 +3,7 @@ using HireConnect.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace HireConnect.API.Controllers
 {
@@ -66,21 +67,75 @@ namespace HireConnect.API.Controllers
                 .OrderByDescending(j => j.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(j => new
+                {
+                    j.Id,
+                    j.Title,
+                    j.Description,
+                    j.Requirements,
+                    j.Responsibilities,
+                    j.Location,
+                    j.SalaryMin,
+                    j.SalaryMax,
+                    j.ExperienceMin,
+                    j.ExperienceMax,
+                    j.JobType,
+                    j.CategoryId,
+                    j.Status,
+                    j.IsPaid,
+                    j.Deadline,
+                    j.CreatedAt,
+                    Company = j.Company == null ? null : new
+                    {
+                        j.Company.Id,
+                        j.Company.CompanyName,
+                        j.Company.Location,
+                        j.Company.LogoUrl,
+                        j.Company.IsApproved
+                    }
+                })
                 .ToListAsync();
 
             return Ok(new { data = jobs, totalCount });
         }
 
         [HttpPatch("jobs/{id}/approve")]
-        public async Task<IActionResult> ApproveJob(int id, [FromBody] string status = "Approved")
+        public async Task<IActionResult> ApproveJob(int id, [FromBody] JsonElement body)
         {
             var job = await _context.Jobs.FindAsync(id);
             if (job == null) return NotFound();
 
-            // Status State Machine validation can be more complex, but simplified here
-            job.Status = status; 
+            string? status = null;
+            if (body.ValueKind == JsonValueKind.String)
+            {
+                status = body.GetString();
+            }
+            else if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("status", out var statusProp))
+            {
+                status = statusProp.GetString();
+            }
+
+            if (string.IsNullOrWhiteSpace(status) || string.Equals(status, "Approved", StringComparison.OrdinalIgnoreCase))
+            {
+                status = "Published";
+            }
+
+            var allowedStatuses = new[] { "Published", "Rejected", "PendingApproval", "Draft", "Closed" };
+            var matchedStatus = allowedStatuses.FirstOrDefault(s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase));
+            if (matchedStatus == null)
+            {
+                return BadRequest(new { message = $"Invalid status '{status}'. Allowed statuses are: {string.Join(", ", allowedStatuses)}" });
+            }
+
+            job.Status = matchedStatus; 
             await _context.SaveChangesAsync();
-            return Ok(job);
+            return Ok(new
+            {
+                job.Id,
+                job.Title,
+                job.Status,
+                message = $"Job status updated to '{job.Status}' successfully."
+            });
         }
 
         [HttpGet("companies")]
@@ -95,6 +150,24 @@ namespace HireConnect.API.Controllers
                 .OrderByDescending(c => c.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.CompanyName,
+                    c.Description,
+                    c.Website,
+                    c.Location,
+                    c.LogoUrl,
+                    c.VerificationStatus,
+                    c.IsApproved,
+                    Employer = c.Employer == null ? null : new
+                    {
+                        c.Employer.Id,
+                        c.Employer.FullName,
+                        c.Employer.Email,
+                        c.Employer.IsActive
+                    }
+                })
                 .ToListAsync();
 
             return Ok(new { data = companies, totalCount });
@@ -108,7 +181,13 @@ namespace HireConnect.API.Controllers
 
             company.IsApproved = isApproved;
             await _context.SaveChangesAsync();
-            return Ok(company);
+            return Ok(new
+            {
+                company.Id,
+                company.CompanyName,
+                company.IsApproved,
+                message = isApproved ? "Company approved successfully." : "Company approval revoked successfully."
+            });
         }
 
         [HttpPatch("users/{id}/block")]
@@ -128,7 +207,14 @@ namespace HireConnect.API.Controllers
 
             user.IsActive = isActive;
             await _context.SaveChangesAsync();
-            return Ok(user);
+            return Ok(new
+            {
+                user.Id,
+                user.FullName,
+                user.Email,
+                user.IsActive,
+                message = $"User {(isActive ? "unblocked" : "blocked")} successfully."
+            });
         }
 
         [HttpDelete("jobs/{id}")]

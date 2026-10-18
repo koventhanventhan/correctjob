@@ -36,12 +36,31 @@ namespace HireConnect.API.Controllers
             var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == model.JobId);
             if (job == null || job.Status != "Published") return NotFound("Job not found or not open for applications.");
 
-            // File upload
+            // Prevent duplicate applications
+            var hasAlreadyApplied = await _context.Applications.AnyAsync(a => a.JobId == model.JobId && a.SeekerId == seeker.Id);
+            if (hasAlreadyApplied)
+            {
+                return BadRequest(new { message = "You have already applied for this job." });
+            }
+
+            // File upload & validation
             string? resumeUrl = seeker.ResumeUrl;
             string? resumeText = seeker.ResumeText;
             
             if (model.ResumeFile != null)
             {
+                if (model.ResumeFile.Length > 5 * 1024 * 1024)
+                {
+                    return BadRequest(new { message = "Resume file size cannot exceed 5MB." });
+                }
+
+                var ext = Path.GetExtension(model.ResumeFile.FileName)?.ToLowerInvariant() ?? "";
+                var allowedExts = new[] { ".pdf", ".doc", ".docx" };
+                if (!allowedExts.Contains(ext))
+                {
+                    return BadRequest(new { message = "Only PDF, DOC, and DOCX files are allowed for resume upload." });
+                }
+
                 resumeUrl = await _fileStorage.UploadFileAsync(model.ResumeFile, "resumes");
                 try
                 {
@@ -238,10 +257,8 @@ namespace HireConnect.API.Controllers
 
             if (!isAdmin && !isOwner && !isEmployer) return Forbid(); // Access control check
 
-            var env = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
-            var filePath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, application.ResumeUrl.TrimStart('/'));
-
-            if (!System.IO.File.Exists(filePath)) return NotFound();
+            var filePath = _fileStorage.GetPhysicalFilePath(application.ResumeUrl, "resumes");
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath)) return NotFound();
 
             var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
             if (!provider.TryGetContentType(filePath, out var contentType))

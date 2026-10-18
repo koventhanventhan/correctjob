@@ -47,6 +47,9 @@ builder.Services.AddSignalR();
 // File Storage
 builder.Services.AddScoped<HireConnect.API.Services.IFileStorageService, HireConnect.API.Services.LocalFileStorageService>();
 
+// Email Services
+builder.Services.AddScoped<HireConnect.API.Services.IEmailService, HireConnect.API.Services.SmtpEmailService>();
+
 // Background Services
 builder.Services.AddHostedService<HireConnect.API.Services.JobAlertBackgroundService>();
 
@@ -65,8 +68,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
     ));
 
-// Configure Identity
-builder.Services.AddIdentity<User, IdentityRole>()
+// Configure Identity with Lockout settings
+builder.Services.AddIdentity<User, IdentityRole>(options =>
+{
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+    options.User.RequireUniqueEmail = true;
+})
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
@@ -140,14 +149,26 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(role));
     }
 
-    // Seed admin user
-    var userManager = services.GetRequiredService<UserManager<User>>();
-    var adminEmail = "admin@hireconnect.com";
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    // Seed admin user from environment variables / configuration only
+    var adminEmail = builder.Configuration["Admin:Email"] 
+                     ?? builder.Configuration["Admin__Email"] 
+                     ?? Environment.GetEnvironmentVariable("Admin__Email");
+    var adminPassword = builder.Configuration["Admin:Password"] 
+                        ?? builder.Configuration["Admin__Password"] 
+                        ?? Environment.GetEnvironmentVariable("Admin__Password");
+
+    if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
     {
-        var admin = new User { UserName = adminEmail, Email = adminEmail, FullName = "Admin User", IsActive = true };
-        await userManager.CreateAsync(admin, "Admin@123");
-        await userManager.AddToRoleAsync(admin, "Admin");
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        if (await userManager.FindByEmailAsync(adminEmail) == null)
+        {
+            var admin = new User { UserName = adminEmail, Email = adminEmail, FullName = "Admin User", IsActive = true };
+            var createResult = await userManager.CreateAsync(admin, adminPassword);
+            if (createResult.Succeeded)
+            {
+                await userManager.AddToRoleAsync(admin, "Admin");
+            }
+        }
     }
 }
 
@@ -167,6 +188,33 @@ if (!Directory.Exists(uploadsDir))
 {
     Directory.CreateDirectory(uploadsDir);
 }
+
+// Private uploads (outside static uploads root) for sensitive files like resumes and id-cards
+var privateUploadsDir = Path.Combine(builder.Environment.ContentRootPath, "private_uploads");
+if (!Directory.Exists(privateUploadsDir))
+{
+    Directory.CreateDirectory(privateUploadsDir);
+}
+
+// Block direct static access to sensitive directories (resumes, id-cards, private uploads)
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+    if (path.StartsWith("/uploads/resumes") || 
+        path.StartsWith("/uploads/id-cards") || 
+        path.StartsWith("/uploads/idcards") || 
+        path.StartsWith("/private_uploads") ||
+        path.StartsWith("/private-uploads"))
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync("{\"message\":\"Forbidden: Direct static access to sensitive documents is not permitted. Please use authorized endpoints.\"}");
+        return;
+    }
+    await next();
+});
+
+// Serve only public uploads (profile images, company logos)
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
@@ -174,7 +222,7 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx =>
     {
         var path = ctx.Context.Request.Path.Value?.ToLowerInvariant() ?? "";
-        // Resume files & ID verification cards are sensitive and must only be accessed through authorized endpoints
+        // Extra defense-in-depth: Block sensitive folder access if placed in uploads
         if (path.StartsWith("/resumes") || path.StartsWith("/id-cards") || path.StartsWith("/idcards"))
         {
             ctx.Context.Response.StatusCode = StatusCodes.Status403Forbidden;

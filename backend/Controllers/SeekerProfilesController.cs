@@ -124,10 +124,8 @@ namespace HireConnect.API.Controllers
 
             if (profile == null || string.IsNullOrEmpty(profile.ResumeUrl)) return NotFound();
 
-            var env = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
-            var filePath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, profile.ResumeUrl.TrimStart('/'));
-
-            if (!System.IO.File.Exists(filePath)) return NotFound();
+            var filePath = _fileStorage.GetPhysicalFilePath(profile.ResumeUrl, "resumes");
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath)) return NotFound();
 
             var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
             if (!provider.TryGetContentType(filePath, out var contentType))
@@ -205,10 +203,8 @@ namespace HireConnect.API.Controllers
             var fileUrl = side.ToLower() == "back" ? profile.IdCardBackUrl : profile.IdCardFrontUrl;
             if (string.IsNullOrEmpty(fileUrl)) return NotFound();
 
-            var env = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
-            var filePath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, fileUrl.TrimStart('/'));
-
-            if (!System.IO.File.Exists(filePath)) return NotFound();
+            var filePath = _fileStorage.GetPhysicalFilePath(fileUrl, "id-cards");
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath)) return NotFound();
 
             var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
             if (!provider.TryGetContentType(filePath, out var contentType))
