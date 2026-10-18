@@ -38,6 +38,11 @@ function JobsContent() {
     const { user } = useAuthStore();
     const [alertMsg, setAlertMsg] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+    const [alertKeyword, setAlertKeyword] = useState('');
+    const [alertLocation, setAlertLocation] = useState('');
+    const [alertCategoryId, setAlertCategoryId] = useState('');
+    const [alertJobType, setAlertJobType] = useState('');
 
     const createQueryString = useCallback(
         (params: Record<string, string>) => {
@@ -143,19 +148,36 @@ function JobsContent() {
         }
     });
 
+    const openSaveAlertModal = () => {
+        if (!user) {
+            router.push('/login?redirect=/jobs');
+            return;
+        }
+        if (user.role !== 'JobSeeker') {
+            alert('Please sign in as a Job Seeker to create job alerts.');
+            return;
+        }
+        setAlertKeyword(currentKeyword);
+        setAlertLocation(currentLocation);
+        setAlertCategoryId(currentCategory);
+        setAlertJobType(currentJobType);
+        setIsAlertModalOpen(true);
+    };
+
     const createAlertMutation = useMutation({
         mutationFn: async () => {
             const res = await api.post('/jobalerts', { 
-                keyword: currentKeyword || (currentCategory ? 'Category Alert' : 'General Alert'),
-                location: currentLocation || undefined,
-                categoryId: currentCategory ? parseInt(currentCategory, 10) : undefined,
-                jobType: currentJobType || undefined
+                keyword: alertKeyword.trim() || undefined,
+                location: alertLocation.trim() || undefined,
+                categoryId: alertCategoryId ? parseInt(alertCategoryId, 10) : undefined,
+                jobType: alertJobType || undefined
             });
             return res.data;
         },
         onSuccess: () => {
-            setAlertMsg('Alert created successfully! We will email you new matching jobs.');
-            setTimeout(() => setAlertMsg(''), 4000);
+            setIsAlertModalOpen(false);
+            setAlertMsg('Job alert saved! You will receive email notifications when new matching jobs are published.');
+            setTimeout(() => setAlertMsg(''), 6000);
         },
         onError: () => {
             setAlertMsg('Failed to create alert.');
@@ -381,41 +403,38 @@ function JobsContent() {
                     </form>
                 </div>
 
-                {/* Job Alert Banner */}
-                {user?.role === 'JobSeeker' && (
-                    <div className="mb-6 flex flex-col sm:flex-row items-center justify-between bg-peach/70 border border-peach p-4 rounded-lg gap-4">
-                        <div className="flex items-center text-charcoal">
-                            <div className="h-9 w-9 bg-orange/10 text-orange rounded-full flex items-center justify-center mr-3 shrink-0">
-                                <LuBell className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-charcoal text-sm">Save this search as an Email Alert</h4>
-                                <p className="text-xs text-gray-600 mt-0.5">
-                                    {hasAnyFilter ? (
-                                        <>
-                                            Get instant email notifications when new jobs matching your filters are published.
-                                        </>
-                                    ) : (
-                                        <>
-                                            Get daily updates of the top new opportunities directly in your inbox.
-                                        </>
-                                    )}
-                                </p>
-                            </div>
+                {/* Job Alert Banner (Seek.com Feature) */}
+                <div className="mb-6 flex flex-col sm:flex-row items-center justify-between bg-peach/70 border border-peach p-4 rounded-xl gap-4 shadow-sm">
+                    <div className="flex items-center text-charcoal">
+                        <div className="h-10 w-10 bg-orange/10 text-orange rounded-xl flex items-center justify-center mr-3 shrink-0">
+                            <LuBell className="w-5 h-5 text-orange" />
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                            {alertMsg && <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded">{alertMsg}</span>}
-                            <button
-                                type="button"
-                                onClick={() => createAlertMutation.mutate()}
-                                disabled={createAlertMutation.isPending}
-                                className="bg-orange text-white px-4 py-2 rounded-md hover:bg-orange/90 font-medium text-xs whitespace-nowrap transition-colors shadow-sm disabled:opacity-50"
-                            >
-                                {createAlertMutation.isPending ? 'Saving...' : 'Save Search & Alert'}
-                            </button>
+                        <div>
+                            <h4 className="font-semibold text-charcoal text-sm">Save this search as an Email Alert</h4>
+                            <p className="text-xs text-gray-600 mt-0.5">
+                                {hasAnyFilter ? (
+                                    <>Get instant email notifications as soon as new jobs matching your filters are published.</>
+                                ) : (
+                                    <>Get updates for new opportunities delivered directly to your inbox.</>
+                                )}
+                            </p>
                         </div>
                     </div>
-                )}
+                    <div className="flex items-center gap-3 shrink-0">
+                        {alertMsg && (
+                            <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg">
+                                {alertMsg}
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={openSaveAlertModal}
+                            className="bg-orange text-white px-4 py-2.5 rounded-xl hover:bg-orange/90 font-semibold text-xs whitespace-nowrap transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                        >
+                            <LuBell className="w-3.5 h-3.5" /> Save Search & Alert
+                        </button>
+                    </div>
+                </div>
 
                 {/* Job List */}
                 <div className="max-w-5xl">
@@ -535,6 +554,117 @@ function JobsContent() {
                         </div>
                     )}
                 </div>
+
+                {/* Save Search & Alert Modal (Seek.com Feature) */}
+                {isAlertModalOpen && (
+                    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                            <button
+                                type="button"
+                                onClick={() => setIsAlertModalOpen(false)}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <LuX className="w-5 h-5" />
+                            </button>
+
+                            <div className="flex items-center gap-2 mb-1">
+                                <LuBell className="w-5 h-5 text-orange" />
+                                <h3 className="text-xl font-bold text-charcoal">Save Search & Email Alert</h3>
+                            </div>
+                            <p className="text-xs text-gray-500 mb-4">
+                                Receive email notifications as soon as new jobs matching these criteria are posted.
+                            </p>
+
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    createAlertMutation.mutate();
+                                }}
+                                className="space-y-4"
+                            >
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Keyword / Title</label>
+                                    <input
+                                        type="text"
+                                        value={alertKeyword}
+                                        onChange={(e) => setAlertKeyword(e.target.value)}
+                                        placeholder="e.g. React Developer, UI Designer"
+                                        className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm text-charcoal focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Location</label>
+                                    <input
+                                        type="text"
+                                        value={alertLocation}
+                                        onChange={(e) => setAlertLocation(e.target.value)}
+                                        placeholder="e.g. Colombo, Remote, Jaffna"
+                                        className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm text-charcoal focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Category</label>
+                                        <select
+                                            value={alertCategoryId}
+                                            onChange={(e) => setAlertCategoryId(e.target.value)}
+                                            className="w-full bg-white border border-gray-300 rounded-xl px-2 py-2 text-xs text-charcoal focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none"
+                                        >
+                                            <option value="">Any Category</option>
+                                            {categories?.map((c: any) => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Work Type</label>
+                                        <select
+                                            value={alertJobType}
+                                            onChange={(e) => setAlertJobType(e.target.value)}
+                                            className="w-full bg-white border border-gray-300 rounded-xl px-2 py-2 text-xs text-charcoal focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none"
+                                        >
+                                            <option value="">Any Work Type</option>
+                                            <option value="Full-time">Full-time</option>
+                                            <option value="Part-time">Part-time</option>
+                                            <option value="Contract">Contract</option>
+                                            <option value="Casual">Casual / Temporary</option>
+                                            <option value="Internship">Internship</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                                    <Link
+                                        href="/seeker/job-alerts"
+                                        className="text-xs text-orange hover:underline font-semibold"
+                                        onClick={() => setIsAlertModalOpen(false)}
+                                    >
+                                        Manage alerts →
+                                    </Link>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAlertModalOpen(false)}
+                                            className="px-3 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={createAlertMutation.isPending}
+                                            className="px-4 py-2 bg-orange text-white rounded-xl text-xs font-semibold hover:bg-orange/90 disabled:opacity-50 transition-colors shadow-sm"
+                                        >
+                                            {createAlertMutation.isPending ? 'Saving...' : 'Save Alert'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
