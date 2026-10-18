@@ -39,11 +39,18 @@ namespace HireConnect.API.Models
         public string? VerificationNotes { get; set; }
         public DateTime? VerifiedAt { get; set; }
 
+        public bool IsOpenToWork { get; set; } = true;
+
         [ForeignKey(nameof(UserId))]
         public virtual User User { get; set; } = null!;
 
         public virtual ICollection<Application> Applications { get; set; } = new List<Application>();
         public virtual ICollection<SavedJob> SavedJobs { get; set; } = new List<SavedJob>();
         public virtual ICollection<SeekerResume> Resumes { get; set; } = new List<SeekerResume>();
+        public virtual ICollection<SeekerWorkHistory> WorkHistories { get; set; } = new List<SeekerWorkHistory>();
+        public virtual ICollection<SeekerEducation> Educations { get; set; } = new List<SeekerEducation>();
+        public virtual ICollection<SeekerSkill> Skills { get; set; } = new List<SeekerSkill>();
+        public virtual ICollection<SeekerLanguage> Languages { get; set; } = new List<SeekerLanguage>();
+        public virtual ICollection<SeekerCertification> Certifications { get; set; } = new List<SeekerCertification>();
     }
 }

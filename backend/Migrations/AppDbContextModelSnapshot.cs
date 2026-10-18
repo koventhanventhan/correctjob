@@ -669,6 +669,113 @@ namespace HireConnect.API.Migrations
                     b.ToTable("SavedJobs");
                 });
 
+            modelBuilder.Entity("HireConnect.API.Models.SeekerCertification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CredentialUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("IssueDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("IssuingOrganization")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("SeekerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeekerId");
+
+                    b.ToTable("SeekerCertifications");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SeekerEducation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Degree")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("FieldOfStudy")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Institution")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("SeekerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeekerId");
+
+                    b.ToTable("SeekerEducations");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SeekerLanguage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Proficiency")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int>("SeekerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeekerId");
+
+                    b.ToTable("SeekerLanguages");
+                });
+
             modelBuilder.Entity("HireConnect.API.Models.SeekerProfile", b =>
                 {
                     b.Property<int>("Id")
@@ -695,6 +802,9 @@ namespace HireConnect.API.Migrations
 
                     b.Property<string>("IdCardFrontUrl")
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("IsOpenToWork")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("LinkedInUrl")
                         .HasMaxLength(255)
@@ -775,6 +885,76 @@ namespace HireConnect.API.Migrations
                     b.HasIndex("SeekerId");
 
                     b.ToTable("SeekerResumes");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SeekerSkill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("SeekerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SkillName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int?>("YearsExperience")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeekerId");
+
+                    b.ToTable("SeekerSkills");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SeekerWorkHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Company")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("JobTitle")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("SeekerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeekerId");
+
+                    b.ToTable("SeekerWorkHistories");
                 });
 
             modelBuilder.Entity("HireConnect.API.Models.Skill", b =>
@@ -1269,6 +1449,39 @@ namespace HireConnect.API.Migrations
                     b.Navigation("Seeker");
                 });
 
+            modelBuilder.Entity("HireConnect.API.Models.SeekerCertification", b =>
+                {
+                    b.HasOne("HireConnect.API.Models.SeekerProfile", "Seeker")
+                        .WithMany("Certifications")
+                        .HasForeignKey("SeekerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Seeker");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SeekerEducation", b =>
+                {
+                    b.HasOne("HireConnect.API.Models.SeekerProfile", "Seeker")
+                        .WithMany("Educations")
+                        .HasForeignKey("SeekerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Seeker");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SeekerLanguage", b =>
+                {
+                    b.HasOne("HireConnect.API.Models.SeekerProfile", "Seeker")
+                        .WithMany("Languages")
+                        .HasForeignKey("SeekerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Seeker");
+                });
+
             modelBuilder.Entity("HireConnect.API.Models.SeekerProfile", b =>
                 {
                     b.HasOne("HireConnect.API.Models.User", "User")
@@ -1284,6 +1497,28 @@ namespace HireConnect.API.Migrations
                 {
                     b.HasOne("HireConnect.API.Models.SeekerProfile", "Seeker")
                         .WithMany("Resumes")
+                        .HasForeignKey("SeekerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Seeker");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SeekerSkill", b =>
+                {
+                    b.HasOne("HireConnect.API.Models.SeekerProfile", "Seeker")
+                        .WithMany("Skills")
+                        .HasForeignKey("SeekerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Seeker");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SeekerWorkHistory", b =>
+                {
+                    b.HasOne("HireConnect.API.Models.SeekerProfile", "Seeker")
+                        .WithMany("WorkHistories")
                         .HasForeignKey("SeekerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1381,9 +1616,19 @@ namespace HireConnect.API.Migrations
                 {
                     b.Navigation("Applications");
 
+                    b.Navigation("Certifications");
+
+                    b.Navigation("Educations");
+
+                    b.Navigation("Languages");
+
                     b.Navigation("Resumes");
 
                     b.Navigation("SavedJobs");
+
+                    b.Navigation("Skills");
+
+                    b.Navigation("WorkHistories");
                 });
 
             modelBuilder.Entity("HireConnect.API.Models.Skill", b =>

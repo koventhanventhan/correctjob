@@ -27,7 +27,14 @@ namespace HireConnect.API.Controllers
         public async Task<IActionResult> GetMyProfile()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            var profile = await _context.SeekerProfiles
+                .Include(s => s.WorkHistories)
+                .Include(s => s.Educations)
+                .Include(s => s.Skills)
+                .Include(s => s.Languages)
+                .Include(s => s.Certifications)
+                .Include(s => s.Resumes)
+                .FirstOrDefaultAsync(s => s.UserId == userId);
             
             if (profile == null)
             {
@@ -58,6 +65,10 @@ namespace HireConnect.API.Controllers
             existing.Location = model.Location;
             existing.LinkedInUrl = model.LinkedInUrl;
             existing.PortfolioUrl = model.PortfolioUrl;
+            if (model.IsOpenToWork.HasValue)
+            {
+                existing.IsOpenToWork = model.IsOpenToWork.Value;
+            }
 
             await _context.SaveChangesAsync();
             return Ok(existing);
@@ -345,6 +356,247 @@ namespace HireConnect.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Default resume updated." });
         }
+
+        [HttpPatch("open-to-work")]
+        public async Task<IActionResult> ToggleOpenToWork([FromBody] ToggleOpenToWorkDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (profile == null)
+            {
+                profile = new SeekerProfile { UserId = userId!, IsOpenToWork = model.IsOpenToWork };
+                _context.SeekerProfiles.Add(profile);
+            }
+            else
+            {
+                profile.IsOpenToWork = model.IsOpenToWork;
+            }
+            await _context.SaveChangesAsync();
+            return Ok(new { isOpenToWork = profile.IsOpenToWork });
+        }
+
+        // --- Work History Endpoints ---
+        [HttpPost("work-history")]
+        public async Task<IActionResult> AddWorkHistory([FromBody] WorkHistoryDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (profile == null) return NotFound("Profile not found.");
+
+            var item = new SeekerWorkHistory
+            {
+                SeekerId = profile.Id,
+                JobTitle = model.JobTitle,
+                Company = model.Company,
+                Location = model.Location,
+                StartDate = model.StartDate,
+                EndDate = model.EndDate,
+                IsCurrent = model.IsCurrent,
+                Description = model.Description
+            };
+
+            _context.SeekerWorkHistories.Add(item);
+            await _context.SaveChangesAsync();
+            return Ok(item);
+        }
+
+        [HttpPut("work-history/{id}")]
+        public async Task<IActionResult> UpdateWorkHistory(int id, [FromBody] WorkHistoryDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var item = await _context.SeekerWorkHistories
+                .Include(w => w.Seeker)
+                .FirstOrDefaultAsync(w => w.Id == id && w.Seeker!.UserId == userId);
+            if (item == null) return NotFound();
+
+            item.JobTitle = model.JobTitle;
+            item.Company = model.Company;
+            item.Location = model.Location;
+            item.StartDate = model.StartDate;
+            item.EndDate = model.EndDate;
+            item.IsCurrent = model.IsCurrent;
+            item.Description = model.Description;
+
+            await _context.SaveChangesAsync();
+            return Ok(item);
+        }
+
+        [HttpDelete("work-history/{id}")]
+        public async Task<IActionResult> DeleteWorkHistory(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var item = await _context.SeekerWorkHistories
+                .Include(w => w.Seeker)
+                .FirstOrDefaultAsync(w => w.Id == id && w.Seeker!.UserId == userId);
+            if (item == null) return NotFound();
+
+            _context.SeekerWorkHistories.Remove(item);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Work history deleted." });
+        }
+
+        // --- Education Endpoints ---
+        [HttpPost("education")]
+        public async Task<IActionResult> AddEducation([FromBody] EducationDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (profile == null) return NotFound("Profile not found.");
+
+            var item = new SeekerEducation
+            {
+                SeekerId = profile.Id,
+                Institution = model.Institution,
+                Degree = model.Degree,
+                FieldOfStudy = model.FieldOfStudy,
+                StartDate = model.StartDate,
+                EndDate = model.EndDate,
+                IsCurrent = model.IsCurrent
+            };
+
+            _context.SeekerEducations.Add(item);
+            await _context.SaveChangesAsync();
+            return Ok(item);
+        }
+
+        [HttpPut("education/{id}")]
+        public async Task<IActionResult> UpdateEducation(int id, [FromBody] EducationDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var item = await _context.SeekerEducations
+                .Include(e => e.Seeker)
+                .FirstOrDefaultAsync(e => e.Id == id && e.Seeker!.UserId == userId);
+            if (item == null) return NotFound();
+
+            item.Institution = model.Institution;
+            item.Degree = model.Degree;
+            item.FieldOfStudy = model.FieldOfStudy;
+            item.StartDate = model.StartDate;
+            item.EndDate = model.EndDate;
+            item.IsCurrent = model.IsCurrent;
+
+            await _context.SaveChangesAsync();
+            return Ok(item);
+        }
+
+        [HttpDelete("education/{id}")]
+        public async Task<IActionResult> DeleteEducation(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var item = await _context.SeekerEducations
+                .Include(e => e.Seeker)
+                .FirstOrDefaultAsync(e => e.Id == id && e.Seeker!.UserId == userId);
+            if (item == null) return NotFound();
+
+            _context.SeekerEducations.Remove(item);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Education deleted." });
+        }
+
+        // --- Skills Endpoints ---
+        [HttpPost("skills")]
+        public async Task<IActionResult> AddSkill([FromBody] SkillDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (profile == null) return NotFound("Profile not found.");
+
+            var item = new SeekerSkill
+            {
+                SeekerId = profile.Id,
+                SkillName = model.SkillName.Trim(),
+                YearsExperience = model.YearsExperience
+            };
+
+            _context.SeekerSkills.Add(item);
+            await _context.SaveChangesAsync();
+            return Ok(item);
+        }
+
+        [HttpDelete("skills/{id}")]
+        public async Task<IActionResult> DeleteSkill(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var item = await _context.SeekerSkills
+                .Include(s => s.Seeker)
+                .FirstOrDefaultAsync(s => s.Id == id && s.Seeker!.UserId == userId);
+            if (item == null) return NotFound();
+
+            _context.SeekerSkills.Remove(item);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Skill deleted." });
+        }
+
+        // --- Languages Endpoints ---
+        [HttpPost("languages")]
+        public async Task<IActionResult> AddLanguage([FromBody] LanguageDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (profile == null) return NotFound("Profile not found.");
+
+            var item = new SeekerLanguage
+            {
+                SeekerId = profile.Id,
+                Language = model.Language.Trim(),
+                Proficiency = string.IsNullOrWhiteSpace(model.Proficiency) ? "Conversational" : model.Proficiency.Trim()
+            };
+
+            _context.SeekerLanguages.Add(item);
+            await _context.SaveChangesAsync();
+            return Ok(item);
+        }
+
+        [HttpDelete("languages/{id}")]
+        public async Task<IActionResult> DeleteLanguage(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var item = await _context.SeekerLanguages
+                .Include(l => l.Seeker)
+                .FirstOrDefaultAsync(l => l.Id == id && l.Seeker!.UserId == userId);
+            if (item == null) return NotFound();
+
+            _context.SeekerLanguages.Remove(item);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Language deleted." });
+        }
+
+        // --- Certifications Endpoints ---
+        [HttpPost("certifications")]
+        public async Task<IActionResult> AddCertification([FromBody] CertificationDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var profile = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (profile == null) return NotFound("Profile not found.");
+
+            var item = new SeekerCertification
+            {
+                SeekerId = profile.Id,
+                Name = model.Name.Trim(),
+                IssuingOrganization = model.IssuingOrganization.Trim(),
+                IssueDate = model.IssueDate,
+                ExpiryDate = model.ExpiryDate,
+                CredentialUrl = model.CredentialUrl
+            };
+
+            _context.SeekerCertifications.Add(item);
+            await _context.SaveChangesAsync();
+            return Ok(item);
+        }
+
+        [HttpDelete("certifications/{id}")]
+        public async Task<IActionResult> DeleteCertification(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var item = await _context.SeekerCertifications
+                .Include(c => c.Seeker)
+                .FirstOrDefaultAsync(c => c.Id == id && c.Seeker!.UserId == userId);
+            if (item == null) return NotFound();
+
+            _context.SeekerCertifications.Remove(item);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Certification deleted." });
+        }
     }
 
     public class SeekerProfileDto
@@ -356,6 +608,54 @@ namespace HireConnect.API.Controllers
         public string? Location { get; set; }
         public string? LinkedInUrl { get; set; }
         public string? PortfolioUrl { get; set; }
+        public bool? IsOpenToWork { get; set; }
+    }
+
+    public class ToggleOpenToWorkDto
+    {
+        public bool IsOpenToWork { get; set; }
+    }
+
+    public class WorkHistoryDto
+    {
+        public string JobTitle { get; set; } = string.Empty;
+        public string Company { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public bool IsCurrent { get; set; }
+        public string? Description { get; set; }
+    }
+
+    public class EducationDto
+    {
+        public string Institution { get; set; } = string.Empty;
+        public string Degree { get; set; } = string.Empty;
+        public string? FieldOfStudy { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public bool IsCurrent { get; set; }
+    }
+
+    public class SkillDto
+    {
+        public string SkillName { get; set; } = string.Empty;
+        public int? YearsExperience { get; set; }
+    }
+
+    public class LanguageDto
+    {
+        public string Language { get; set; } = string.Empty;
+        public string Proficiency { get; set; } = "Conversational";
+    }
+
+    public class CertificationDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string IssuingOrganization { get; set; } = string.Empty;
+        public DateTime? IssueDate { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+        public string? CredentialUrl { get; set; }
     }
 
     public class AddResumeDto

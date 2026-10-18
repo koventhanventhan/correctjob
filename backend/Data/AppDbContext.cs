@@ -29,6 +29,11 @@ namespace HireConnect.API.Data
         public DbSet<JobScreeningQuestion> JobScreeningQuestions { get; set; }
         public DbSet<ApplicationAnswer> ApplicationAnswers { get; set; }
         public DbSet<SeekerResume> SeekerResumes { get; set; }
+        public DbSet<SeekerWorkHistory> SeekerWorkHistories { get; set; }
+        public DbSet<SeekerEducation> SeekerEducations { get; set; }
+        public DbSet<SeekerSkill> SeekerSkills { get; set; }
+        public DbSet<SeekerLanguage> SeekerLanguages { get; set; }
+        public DbSet<SeekerCertification> SeekerCertifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
