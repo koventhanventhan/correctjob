@@ -94,7 +94,8 @@ namespace HireConnect.API.Controllers
             }
             if (remote.HasValue && remote.Value)
             {
-                query = query.Where(j => (j.Location != null && j.Location.Contains("Remote")) || 
+                query = query.Where(j => j.IsRemote || 
+                                         (j.Location != null && j.Location.Contains("Remote")) || 
                                          (j.JobType != null && j.JobType.Contains("Remote")) || 
                                          (j.Description != null && j.Description.Contains("Remote")));
             }
@@ -158,6 +159,7 @@ namespace HireConnect.API.Controllers
                     Requirements = j.Requirements,
                     Responsibilities = j.Responsibilities,
                     Location = j.Location,
+                    IsRemote = j.IsRemote,
                     SalaryMin = j.SalaryMin,
                     SalaryMax = j.SalaryMax,
                     ExperienceMin = j.ExperienceMin,
@@ -237,6 +239,7 @@ namespace HireConnect.API.Controllers
                 Requirements = job.Requirements,
                 Responsibilities = job.Responsibilities,
                 Location = job.Location,
+                IsRemote = job.IsRemote,
                 SalaryMin = job.SalaryMin,
                 SalaryMax = job.SalaryMax,
                 ExperienceMin = job.ExperienceMin,
@@ -273,6 +276,7 @@ namespace HireConnect.API.Controllers
                         QuestionText = q.QuestionText,
                         QuestionType = q.QuestionType,
                         IsRequired = q.IsRequired,
+                        IdealAnswer = q.IdealAnswer,
                         OrderIndex = q.OrderIndex
                     }).ToList()
             };
@@ -310,6 +314,7 @@ namespace HireConnect.API.Controllers
                     Requirements = j.Requirements,
                     Responsibilities = j.Responsibilities,
                     Location = j.Location,
+                    IsRemote = j.IsRemote,
                     SalaryMin = j.SalaryMin,
                     SalaryMax = j.SalaryMax,
                     ExperienceMin = j.ExperienceMin,
@@ -429,6 +434,7 @@ namespace HireConnect.API.Controllers
                 Requirements = x.Job.Requirements,
                 Responsibilities = x.Job.Responsibilities,
                 Location = x.Job.Location,
+                IsRemote = x.Job.IsRemote,
                 SalaryMin = x.Job.SalaryMin,
                 SalaryMax = x.Job.SalaryMax,
                 ExperienceMin = x.Job.ExperienceMin,
@@ -492,6 +498,7 @@ namespace HireConnect.API.Controllers
                     Requirements = j.Requirements,
                     Responsibilities = j.Responsibilities,
                     Location = j.Location,
+                    IsRemote = j.IsRemote,
                     SalaryMin = j.SalaryMin,
                     SalaryMax = j.SalaryMax,
                     ExperienceMin = j.ExperienceMin,
@@ -550,16 +557,17 @@ namespace HireConnect.API.Controllers
             var job = new Job
             {
                 CompanyId = company.Id,
-                Title = model.Title,
-                Description = model.Description,
-                Requirements = model.Requirements,
-                Responsibilities = model.Responsibilities,
-                Location = model.Location,
+                Title = model.Title.Trim(),
+                Description = model.Description.Trim(),
+                Requirements = model.Requirements?.Trim(),
+                Responsibilities = model.Responsibilities?.Trim(),
+                Location = model.Location?.Trim(),
+                IsRemote = model.IsRemote,
                 SalaryMin = model.SalaryMin,
                 SalaryMax = model.SalaryMax,
                 ExperienceMin = model.ExperienceMin,
                 ExperienceMax = model.ExperienceMax,
-                JobType = model.JobType,
+                JobType = model.JobType?.Trim(),
                 CategoryId = model.CategoryId,
                 Deadline = model.Deadline,
                 Status = "Draft" // Strict state machine starts at Draft
@@ -568,7 +576,37 @@ namespace HireConnect.API.Controllers
             _context.Jobs.Add(job);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetJob), new { id = job.Id }, job);
+            // Save screening questions if provided
+            if (model.ScreeningQuestions != null && model.ScreeningQuestions.Count > 0)
+            {
+                int idx = 0;
+                foreach (var q in model.ScreeningQuestions)
+                {
+                    if (!string.IsNullOrWhiteSpace(q.QuestionText))
+                    {
+                        _context.JobScreeningQuestions.Add(new JobScreeningQuestion
+                        {
+                            JobId = job.Id,
+                            QuestionText = q.QuestionText.Trim(),
+                            QuestionType = string.IsNullOrWhiteSpace(q.QuestionType) ? "Text" : q.QuestionType.Trim(),
+                            IsRequired = q.IsRequired,
+                            IdealAnswer = q.IdealAnswer?.Trim(),
+                            OrderIndex = q.OrderIndex > 0 ? q.OrderIndex : idx
+                        });
+                        idx++;
+                    }
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            var createdJob = await _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category)
+                .Include(j => j.JobSkills).ThenInclude(js => js.Skill)
+                .Include(j => j.ScreeningQuestions)
+                .FirstOrDefaultAsync(j => j.Id == job.Id);
+
+            return CreatedAtAction(nameof(GetJob), new { id = job.Id }, MapToResponseDto(createdJob ?? job));
         }
 
         [HttpPut("{id}")]
@@ -576,7 +614,10 @@ namespace HireConnect.API.Controllers
         public async Task<IActionResult> UpdateJob(int id, [FromBody] JobDto model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == id);
+            var job = await _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.ScreeningQuestions)
+                .FirstOrDefaultAsync(j => j.Id == id);
             
             if (job == null) return NotFound();
             if (job.Company.EmployerId != userId) return Forbid(); // Ownership check
@@ -591,21 +632,61 @@ namespace HireConnect.API.Controllers
                 job.Status = "PendingApproval";
             }
 
-            job.Title = model.Title;
-            job.Description = model.Description;
-            job.Requirements = model.Requirements;
-            job.Responsibilities = model.Responsibilities;
-            job.Location = model.Location;
+            job.Title = model.Title.Trim();
+            job.Description = model.Description.Trim();
+            job.Requirements = model.Requirements?.Trim();
+            job.Responsibilities = model.Responsibilities?.Trim();
+            job.Location = model.Location?.Trim();
+            job.IsRemote = model.IsRemote;
             job.SalaryMin = model.SalaryMin;
             job.SalaryMax = model.SalaryMax;
             job.ExperienceMin = model.ExperienceMin;
             job.ExperienceMax = model.ExperienceMax;
-            job.JobType = model.JobType;
+            job.JobType = model.JobType?.Trim();
             job.CategoryId = model.CategoryId;
             job.Deadline = model.Deadline;
 
+            if (model.ScreeningQuestions != null)
+            {
+                var existingQuestions = await _context.JobScreeningQuestions
+                    .Where(q => q.JobId == id)
+                    .ToListAsync();
+                var questionIds = existingQuestions.Select(q => q.Id).ToList();
+                var hasAnswers = await _context.ApplicationAnswers.AnyAsync(a => questionIds.Contains(a.QuestionId));
+
+                if (!hasAnswers)
+                {
+                    _context.JobScreeningQuestions.RemoveRange(existingQuestions);
+                    int idx = 0;
+                    foreach (var q in model.ScreeningQuestions)
+                    {
+                        if (!string.IsNullOrWhiteSpace(q.QuestionText))
+                        {
+                            _context.JobScreeningQuestions.Add(new JobScreeningQuestion
+                            {
+                                JobId = job.Id,
+                                QuestionText = q.QuestionText.Trim(),
+                                QuestionType = string.IsNullOrWhiteSpace(q.QuestionType) ? "Text" : q.QuestionType.Trim(),
+                                IsRequired = q.IsRequired,
+                                IdealAnswer = q.IdealAnswer?.Trim(),
+                                OrderIndex = q.OrderIndex > 0 ? q.OrderIndex : idx
+                            });
+                            idx++;
+                        }
+                    }
+                }
+            }
+
             await _context.SaveChangesAsync();
-            return Ok(job);
+
+            var updatedJob = await _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category)
+                .Include(j => j.JobSkills).ThenInclude(js => js.Skill)
+                .Include(j => j.ScreeningQuestions)
+                .FirstOrDefaultAsync(j => j.Id == job.Id);
+
+            return Ok(MapToResponseDto(updatedJob ?? job));
         }
 
         [HttpPost("{id}/submit")]
@@ -625,7 +706,7 @@ namespace HireConnect.API.Controllers
             job.Status = "PendingApproval";
             await _context.SaveChangesAsync();
 
-            return Ok(job);
+            return Ok(new { message = "Job submitted for approval.", status = job.Status });
         }
 
         [HttpPost("{id}/close")]
@@ -701,6 +782,145 @@ namespace HireConnect.API.Controllers
 
             return NoContent();
         }
+
+        [HttpPost("{id}/duplicate")]
+        [Authorize(Roles = "Employer,Admin")]
+        public async Task<IActionResult> DuplicateJob(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Admin");
+
+            var originalJob = await _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.JobSkills)
+                .Include(j => j.ScreeningQuestions)
+                .FirstOrDefaultAsync(j => j.Id == id);
+
+            if (originalJob == null) return NotFound();
+            if (!isAdmin && originalJob.Company.EmployerId != userId) return Forbid();
+
+            var copyTitle = $"{originalJob.Title} (Copy)";
+            if (copyTitle.Length > 200) copyTitle = copyTitle.Substring(0, 193) + " (Copy)";
+
+            var copy = new Job
+            {
+                CompanyId = originalJob.CompanyId,
+                Title = copyTitle,
+                Description = originalJob.Description,
+                Requirements = originalJob.Requirements,
+                Responsibilities = originalJob.Responsibilities,
+                Location = originalJob.Location,
+                IsRemote = originalJob.IsRemote,
+                SalaryMin = originalJob.SalaryMin,
+                SalaryMax = originalJob.SalaryMax,
+                ExperienceMin = originalJob.ExperienceMin,
+                ExperienceMax = originalJob.ExperienceMax,
+                JobType = originalJob.JobType,
+                CategoryId = originalJob.CategoryId,
+                Deadline = originalJob.Deadline.HasValue && originalJob.Deadline > DateTime.UtcNow 
+                    ? originalJob.Deadline 
+                    : DateTime.UtcNow.AddDays(30),
+                Status = "Draft",
+                IsPaid = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Jobs.Add(copy);
+            await _context.SaveChangesAsync();
+
+            // Duplicate skills
+            if (originalJob.JobSkills.Any())
+            {
+                foreach (var js in originalJob.JobSkills)
+                {
+                    _context.JobSkills.Add(new JobSkill
+                    {
+                        JobId = copy.Id,
+                        SkillId = js.SkillId
+                    });
+                }
+            }
+
+            // Duplicate screening questions
+            if (originalJob.ScreeningQuestions.Any())
+            {
+                foreach (var sq in originalJob.ScreeningQuestions.OrderBy(q => q.OrderIndex))
+                {
+                    _context.JobScreeningQuestions.Add(new JobScreeningQuestion
+                    {
+                        JobId = copy.Id,
+                        QuestionText = sq.QuestionText,
+                        QuestionType = sq.QuestionType,
+                        IsRequired = sq.IsRequired,
+                        IdealAnswer = sq.IdealAnswer,
+                        OrderIndex = sq.OrderIndex
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Job duplicated successfully as draft.",
+                jobId = copy.Id,
+                title = copy.Title
+            });
+        }
+
+        private static JobResponseDto MapToResponseDto(Job job)
+        {
+            return new JobResponseDto
+            {
+                Id = job.Id,
+                CompanyId = job.CompanyId,
+                Title = job.Title,
+                Description = job.Description,
+                Requirements = job.Requirements,
+                Responsibilities = job.Responsibilities,
+                Location = job.Location,
+                IsRemote = job.IsRemote,
+                SalaryMin = job.SalaryMin,
+                SalaryMax = job.SalaryMax,
+                ExperienceMin = job.ExperienceMin,
+                ExperienceMax = job.ExperienceMax,
+                JobType = job.JobType,
+                CategoryId = job.CategoryId,
+                Deadline = job.Deadline,
+                Status = job.Status,
+                CreatedAt = job.CreatedAt,
+                IsPaid = job.IsPaid,
+                Company = job.Company == null ? null : new JobCompanyDto
+                {
+                    Id = job.Company.Id,
+                    CompanyName = job.Company.CompanyName,
+                    LogoUrl = job.Company.LogoUrl,
+                    Location = job.Company.Location,
+                    Industry = job.Company.Industry,
+                    Website = job.Company.Website,
+                    Description = job.Company.Description,
+                    CompanySize = job.Company.CompanySize,
+                    IsApproved = job.Company.IsApproved
+                },
+                Category = job.Category == null ? null : new JobCategoryDto
+                {
+                    Id = job.Category.Id,
+                    Name = job.Category.Name
+                },
+                Skills = job.JobSkills?.Select(js => js.Skill.Name).ToList() ?? new List<string>(),
+                ScreeningQuestions = job.ScreeningQuestions?
+                    .OrderBy(q => q.OrderIndex)
+                    .Select(q => new ScreeningQuestionResponseDto
+                    {
+                        Id = q.Id,
+                        QuestionText = q.QuestionText,
+                        QuestionType = q.QuestionType,
+                        IsRequired = q.IsRequired,
+                        IdealAnswer = q.IdealAnswer,
+                        OrderIndex = q.OrderIndex
+                    }).ToList() ?? new List<ScreeningQuestionResponseDto>()
+            };
+        }
     }
 
     public class JobDto
@@ -710,6 +930,7 @@ namespace HireConnect.API.Controllers
         public string? Requirements { get; set; }
         public string? Responsibilities { get; set; }
         public string? Location { get; set; }
+        public bool IsRemote { get; set; } = false;
         public decimal? SalaryMin { get; set; }
         public decimal? SalaryMax { get; set; }
         public int? ExperienceMin { get; set; }
@@ -717,6 +938,17 @@ namespace HireConnect.API.Controllers
         public string? JobType { get; set; }
         public int CategoryId { get; set; }
         public DateTime? Deadline { get; set; }
+        public List<ScreeningQuestionInputDto>? ScreeningQuestions { get; set; }
+    }
+
+    public class ScreeningQuestionInputDto
+    {
+        public int? Id { get; set; }
+        public string QuestionText { get; set; } = string.Empty;
+        public string QuestionType { get; set; } = "Text"; // Text, YesNo, Number, Choice
+        public bool IsRequired { get; set; } = true;
+        public string? IdealAnswer { get; set; }
+        public int OrderIndex { get; set; } = 0;
     }
 
     public class JobResponseDto
@@ -728,6 +960,7 @@ namespace HireConnect.API.Controllers
         public string? Requirements { get; set; }
         public string? Responsibilities { get; set; }
         public string? Location { get; set; }
+        public bool IsRemote { get; set; }
         public decimal? SalaryMin { get; set; }
         public decimal? SalaryMax { get; set; }
         public int? ExperienceMin { get; set; }
@@ -750,6 +983,7 @@ namespace HireConnect.API.Controllers
         public string QuestionText { get; set; } = string.Empty;
         public string QuestionType { get; set; } = "Text";
         public bool IsRequired { get; set; } = true;
+        public string? IdealAnswer { get; set; }
         public int OrderIndex { get; set; }
     }
 

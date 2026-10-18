@@ -23,6 +23,8 @@ namespace HireConnect.API.Models
         [MaxLength(100)]
         public string? Location { get; set; }
 
+        public bool IsRemote { get; set; } = false;
+
         public decimal? SalaryMin { get; set; }
         public decimal? SalaryMax { get; set; }
 

@@ -338,6 +338,9 @@ namespace HireConnect.API.Migrations
                     b.Property<bool>("IsPaid")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<bool>("IsRemote")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("JobType")
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
