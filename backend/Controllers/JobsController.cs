@@ -269,6 +269,70 @@ namespace HireConnect.API.Controllers
             return Ok(dto);
         }
 
+        [HttpGet("{id}/similar")]
+        public async Task<IActionResult> GetSimilarJobs(int id)
+        {
+            var job = await _context.Jobs
+                .Include(j => j.JobSkills)
+                .FirstOrDefaultAsync(j => j.Id == id);
+
+            if (job == null) return NotFound();
+
+            var query = _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category)
+                .Include(j => j.JobSkills)
+                .ThenInclude(js => js.Skill)
+                .Where(j => j.Id != id && j.Status == "Published");
+
+            var similarJobs = await query
+                .Where(j => j.CategoryId == job.CategoryId || (job.Location != null && j.Location == job.Location))
+                .OrderByDescending(j => j.CategoryId == job.CategoryId)
+                .ThenByDescending(j => j.CreatedAt)
+                .Take(4)
+                .Select(j => new JobResponseDto
+                {
+                    Id = j.Id,
+                    CompanyId = j.CompanyId,
+                    Title = j.Title,
+                    Description = j.Description,
+                    Requirements = j.Requirements,
+                    Responsibilities = j.Responsibilities,
+                    Location = j.Location,
+                    SalaryMin = j.SalaryMin,
+                    SalaryMax = j.SalaryMax,
+                    ExperienceMin = j.ExperienceMin,
+                    ExperienceMax = j.ExperienceMax,
+                    JobType = j.JobType,
+                    CategoryId = j.CategoryId,
+                    Deadline = j.Deadline,
+                    Status = j.Status,
+                    CreatedAt = j.CreatedAt,
+                    IsPaid = j.IsPaid,
+                    Company = j.Company == null ? null : new JobCompanyDto
+                    {
+                        Id = j.Company.Id,
+                        CompanyName = j.Company.CompanyName,
+                        LogoUrl = j.Company.LogoUrl,
+                        Location = j.Company.Location,
+                        Industry = j.Company.Industry,
+                        Website = j.Company.Website,
+                        Description = j.Company.Description,
+                        CompanySize = j.Company.CompanySize,
+                        IsApproved = j.Company.IsApproved
+                    },
+                    Category = j.Category == null ? null : new JobCategoryDto
+                    {
+                        Id = j.Category.Id,
+                        Name = j.Category.Name
+                    },
+                    Skills = j.JobSkills.Select(js => js.Skill.Name).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(similarJobs);
+        }
+
         [HttpGet("my-jobs")]
         [Authorize(Roles = "Employer")]
         public async Task<IActionResult> GetMyJobs([FromQuery] int page = 1, [FromQuery] int pageSize = 12)

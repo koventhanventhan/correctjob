@@ -138,6 +138,29 @@ namespace HireConnect.API.Controllers
             return Ok(new { data = applications, totalCount });
         }
 
+        [HttpGet("check/{jobId}")]
+        [Authorize(Roles = "JobSeeker")]
+        public async Task<IActionResult> CheckApplicationStatus(int jobId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var seeker = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (seeker == null) return Ok(new { isApplied = false });
+
+            var app = await _context.Applications
+                .Where(a => a.JobId == jobId && a.SeekerId == seeker.Id)
+                .Select(a => new
+                {
+                    isApplied = true,
+                    applicationId = a.Id,
+                    status = a.Status,
+                    appliedAt = a.AppliedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (app == null) return Ok(new { isApplied = false });
+            return Ok(app);
+        }
+
         [HttpGet("job/{jobId}")]
         [Authorize(Roles = "Employer")]
         public async Task<IActionResult> GetJobApplications(int jobId)
