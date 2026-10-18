@@ -20,6 +20,8 @@ export default function Footer() {
                         <ul className="space-y-2 text-sm text-gray-400">
                             <li><Link href="/jobs" className="hover:text-white transition-colors">Browse Jobs</Link></li>
                             <li><Link href="/companies" className="hover:text-white transition-colors">Browse Companies</Link></li>
+                            <li><Link href="/salary-guide" className="hover:text-white transition-colors">Salary Guide</Link></li>
+                            <li><Link href="/career-advice" className="hover:text-white transition-colors">Career Advice</Link></li>
                             <li><Link href="/register" className="hover:text-white transition-colors">Create Profile</Link></li>
                         </ul>
                     </div>
