@@ -3,7 +3,20 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import Link from 'next/link';
-import { LuBriefcase, LuFileText, LuCircleCheck, LuClock, LuBell, LuCalendar as CalendarIcon, LuDownload } from 'react-icons/lu';
+import { 
+    LuBriefcase, 
+    LuFileText, 
+    LuCircleCheck, 
+    LuClock, 
+    LuBell, 
+    LuCalendar as CalendarIcon, 
+    LuDownload,
+    LuSparkles,
+    LuMapPin,
+    LuIndianRupee,
+    LuArrowRight,
+    LuBuilding
+} from 'react-icons/lu';
 import { calculateProfileCompletion } from '@/utils/profile';
 
 export default function SeekerDashboard() {
@@ -38,6 +51,14 @@ export default function SeekerDashboard() {
         queryKey: ['my-profile'],
         queryFn: async () => {
             const res = await api.get('/seekerprofiles/me');
+            return res.data;
+        }
+    });
+
+    const { data: recommendedJobs, isLoading: isLoadingRecommended } = useQuery({
+        queryKey: ['recommended-jobs'],
+        queryFn: async () => {
+            const res = await api.get('/jobs/recommended?limit=4');
             return res.data;
         }
     });
@@ -110,6 +131,104 @@ export default function SeekerDashboard() {
                             </div>
                         </Link>
                     </div>
+                </div>
+
+                {/* Recommended Jobs (Seek.com Feature) */}
+                <div className="mb-10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-orange/10 flex items-center justify-center text-orange flex-shrink-0">
+                                <LuSparkles className="w-5 h-5 text-orange" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-display font-bold text-charcoal">Recommended Jobs</h3>
+                                <p className="text-xs text-gray-500">Personalized matches based on your career title, location & skills</p>
+                            </div>
+                        </div>
+                        <Link 
+                            href="/jobs" 
+                            className="text-sm text-orange hover:underline font-semibold inline-flex items-center gap-1 self-start sm:self-auto"
+                        >
+                            Explore all jobs <LuArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+
+                    {isLoadingRecommended ? (
+                        <div className="bg-white p-8 rounded-2xl border border-gray-100 text-center text-gray-400 font-medium">
+                            Finding the best matches for you...
+                        </div>
+                    ) : !recommendedJobs || recommendedJobs.length === 0 ? (
+                        <div className="bg-white p-6 rounded-2xl border border-gray-100 text-center shadow-sm">
+                            <p className="text-sm text-gray-600">No recommended jobs yet. Add your career title, target location, and skills in your profile to get matches!</p>
+                            <Link href="/seeker/profile" className="mt-2 inline-block text-xs font-semibold text-orange underline">
+                                Complete your profile →
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {recommendedJobs.map((recJob: any) => (
+                                <Link
+                                    key={recJob.id}
+                                    href={`/jobs/${recJob.id}`}
+                                    className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-orange hover:shadow-md transition-all group flex flex-col justify-between"
+                                >
+                                    <div>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <h4 className="font-bold text-charcoal group-hover:text-orange transition-colors truncate text-base">
+                                                    {recJob.title}
+                                                </h4>
+                                                <p className="text-sm text-gray-600 font-medium truncate mt-0.5">
+                                                    {recJob.company?.companyName}
+                                                </p>
+                                            </div>
+                                            {recJob.company?.logoUrl ? (
+                                                <img 
+                                                    src={recJob.company.logoUrl} 
+                                                    alt="" 
+                                                    className="w-10 h-10 object-contain rounded-xl border border-gray-100 flex-shrink-0" 
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-xl bg-peach flex items-center justify-center text-gray-400 flex-shrink-0">
+                                                    <LuBuilding className="w-5 h-5" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-500">
+                                            {recJob.location && (
+                                                <span className="flex items-center gap-1">
+                                                    <LuMapPin className="w-3.5 h-3.5 text-gray-400" />
+                                                    {recJob.location}
+                                                </span>
+                                            )}
+                                            {recJob.jobType && (
+                                                <span className="flex items-center gap-1">
+                                                    <LuBriefcase className="w-3.5 h-3.5 text-gray-400" />
+                                                    {recJob.jobType}
+                                                </span>
+                                            )}
+                                            {recJob.salaryMin && (
+                                                <span className="flex items-center gap-1 font-semibold text-charcoal">
+                                                    <LuIndianRupee className="w-3.5 h-3.5 text-gray-400" />
+                                                    {recJob.salaryMin.toLocaleString()} - {recJob.salaryMax ? recJob.salaryMax.toLocaleString() : 'Negotiable'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                                        <span className="text-gray-400">
+                                            Posted {new Date(recJob.createdAt).toLocaleDateString()}
+                                        </span>
+                                        <span className="text-orange font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                                            View & Apply →
+                                        </span>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Applications Timeline */}

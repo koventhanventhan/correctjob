@@ -333,6 +333,125 @@ namespace HireConnect.API.Controllers
             return Ok(similarJobs);
         }
 
+        [HttpGet("recommended")]
+        [Authorize(Roles = "JobSeeker")]
+        public async Task<IActionResult> GetRecommendedJobs([FromQuery] int limit = 6)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var seeker = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (seeker == null) return NotFound("Seeker profile not found.");
+
+            // Exclude jobs already applied to
+            var appliedJobIds = await _context.Applications
+                .Where(a => a.SeekerId == seeker.Id)
+                .Select(a => a.JobId)
+                .ToListAsync();
+
+            // Categories seeker has engaged with
+            var appliedCategoryIds = await _context.Applications
+                .Where(a => a.SeekerId == seeker.Id)
+                .Select(a => a.Job.CategoryId)
+                .ToListAsync();
+
+            var savedCategoryIds = await _context.SavedJobs
+                .Where(s => s.SeekerId == seeker.Id)
+                .Select(s => s.Job.CategoryId)
+                .ToListAsync();
+
+            var preferredCategoryIds = appliedCategoryIds.Concat(savedCategoryIds).Distinct().ToHashSet();
+
+            var titleKeyword = !string.IsNullOrWhiteSpace(seeker.CareerTitle) ? seeker.CareerTitle.Trim().ToLower() : "";
+            var locationKeyword = !string.IsNullOrWhiteSpace(seeker.Location) ? seeker.Location.Trim().ToLower() : "";
+
+            var candidates = await _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category)
+                .Include(j => j.JobSkills)
+                .ThenInclude(js => js.Skill)
+                .Where(j => j.Status == "Published" && !appliedJobIds.Contains(j.Id))
+                .OrderByDescending(j => j.CreatedAt)
+                .Take(50)
+                .ToListAsync();
+
+            var scored = candidates.Select(j =>
+            {
+                int score = 0;
+                var jTitle = (j.Title ?? "").ToLower();
+                var jDesc = (j.Description ?? "").ToLower();
+                var jLoc = (j.Location ?? "").ToLower();
+
+                if (!string.IsNullOrEmpty(titleKeyword))
+                {
+                    if (jTitle.Contains(titleKeyword)) score += 10;
+                    else
+                    {
+                        var words = titleKeyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var w in words)
+                        {
+                            if (jTitle.Contains(w)) score += 3;
+                            else if (jDesc.Contains(w)) score += 1;
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(locationKeyword) && (jLoc.Contains(locationKeyword) || jLoc.Contains("remote")))
+                {
+                    score += 5;
+                }
+
+                if (preferredCategoryIds.Contains(j.CategoryId))
+                {
+                    score += 4;
+                }
+
+                return new { Job = j, Score = score };
+            })
+            .OrderByDescending(x => x.Score)
+            .ThenByDescending(x => x.Job.CreatedAt)
+            .Take(limit)
+            .Select(x => new JobResponseDto
+            {
+                Id = x.Job.Id,
+                CompanyId = x.Job.CompanyId,
+                Title = x.Job.Title,
+                Description = x.Job.Description,
+                Requirements = x.Job.Requirements,
+                Responsibilities = x.Job.Responsibilities,
+                Location = x.Job.Location,
+                SalaryMin = x.Job.SalaryMin,
+                SalaryMax = x.Job.SalaryMax,
+                ExperienceMin = x.Job.ExperienceMin,
+                ExperienceMax = x.Job.ExperienceMax,
+                JobType = x.Job.JobType,
+                CategoryId = x.Job.CategoryId,
+                Deadline = x.Job.Deadline,
+                Status = x.Job.Status,
+                CreatedAt = x.Job.CreatedAt,
+                IsPaid = x.Job.IsPaid,
+                Company = x.Job.Company == null ? null : new JobCompanyDto
+                {
+                    Id = x.Job.Company.Id,
+                    CompanyName = x.Job.Company.CompanyName,
+                    LogoUrl = x.Job.Company.LogoUrl,
+                    Location = x.Job.Company.Location,
+                    Industry = x.Job.Company.Industry,
+                    Website = x.Job.Company.Website,
+                    Description = x.Job.Company.Description,
+                    CompanySize = x.Job.Company.CompanySize,
+                    IsApproved = x.Job.Company.IsApproved
+                },
+                Category = x.Job.Category == null ? null : new JobCategoryDto
+                {
+                    Id = x.Job.Category.Id,
+                    Name = x.Job.Category.Name
+                },
+                Skills = x.Job.JobSkills.Select(js => js.Skill.Name).ToList()
+            })
+            .ToList();
+
+            return Ok(scored);
+        }
+
         [HttpGet("my-jobs")]
         [Authorize(Roles = "Employer")]
         public async Task<IActionResult> GetMyJobs([FromQuery] int page = 1, [FromQuery] int pageSize = 12)
