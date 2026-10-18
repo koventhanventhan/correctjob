@@ -110,6 +110,21 @@ namespace HireConnect.API.Hubs
                 SentAt = message.SentAt,
                 IsRead = message.IsRead
             });
+
+            // In-app notification for the recipient
+            string recipientId = isSeeker ? application.Job.Company.EmployerId : application.Seeker.UserId;
+            if (!string.IsNullOrEmpty(recipientId))
+            {
+                var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = recipientId,
+                    Title = $"Message from {senderName}",
+                    Message = preview,
+                    CreatedAt = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

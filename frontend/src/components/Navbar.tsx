@@ -7,6 +7,7 @@ import { useState } from 'react';
 import api from '@/services/api';
 
 import ProfileMenu from './ProfileMenu';
+import NotificationBell from './NotificationBell';
 import { getFileUrl } from '@/utils/imageUrl';
 
 const roleToPath: Record<string, string> = {
@@ -71,12 +72,16 @@ export default function Navbar() {
                                 </Link>
                             </>
                         ) : (
-                            <ProfileMenu />
+                            <div className="flex items-center space-x-3">
+                                <NotificationBell />
+                                <ProfileMenu />
+                            </div>
                         )}
                     </div>
                     
                     {/* Mobile Menu Button */}
-                    <div className="flex items-center sm:hidden">
+                    <div className="flex items-center gap-2 sm:hidden">
+                        {user && <NotificationBell />}
                         <button
                             type="button"
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
