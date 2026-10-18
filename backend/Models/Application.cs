@@ -40,5 +40,7 @@ namespace HireConnect.API.Models
 
         [ForeignKey(nameof(SeekerId))]
         public virtual SeekerProfile Seeker { get; set; } = null!;
+
+        public virtual ICollection<ApplicationAnswer> Answers { get; set; } = new List<ApplicationAnswer>();
     }
 }

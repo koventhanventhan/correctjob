@@ -26,6 +26,9 @@ namespace HireConnect.API.Data
         public DbSet<CompanyReview> CompanyReviews { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<JobScreeningQuestion> JobScreeningQuestions { get; set; }
+        public DbSet<ApplicationAnswer> ApplicationAnswers { get; set; }
+        public DbSet<SeekerResume> SeekerResumes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -147,6 +150,34 @@ namespace HireConnect.API.Data
                 .WithMany()
                 .HasForeignKey(m => m.SenderId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // JobScreeningQuestion -> Job
+            builder.Entity<JobScreeningQuestion>()
+                .HasOne(q => q.Job)
+                .WithMany(j => j.ScreeningQuestions)
+                .HasForeignKey(q => q.JobId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ApplicationAnswer -> Application
+            builder.Entity<ApplicationAnswer>()
+                .HasOne(a => a.Application)
+                .WithMany(app => app.Answers)
+                .HasForeignKey(a => a.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ApplicationAnswer -> JobScreeningQuestion
+            builder.Entity<ApplicationAnswer>()
+                .HasOne(a => a.Question)
+                .WithMany(q => q.Answers)
+                .HasForeignKey(a => a.QuestionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // SeekerResume -> SeekerProfile
+            builder.Entity<SeekerResume>()
+                .HasOne(r => r.Seeker)
+                .WithMany(s => s.Resumes)
+                .HasForeignKey(r => r.SeekerId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Seed Data for Categories and Skills
             builder.Entity<Category>().HasData(

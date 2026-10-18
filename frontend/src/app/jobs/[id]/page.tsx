@@ -1,7 +1,7 @@
 'use client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/services/api';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { 
     LuMapPin, 
@@ -14,18 +14,23 @@ import {
     LuX, 
     LuCheck,
     LuExternalLink,
-    LuArrowRight
+    LuArrowRight,
+    LuCircleHelp
 } from 'react-icons/lu';
 import { useState } from 'react';
 import Link from 'next/link';
 
 export default function JobDetailsPage() {
     const params = useParams();
+    const router = useRouter();
     const id = params.id;
     const { user } = useAuthStore();
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
     const [coverLetter, setCoverLetter] = useState('');
     const [resumeFile, setResumeFile] = useState<File | null>(null);
+    const [resumeSource, setResumeSource] = useState<'profile' | 'saved' | 'upload'>('profile');
+    const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
+    const [answers, setAnswers] = useState<Record<number, string>>({});
     const [applyError, setApplyError] = useState('');
     const [applySuccess, setApplySuccess] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -58,6 +63,16 @@ export default function JobDetailsPage() {
         enabled: !!user && user.role === 'JobSeeker'
     });
 
+    const { data: seekerResumes } = useQuery({
+        queryKey: ['seeker-resumes'],
+        queryFn: async () => {
+            if (user?.role !== 'JobSeeker') return [];
+            const res = await api.get('/seekerprofiles/resumes');
+            return res.data;
+        },
+        enabled: !!user && user.role === 'JobSeeker'
+    });
+
     const { data: similarJobs } = useQuery({
         queryKey: ['similar-jobs', id],
         queryFn: async () => {
@@ -83,17 +98,44 @@ export default function JobDetailsPage() {
         }
     });
 
+    const handleAnswerChange = (questionId: number, value: string) => {
+        setAnswers(prev => ({ ...prev, [questionId]: value }));
+    };
+
     const applyMutation = useMutation({
         mutationFn: async () => {
             setApplyError('');
+
+            // Validate mandatory screening questions
+            if (job.screeningQuestions && job.screeningQuestions.length > 0) {
+                for (const q of job.screeningQuestions) {
+                    if (q.isRequired && (!answers[q.id] || !answers[q.id].trim())) {
+                        throw new Error(`Please answer the required question: "${q.questionText}"`);
+                    }
+                }
+            }
+
             const formData = new FormData();
             formData.append('JobId', id as string);
             if (coverLetter.trim()) {
                 formData.append('CoverLetter', coverLetter.trim());
             }
-            if (resumeFile) {
+
+            if (resumeSource === 'saved' && selectedResumeId) {
+                formData.append('SelectedResumeId', selectedResumeId.toString());
+            } else if (resumeSource === 'upload' && resumeFile) {
                 formData.append('ResumeFile', resumeFile);
             }
+
+            // Answers JSON
+            const answersList = Object.entries(answers).map(([qId, val]) => ({
+                questionId: parseInt(qId, 10),
+                answerText: val
+            }));
+            if (answersList.length > 0) {
+                formData.append('AnswersJson', JSON.stringify(answersList));
+            }
+
             const res = await api.post('/applications', formData);
             return res.data;
         },
@@ -101,13 +143,11 @@ export default function JobDetailsPage() {
             setApplySuccess(true);
             setIsApplyModalOpen(false);
             refetchApplicationCheck();
+            router.push(`/seeker/applied-success?jobId=${id}&jobTitle=${encodeURIComponent(job.title)}&companyName=${encodeURIComponent(job.company?.companyName || '')}`);
         },
         onError: (err: any) => {
-            const errorData = err.response?.data;
-            const message = typeof errorData === 'string' 
-                ? errorData 
-                : errorData?.message || 'Failed to apply for this job.';
-            setApplyError(message);
+            const errorMsg = err.message || err.response?.data?.message || (typeof err.response?.data === 'string' ? err.response?.data : 'Failed to apply for this job.');
+            setApplyError(errorMsg);
         }
     });
 
@@ -122,7 +162,7 @@ export default function JobDetailsPage() {
                     });
                     return;
                 } catch {
-                    // Fall back to clipboard if user dismissed or cancelled share dialog
+                    // Fall back to clipboard if user dismissed dialog
                 }
             }
             try {
@@ -130,7 +170,7 @@ export default function JobDetailsPage() {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
             } catch {
-                // Clipboard copy fallback
+                // Clipboard fallback
             }
         }
     };
@@ -303,6 +343,25 @@ export default function JobDetailsPage() {
                                     </div>
                                 </div>
                             )}
+
+                            {job.screeningQuestions && job.screeningQuestions.length > 0 && (
+                                <div className="mt-8 pt-4 border-t border-gray-100">
+                                    <h4 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                                        <LuCircleHelp className="w-4 h-4 text-orange" />
+                                        Screening Questions ({job.screeningQuestions.length})
+                                    </h4>
+                                    <ul className="space-y-2 text-sm text-gray-700">
+                                        {job.screeningQuestions.map((q: any, i: number) => (
+                                            <li key={q.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start justify-between gap-2">
+                                                <span>{i + 1}. {q.questionText}</span>
+                                                {q.isRequired && (
+                                                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded uppercase">Required</span>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -353,7 +412,7 @@ export default function JobDetailsPage() {
                                 )}
                             </div>
 
-                            {/* Seek.com feature: Company active jobs link */}
+                            {/* Company active jobs link */}
                             <div className="mt-5 pt-4 border-t border-gray-100">
                                 <Link 
                                     href={`/jobs?keyword=${encodeURIComponent(job.company?.companyName || '')}`}
@@ -443,24 +502,29 @@ export default function JobDetailsPage() {
 
             </div>
 
-            {/* Apply Modal */}
+            {/* Step 5: Advanced Apply Modal (Screening Questions + Multiple Resumes) */}
             {isApplyModalOpen && (
                 <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 sm:p-8 relative border border-gray-100 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
                         <button
                             type="button"
                             onClick={() => setIsApplyModalOpen(false)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                            className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors"
                         >
                             <LuX className="w-5 h-5" />
                         </button>
 
-                        <h3 className="text-xl font-bold text-charcoal mb-1">Apply for {job.title}</h3>
-                        <p className="text-sm text-gray-500 mb-4">{job.company?.companyName}</p>
+                        <div className="mb-5">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange/10 text-orange">
+                                Direct Application
+                            </span>
+                            <h3 className="text-2xl font-bold text-charcoal mt-1">Apply for {job.title}</h3>
+                            <p className="text-sm text-gray-500">{job.company?.companyName} • {job.location || 'Remote'}</p>
+                        </div>
 
                         {applyError && (
-                            <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm">
-                                <p className="font-medium">{applyError}</p>
+                            <div className="mb-5 p-3.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-medium">
+                                <p>{applyError}</p>
                                 {applyError.toLowerCase().includes('profile') && (
                                     <Link href="/seeker/profile" className="text-orange font-semibold underline mt-1 inline-block">
                                         Go to My Profile to complete it →
@@ -474,52 +538,172 @@ export default function JobDetailsPage() {
                                 e.preventDefault();
                                 applyMutation.mutate();
                             }}
-                            className="space-y-4"
+                            className="space-y-6"
                         >
+                            {/* 1. Resume Selection (Multiple Resumes) */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Cover Letter <span className="text-xs text-gray-400">(Optional)</span>
+                                <label className="block text-sm font-bold text-charcoal mb-2">
+                                    Select Resume <span className="text-red-500">*</span>
+                                </label>
+                                <div className="space-y-2">
+                                    <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                        resumeSource === 'profile' ? 'border-orange bg-peach/40 shadow-sm' : 'border-gray-200 bg-white hover:bg-gray-50'
+                                    }`}>
+                                        <input
+                                            type="radio"
+                                            name="resumeSource"
+                                            checked={resumeSource === 'profile'}
+                                            onChange={() => setResumeSource('profile')}
+                                            className="text-orange focus:ring-orange"
+                                        />
+                                        <div className="text-xs">
+                                            <p className="font-semibold text-charcoal">Use Default Profile Resume</p>
+                                            <p className="text-gray-500">Your primary verified resume on your profile</p>
+                                        </div>
+                                    </label>
+
+                                    {seekerResumes && seekerResumes.length > 0 && (
+                                        <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                            resumeSource === 'saved' ? 'border-orange bg-peach/40 shadow-sm' : 'border-gray-200 bg-white hover:bg-gray-50'
+                                        }`}>
+                                            <input
+                                                type="radio"
+                                                name="resumeSource"
+                                                checked={resumeSource === 'saved'}
+                                                onChange={() => {
+                                                    setResumeSource('saved');
+                                                    if (!selectedResumeId && seekerResumes.length > 0) {
+                                                        setSelectedResumeId(seekerResumes[0].id);
+                                                    }
+                                                }}
+                                                className="text-orange focus:ring-orange mt-1"
+                                            />
+                                            <div className="w-full text-xs">
+                                                <p className="font-semibold text-charcoal">Choose from Saved Resumes ({seekerResumes.length})</p>
+                                                {resumeSource === 'saved' && (
+                                                    <select
+                                                        value={selectedResumeId || ''}
+                                                        onChange={(e) => setSelectedResumeId(parseInt(e.target.value, 10))}
+                                                        className="mt-2 w-full p-2 bg-white border border-gray-300 rounded-lg text-xs outline-none focus:border-orange"
+                                                    >
+                                                        {seekerResumes.map((r: any) => (
+                                                            <option key={r.id} value={r.id}>
+                                                                {r.title} {r.isDefault ? '(Default)' : ''} — {new Date(r.uploadedAt).toLocaleDateString()}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                            </div>
+                                        </label>
+                                    )}
+
+                                    <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                        resumeSource === 'upload' ? 'border-orange bg-peach/40 shadow-sm' : 'border-gray-200 bg-white hover:bg-gray-50'
+                                    }`}>
+                                        <input
+                                            type="radio"
+                                            name="resumeSource"
+                                            checked={resumeSource === 'upload'}
+                                            onChange={() => setResumeSource('upload')}
+                                            className="text-orange focus:ring-orange mt-1"
+                                        />
+                                        <div className="w-full text-xs">
+                                            <p className="font-semibold text-charcoal">Upload Tailored Resume</p>
+                                            <p className="text-gray-500 mb-2">Upload a specific CV for this role (.pdf, .doc, .docx)</p>
+                                            {resumeSource === 'upload' && (
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf,.doc,.docx"
+                                                    onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+                                                    className="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:font-semibold file:bg-orange file:text-white hover:file:bg-orange/90 cursor-pointer"
+                                                />
+                                            )}
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* 2. Screening Questions (Employer Set) */}
+                            {job.screeningQuestions && job.screeningQuestions.length > 0 && (
+                                <div className="pt-4 border-t border-gray-100">
+                                    <h4 className="text-sm font-bold text-charcoal mb-3 flex items-center justify-between">
+                                        <span>Employer Screening Questions</span>
+                                        <span className="text-xs font-normal text-gray-500">{job.screeningQuestions.length} Questions</span>
+                                    </h4>
+                                    <div className="space-y-4">
+                                        {job.screeningQuestions.map((q: any, idx: number) => (
+                                            <div key={q.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                                                <label className="block text-xs font-bold text-charcoal mb-2">
+                                                    {idx + 1}. {q.questionText} {q.isRequired && <span className="text-red-500">*</span>}
+                                                </label>
+                                                {q.questionType === 'YesNo' ? (
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAnswerChange(q.id, 'Yes')}
+                                                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                                                                answers[q.id] === 'Yes' 
+                                                                    ? 'bg-orange text-white border-orange shadow-sm' 
+                                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-peach'
+                                                            }`}
+                                                        >
+                                                            Yes
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAnswerChange(q.id, 'No')}
+                                                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                                                                answers[q.id] === 'No' 
+                                                                    ? 'bg-orange text-white border-orange shadow-sm' 
+                                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-peach'
+                                                            }`}
+                                                        >
+                                                            No
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={answers[q.id] || ''}
+                                                        onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                                        placeholder="Your answer..."
+                                                        className="w-full bg-white border border-gray-300 rounded-xl p-2.5 text-xs text-charcoal focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none"
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 3. Cover Letter */}
+                            <div className="pt-4 border-t border-gray-100">
+                                <label className="block text-sm font-bold text-charcoal mb-1">
+                                    Cover Letter <span className="text-xs font-normal text-gray-400">(Optional)</span>
                                 </label>
                                 <textarea
                                     value={coverLetter}
                                     onChange={(e) => setCoverLetter(e.target.value)}
                                     rows={4}
-                                    placeholder="Explain why you're a strong fit for this position..."
-                                    className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange focus:border-orange outline-none"
+                                    placeholder="Explain why your experience makes you a strong fit for this position..."
+                                    className="w-full border border-gray-300 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-orange focus:border-orange outline-none"
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Attach Custom Resume <span className="text-xs text-gray-400">(Optional)</span>
-                                </label>
-                                <div className="border border-dashed border-gray-300 rounded-xl p-4 text-center bg-warmwhite/50">
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.doc,.docx"
-                                        onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-                                        className="text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange file:text-white hover:file:bg-orange/90 cursor-pointer"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        {resumeFile ? `Selected: ${resumeFile.name}` : 'If not provided, your default profile resume will be used.'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-3 border-t border-gray-100">
+                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-4 border-t border-gray-100">
                                 <button
                                     type="button"
                                     onClick={() => setIsApplyModalOpen(false)}
-                                    className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 text-center"
+                                    className="w-full sm:w-auto px-5 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 text-center"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={applyMutation.isPending}
-                                    className="w-full sm:w-auto px-5 py-2.5 bg-orange text-white rounded-xl text-sm font-semibold hover:bg-orange/90 disabled:opacity-50 transition-colors shadow-md text-center"
+                                    className="w-full sm:w-auto px-6 py-2.5 bg-orange text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-orange/90 disabled:opacity-50 transition-all shadow-md text-center active:scale-95"
                                 >
-                                    {applyMutation.isPending ? 'Submitting...' : 'Submit Application'}
+                                    {applyMutation.isPending ? 'Submitting Application...' : 'Submit Application'}
                                 </button>
                             </div>
                         </form>

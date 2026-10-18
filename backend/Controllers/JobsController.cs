@@ -210,6 +210,7 @@ namespace HireConnect.API.Controllers
                 .Include(j => j.Category)
                 .Include(j => j.JobSkills)
                 .ThenInclude(js => js.Skill)
+                .Include(j => j.ScreeningQuestions)
                 .FirstOrDefaultAsync(j => j.Id == id);
 
             if (job == null) return NotFound();
@@ -263,7 +264,17 @@ namespace HireConnect.API.Controllers
                     Id = job.Category.Id,
                     Name = job.Category.Name
                 },
-                Skills = job.JobSkills.Select(js => js.Skill.Name).ToList()
+                Skills = job.JobSkills.Select(js => js.Skill.Name).ToList(),
+                ScreeningQuestions = job.ScreeningQuestions
+                    .OrderBy(q => q.OrderIndex)
+                    .Select(q => new ScreeningQuestionResponseDto
+                    {
+                        Id = q.Id,
+                        QuestionText = q.QuestionText,
+                        QuestionType = q.QuestionType,
+                        IsRequired = q.IsRequired,
+                        OrderIndex = q.OrderIndex
+                    }).ToList()
             };
 
             return Ok(dto);
@@ -674,6 +685,16 @@ namespace HireConnect.API.Controllers
         public JobCompanyDto? Company { get; set; }
         public JobCategoryDto? Category { get; set; }
         public List<string> Skills { get; set; } = new();
+        public List<ScreeningQuestionResponseDto> ScreeningQuestions { get; set; } = new();
+    }
+
+    public class ScreeningQuestionResponseDto
+    {
+        public int Id { get; set; }
+        public string QuestionText { get; set; } = string.Empty;
+        public string QuestionType { get; set; } = "Text";
+        public bool IsRequired { get; set; } = true;
+        public int OrderIndex { get; set; }
     }
 
     public class JobCompanyDto

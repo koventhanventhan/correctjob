@@ -47,7 +47,17 @@ namespace HireConnect.API.Controllers
             string? resumeUrl = seeker.ResumeUrl;
             string? resumeText = seeker.ResumeText;
             
-            if (model.ResumeFile != null)
+            if (model.SelectedResumeId.HasValue)
+            {
+                var selectedResume = await _context.SeekerResumes
+                    .FirstOrDefaultAsync(r => r.Id == model.SelectedResumeId.Value && r.SeekerId == seeker.Id);
+                if (selectedResume != null)
+                {
+                    resumeUrl = selectedResume.FileUrl;
+                    resumeText = selectedResume.ResumeText;
+                }
+            }
+            else if (model.ResumeFile != null)
             {
                 if (model.ResumeFile.Length > 5 * 1024 * 1024)
                 {
@@ -93,6 +103,35 @@ namespace HireConnect.API.Controllers
             _context.Notifications.Add(notification);
 
             await _context.SaveChangesAsync();
+
+            // Save screening question answers if present
+            if (!string.IsNullOrWhiteSpace(model.AnswersJson))
+            {
+                try
+                {
+                    var answers = System.Text.Json.JsonSerializer.Deserialize<List<AnswerInputDto>>(
+                        model.AnswersJson,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                    );
+                    if (answers != null && answers.Any())
+                    {
+                        foreach (var a in answers)
+                        {
+                            if (!string.IsNullOrWhiteSpace(a.AnswerText))
+                            {
+                                _context.ApplicationAnswers.Add(new ApplicationAnswer
+                                {
+                                    ApplicationId = application.Id,
+                                    QuestionId = a.QuestionId,
+                                    AnswerText = a.AnswerText.Trim()
+                                });
+                            }
+                        }
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                catch { }
+            }
             
             var appId = application.Id;
             var jobDesc = (job.Description ?? "") + " " + (job.Requirements ?? "") + " " + (job.Responsibilities ?? "");
@@ -174,6 +213,8 @@ namespace HireConnect.API.Controllers
             var applications = await _context.Applications
                 .Include(a => a.Seeker)
                 .ThenInclude(s => s.User)
+                .Include(a => a.Answers)
+                .ThenInclude(ans => ans.Question)
                 .Where(a => a.JobId == jobId)
                 .ToListAsync();
 
@@ -409,6 +450,14 @@ END:VCALENDAR";
         public int JobId { get; set; }
         public string? CoverLetter { get; set; }
         public IFormFile? ResumeFile { get; set; }
+        public int? SelectedResumeId { get; set; }
+        public string? AnswersJson { get; set; }
+    }
+
+    public class AnswerInputDto
+    {
+        public int QuestionId { get; set; }
+        public string AnswerText { get; set; } = string.Empty;
     }
 
     public class UpdateStatusDto

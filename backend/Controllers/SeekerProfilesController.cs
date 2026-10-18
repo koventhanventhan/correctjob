@@ -214,6 +214,137 @@ namespace HireConnect.API.Controllers
 
             return PhysicalFile(filePath, contentType, Path.GetFileName(filePath));
         }
+
+        [HttpGet("resumes")]
+        public async Task<IActionResult> GetMyResumes()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var seeker = await _context.SeekerProfiles
+                .Include(s => s.Resumes)
+                .FirstOrDefaultAsync(s => s.UserId == userId);
+
+            if (seeker == null) return Ok(new List<object>());
+
+            var resumes = seeker.Resumes
+                .OrderByDescending(r => r.IsDefault)
+                .ThenByDescending(r => r.UploadedAt)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Title,
+                    r.FileUrl,
+                    r.FileName,
+                    r.IsDefault,
+                    r.UploadedAt
+                })
+                .ToList();
+
+            return Ok(resumes);
+        }
+
+        [HttpPost("resumes")]
+        [RequestSizeLimit(5242880)] // 5 MB
+        public async Task<IActionResult> AddResume([FromForm] AddResumeDto model)
+        {
+            if (model.File == null || model.File.Length == 0) return BadRequest("File is required.");
+            if (model.File.Length > 5 * 1024 * 1024) return BadRequest("File size cannot exceed 5MB.");
+
+            var ext = Path.GetExtension(model.File.FileName)?.ToLowerInvariant();
+            var allowedExts = new[] { ".pdf", ".doc", ".docx" };
+            if (!allowedExts.Contains(ext)) return BadRequest("Only PDF and Word documents are supported.");
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var seeker = await _context.SeekerProfiles.Include(s => s.Resumes).FirstOrDefaultAsync(s => s.UserId == userId);
+            if (seeker == null)
+            {
+                seeker = new SeekerProfile { UserId = userId! };
+                _context.SeekerProfiles.Add(seeker);
+                await _context.SaveChangesAsync();
+            }
+
+            var fileUrl = await _fileStorage.UploadFileAsync(model.File, "resumes");
+            string? extractedText = null;
+            try
+            {
+                using var stream = model.File.OpenReadStream();
+                extractedText = await _extractor.ExtractTextAsync(stream, model.File.ContentType);
+            }
+            catch { }
+
+            bool isDefault = model.IsDefault || seeker.Resumes.Count == 0;
+            if (isDefault)
+            {
+                foreach (var r in seeker.Resumes) r.IsDefault = false;
+                seeker.ResumeUrl = fileUrl;
+                seeker.ResumeText = extractedText;
+            }
+
+            var resume = new SeekerResume
+            {
+                SeekerId = seeker.Id,
+                Title = !string.IsNullOrWhiteSpace(model.Title) ? model.Title.Trim() : model.File.FileName,
+                FileName = model.File.FileName,
+                FileUrl = fileUrl,
+                ResumeText = extractedText,
+                IsDefault = isDefault,
+                UploadedAt = DateTime.UtcNow
+            };
+
+            _context.SeekerResumes.Add(resume);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                resume.Id,
+                resume.Title,
+                resume.FileUrl,
+                resume.FileName,
+                resume.IsDefault,
+                resume.UploadedAt
+            });
+        }
+
+        [HttpDelete("resumes/{id}")]
+        public async Task<IActionResult> DeleteResume(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var seeker = await _context.SeekerProfiles.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (seeker == null) return NotFound();
+
+            var resume = await _context.SeekerResumes.FirstOrDefaultAsync(r => r.Id == id && r.SeekerId == seeker.Id);
+            if (resume == null) return NotFound();
+
+            await _fileStorage.DeleteFileAsync(resume.FileUrl);
+            _context.SeekerResumes.Remove(resume);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Resume deleted successfully." });
+        }
+
+        [HttpPut("resumes/{id}/default")]
+        public async Task<IActionResult> SetDefaultResume(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var seeker = await _context.SeekerProfiles
+                .Include(s => s.Resumes)
+                .FirstOrDefaultAsync(s => s.UserId == userId);
+
+            if (seeker == null) return NotFound();
+
+            var resume = seeker.Resumes.FirstOrDefault(r => r.Id == id);
+            if (resume == null) return NotFound();
+
+            foreach (var r in seeker.Resumes)
+            {
+                r.IsDefault = (r.Id == id);
+            }
+
+            seeker.ResumeUrl = resume.FileUrl;
+            seeker.ResumeText = resume.ResumeText;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Default resume updated." });
+        }
     }
 
     public class SeekerProfileDto
@@ -225,5 +356,12 @@ namespace HireConnect.API.Controllers
         public string? Location { get; set; }
         public string? LinkedInUrl { get; set; }
         public string? PortfolioUrl { get; set; }
+    }
+
+    public class AddResumeDto
+    {
+        public string? Title { get; set; }
+        public IFormFile File { get; set; } = null!;
+        public bool IsDefault { get; set; } = false;
     }
 }
