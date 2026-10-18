@@ -35,6 +35,7 @@ namespace HireConnect.API.Data
         public DbSet<SeekerLanguage> SeekerLanguages { get; set; }
         public DbSet<SeekerCertification> SeekerCertifications { get; set; }
         public DbSet<JobView> JobViews { get; set; }
+        public DbSet<JobInvitation> Invitations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -205,6 +206,40 @@ namespace HireConnect.API.Data
             builder.Entity<JobView>()
                 .HasIndex(v => new { v.JobId, v.ViewedDate, v.IpHash })
                 .IsUnique();
+
+            // JobInvitation relationships
+            builder.Entity<JobInvitation>()
+                .HasOne(i => i.Job)
+                .WithMany()
+                .HasForeignKey(i => i.JobId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<JobInvitation>()
+                .HasOne(i => i.Seeker)
+                .WithMany()
+                .HasForeignKey(i => i.SeekerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<JobInvitation>()
+                .HasOne(i => i.Company)
+                .WithMany()
+                .HasForeignKey(i => i.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<JobInvitation>()
+                .HasOne(i => i.Employer)
+                .WithMany()
+                .HasForeignKey(i => i.EmployerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Unique index: same seeker + same job = only 1 invitation!
+            builder.Entity<JobInvitation>()
+                .HasIndex(i => new { i.JobId, i.SeekerId })
+                .IsUnique();
+
+            // Index for daily invitation rate limiting check
+            builder.Entity<JobInvitation>()
+                .HasIndex(i => new { i.EmployerId, i.CreatedAt });
 
             // Seed Data for Categories and Skills
             builder.Entity<Category>().HasData(
