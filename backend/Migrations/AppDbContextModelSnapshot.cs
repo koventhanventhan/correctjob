@@ -475,6 +475,41 @@ namespace HireConnect.API.Migrations
                     b.ToTable("JobSkills");
                 });
 
+            modelBuilder.Entity("HireConnect.API.Models.JobView", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int>("JobId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("varchar(450)");
+
+                    b.Property<DateTime>("ViewedDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("JobId", "ViewedDate");
+
+                    b.ToTable("JobViews");
+                });
+
             modelBuilder.Entity("HireConnect.API.Models.Message", b =>
                 {
                     b.Property<int>("Id")
@@ -1374,6 +1409,24 @@ namespace HireConnect.API.Migrations
                     b.Navigation("Skill");
                 });
 
+            modelBuilder.Entity("HireConnect.API.Models.JobView", b =>
+                {
+                    b.HasOne("HireConnect.API.Models.Job", "Job")
+                        .WithMany("Views")
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HireConnect.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Job");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("HireConnect.API.Models.Message", b =>
                 {
                     b.HasOne("HireConnect.API.Models.Application", "Application")
@@ -1627,6 +1680,8 @@ namespace HireConnect.API.Migrations
                     b.Navigation("SavedJobs");
 
                     b.Navigation("ScreeningQuestions");
+
+                    b.Navigation("Views");
                 });
 
             modelBuilder.Entity("HireConnect.API.Models.JobScreeningQuestion", b =>

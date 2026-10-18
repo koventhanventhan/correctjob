@@ -34,6 +34,7 @@ namespace HireConnect.API.Data
         public DbSet<SeekerSkill> SeekerSkills { get; set; }
         public DbSet<SeekerLanguage> SeekerLanguages { get; set; }
         public DbSet<SeekerCertification> SeekerCertifications { get; set; }
+        public DbSet<JobView> JobViews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -183,6 +184,22 @@ namespace HireConnect.API.Data
                 .WithMany(s => s.Resumes)
                 .HasForeignKey(r => r.SeekerId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // JobView -> Job & User
+            builder.Entity<JobView>()
+                .HasOne(v => v.Job)
+                .WithMany(j => j.Views)
+                .HasForeignKey(v => v.JobId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<JobView>()
+                .HasOne(v => v.User)
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<JobView>()
+                .HasIndex(v => new { v.JobId, v.ViewedDate });
 
             // Seed Data for Categories and Skills
             builder.Entity<Category>().HasData(

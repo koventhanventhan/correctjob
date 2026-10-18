@@ -117,6 +117,34 @@ namespace HireConnect.API.Controllers
                 {
                     return BadRequest(new { message = $"Screening question ID {a.QuestionId} does not belong to this job." });
                 }
+
+                var q = jobQuestions.First(x => x.Id == a.QuestionId);
+                if (!string.IsNullOrWhiteSpace(a.AnswerText))
+                {
+                    var trimmed = a.AnswerText.Trim();
+                    if (q.QuestionType.Equals("Number", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!double.TryParse(trimmed, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out _))
+                        {
+                            return BadRequest(new { message = $"Answer for screening question \"{q.QuestionText}\" must be a valid number." });
+                        }
+                    }
+                    else if (q.QuestionType.Equals("YesNo", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!trimmed.Equals("Yes", StringComparison.OrdinalIgnoreCase) && !trimmed.Equals("No", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return BadRequest(new { message = $"Answer for screening question \"{q.QuestionText}\" must be either 'Yes' or 'No'." });
+                        }
+                        a.AnswerText = trimmed.Equals("Yes", StringComparison.OrdinalIgnoreCase) ? "Yes" : "No";
+                    }
+                    else if (q.QuestionType.Equals("Text", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (trimmed.Length > 1000)
+                        {
+                            return BadRequest(new { message = $"Answer for screening question \"{q.QuestionText}\" cannot exceed 1000 characters." });
+                        }
+                    }
+                }
             }
 
             // (1) Validate IsRequired: antha job oda IsRequired=true screening questions ku bathil irukkanum, illana 400

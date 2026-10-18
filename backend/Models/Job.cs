@@ -56,5 +56,6 @@ namespace HireConnect.API.Models
         public virtual ICollection<SavedJob> SavedJobs { get; set; } = new List<SavedJob>();
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
         public virtual ICollection<JobScreeningQuestion> ScreeningQuestions { get; set; } = new List<JobScreeningQuestion>();
+        public virtual ICollection<JobView> Views { get; set; } = new List<JobView>();
     }
 }

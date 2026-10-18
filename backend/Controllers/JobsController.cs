@@ -221,14 +221,55 @@ namespace HireConnect.API.Controllers
             var isEmployer = User.IsInRole("Employer");
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            bool isOwnJob = isEmployer && job.Company.EmployerId == userId;
+
             if (!isAdmin)
             {
-                bool isOwnJob = isEmployer && job.Company.EmployerId == userId;
                 if (!isOwnJob && (job.Status != "Published" || !job.Company.IsApproved))
                 {
                     return Forbid();
                 }
             }
+
+            // Views count: oru user/IP ku oru job ku oru naalaiku oru thadava mattum count, employer thaan paartha count pannaatha
+            if (!isOwnJob)
+            {
+                var today = DateTime.UtcNow.Date;
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                bool alreadyViewed;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    alreadyViewed = await _context.JobViews.AnyAsync(v => 
+                        v.JobId == id && 
+                        v.ViewedDate == today && 
+                        v.UserId == userId);
+                }
+                else
+                {
+                    alreadyViewed = await _context.JobViews.AnyAsync(v => 
+                        v.JobId == id && 
+                        v.ViewedDate == today && 
+                        v.IpAddress == ip && 
+                        v.UserId == null);
+                }
+
+                if (!alreadyViewed)
+                {
+                    _context.JobViews.Add(new JobView
+                    {
+                        JobId = id,
+                        UserId = string.IsNullOrEmpty(userId) ? null : userId,
+                        IpAddress = ip.Length > 50 ? ip.Substring(0, 50) : ip,
+                        ViewedDate = today,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            var viewsCount = await _context.JobViews.CountAsync(v => v.JobId == job.Id);
+            var applicantsCount = await _context.Applications.CountAsync(a => a.JobId == job.Id);
 
             var dto = new JobResponseDto
             {
@@ -250,6 +291,8 @@ namespace HireConnect.API.Controllers
                 Status = job.Status,
                 CreatedAt = job.CreatedAt,
                 IsPaid = job.IsPaid,
+                ViewsCount = viewsCount,
+                ApplicantsCount = applicantsCount,
                 Company = job.Company == null ? null : new JobCompanyDto
                 {
                     Id = job.Company.Id,
@@ -471,7 +514,11 @@ namespace HireConnect.API.Controllers
 
         [HttpGet("my-jobs")]
         [Authorize(Roles = "Employer")]
-        public async Task<IActionResult> GetMyJobs([FromQuery] int page = 1, [FromQuery] int pageSize = 12)
+        public async Task<IActionResult> GetMyJobs(
+            [FromQuery] int page = 1, 
+            [FromQuery] int pageSize = 12,
+            [FromQuery] string? status = null,
+            [FromQuery] string? search = null)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var query = _context.Jobs
@@ -479,11 +526,47 @@ namespace HireConnect.API.Controllers
                 .Include(j => j.Category)
                 .Include(j => j.JobSkills)
                 .ThenInclude(js => js.Skill)
+                .Include(j => j.Applications)
+                .Include(j => j.Views)
                 .Where(j => j.Company.EmployerId == userId)
                 .AsQueryable();
 
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim();
+                query = query.Where(j => j.Title.Contains(s));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                if (status.Equals("Expired", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(j => j.Deadline.HasValue && j.Deadline.Value < DateTime.UtcNow && j.Status == "Published");
+                }
+                else
+                {
+                    query = query.Where(j => j.Status == status);
+                }
+            }
+
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            // Tab status counts
+            var allMyJobs = await _context.Jobs
+                .Where(j => j.Company.EmployerId == userId)
+                .Select(j => new { j.Status, j.Deadline })
+                .ToListAsync();
+
+            var counts = new
+            {
+                all = allMyJobs.Count,
+                published = allMyJobs.Count(j => j.Status == "Published" && (!j.Deadline.HasValue || j.Deadline.Value >= DateTime.UtcNow)),
+                draft = allMyJobs.Count(j => j.Status == "Draft"),
+                pendingApproval = allMyJobs.Count(j => j.Status == "PendingApproval"),
+                closed = allMyJobs.Count(j => j.Status == "Closed"),
+                expired = allMyJobs.Count(j => j.Deadline.HasValue && j.Deadline.Value < DateTime.UtcNow && j.Status == "Published")
+            };
 
             var jobs = await query
                 .OrderByDescending(j => j.CreatedAt)
@@ -509,6 +592,8 @@ namespace HireConnect.API.Controllers
                     Status = j.Status,
                     CreatedAt = j.CreatedAt,
                     IsPaid = j.IsPaid,
+                    ViewsCount = j.Views.Count,
+                    ApplicantsCount = j.Applications.Count,
                     Company = j.Company == null ? null : new JobCompanyDto
                     {
                         Id = j.Company.Id,
@@ -533,6 +618,7 @@ namespace HireConnect.API.Controllers
             return Ok(new
             {
                 data = jobs,
+                statusCounts = counts,
                 pagination = new
                 {
                     totalCount,
@@ -553,6 +639,10 @@ namespace HireConnect.API.Controllers
             if (company == null) return BadRequest(new { message = "You must create a company profile first." });
             if (company.VerificationStatus != "Verified") return BadRequest(new { message = "Your identity must be verified before posting jobs." });
             if (!company.IsApproved) return Forbid(); // "An Employer's company must be Admin-approved before it can post jobs at all."
+
+            // Whitelist QuestionType (Text, YesNo, Number), max 10 questions, lengths <= 300
+            var (isQuestionsValid, questionsError) = ValidateScreeningQuestions(model.ScreeningQuestions);
+            if (!isQuestionsValid) return BadRequest(new { message = questionsError });
 
             var job = new Job
             {
@@ -588,7 +678,7 @@ namespace HireConnect.API.Controllers
                         {
                             JobId = job.Id,
                             QuestionText = q.QuestionText.Trim(),
-                            QuestionType = string.IsNullOrWhiteSpace(q.QuestionType) ? "Text" : q.QuestionType.Trim(),
+                            QuestionType = NormalizeQuestionType(q.QuestionType),
                             IsRequired = q.IsRequired,
                             IdealAnswer = q.IdealAnswer?.Trim(),
                             OrderIndex = q.OrderIndex > 0 ? q.OrderIndex : idx
@@ -626,6 +716,10 @@ namespace HireConnect.API.Controllers
             {
                 return BadRequest(new { message = $"Cannot edit job while in '{job.Status}' status. Only Draft, Rejected, or Published jobs can be edited." });
             }
+
+            // Whitelist QuestionType (Text, YesNo, Number), max 10 questions, lengths <= 300
+            var (isQuestionsValid, questionsError) = ValidateScreeningQuestions(model.ScreeningQuestions);
+            if (!isQuestionsValid) return BadRequest(new { message = questionsError });
 
             if (job.Status == "Published")
             {
@@ -666,7 +760,7 @@ namespace HireConnect.API.Controllers
                             {
                                 JobId = job.Id,
                                 QuestionText = q.QuestionText.Trim(),
-                                QuestionType = string.IsNullOrWhiteSpace(q.QuestionType) ? "Text" : q.QuestionType.Trim(),
+                                QuestionType = NormalizeQuestionType(q.QuestionType),
                                 IsRequired = q.IsRequired,
                                 IdealAnswer = q.IdealAnswer?.Trim(),
                                 OrderIndex = q.OrderIndex > 0 ? q.OrderIndex : idx
@@ -733,6 +827,59 @@ namespace HireConnect.API.Controllers
             return Ok(new { message = "Job closed successfully.", status = job.Status });
         }
 
+        [HttpPost("{id}/reopen")]
+        [Authorize(Roles = "Employer,Admin")]
+        public async Task<IActionResult> ReopenJob(int id, [FromBody] ReopenJobDto? model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Admin");
+
+            var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == id);
+            if (job == null) return NotFound();
+
+            // Ownership check: employers can only reopen their own jobs
+            if (!isAdmin && job.Company.EmployerId != userId) return Forbid();
+
+            // Closed jobs only
+            if (job.Status != "Closed")
+            {
+                return BadRequest(new { message = $"Only closed jobs can be reopened. This job is currently '{job.Status}'." });
+            }
+
+            // Expired deadline check: if deadline is expired, require a new future deadline
+            bool isExpired = job.Deadline.HasValue && job.Deadline.Value <= DateTime.UtcNow;
+            if (isExpired)
+            {
+                if (model == null || !model.Deadline.HasValue || model.Deadline.Value <= DateTime.UtcNow)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Job deadline has expired. A new future deadline is required to reopen the job.",
+                        requiresNewDeadline = true
+                    });
+                }
+                job.Deadline = model.Deadline.Value;
+            }
+            else if (model?.Deadline.HasValue == true)
+            {
+                if (model.Deadline.Value <= DateTime.UtcNow)
+                {
+                    return BadRequest(new { message = "The new deadline must be a future date." });
+                }
+                job.Deadline = model.Deadline.Value;
+            }
+
+            job.Status = "Published";
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Job reopened successfully.",
+                status = job.Status,
+                deadline = job.Deadline
+            });
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteJob(int id)
@@ -777,6 +924,10 @@ namespace HireConnect.API.Controllers
             var reports = await _context.Reports.Where(r => r.JobId == id).ToListAsync();
             _context.Reports.RemoveRange(reports);
 
+            // 6. Clean up JobViews
+            var jobViews = await _context.JobViews.Where(v => v.JobId == id).ToListAsync();
+            _context.JobViews.RemoveRange(jobViews);
+
             _context.Jobs.Remove(job);
             await _context.SaveChangesAsync();
 
@@ -798,6 +949,27 @@ namespace HireConnect.API.Controllers
 
             if (originalJob == null) return NotFound();
             if (!isAdmin && originalJob.Company.EmployerId != userId) return Forbid();
+
+            // Validate original job screening questions before duplicating
+            if (originalJob.ScreeningQuestions.Count > 10)
+            {
+                return BadRequest(new { message = "Original job has more than 10 screening questions and cannot be duplicated." });
+            }
+            foreach (var sq in originalJob.ScreeningQuestions)
+            {
+                if (sq.QuestionText.Length > 300)
+                {
+                    return BadRequest(new { message = "Original job has a screening question exceeding 300 characters and cannot be duplicated." });
+                }
+                if (!string.IsNullOrWhiteSpace(sq.IdealAnswer) && sq.IdealAnswer.Length > 300)
+                {
+                    return BadRequest(new { message = "Original job has a screening question ideal answer exceeding 300 characters and cannot be duplicated." });
+                }
+                if (!AllowedQuestionTypes.Contains(sq.QuestionType))
+                {
+                    return BadRequest(new { message = $"Original job has invalid question type '{sq.QuestionType}'." });
+                }
+            }
 
             var copyTitle = $"{originalJob.Title} (Copy)";
             if (copyTitle.Length > 200) copyTitle = copyTitle.Substring(0, 193) + " (Copy)";
@@ -849,10 +1021,10 @@ namespace HireConnect.API.Controllers
                     _context.JobScreeningQuestions.Add(new JobScreeningQuestion
                     {
                         JobId = copy.Id,
-                        QuestionText = sq.QuestionText,
-                        QuestionType = sq.QuestionType,
+                        QuestionText = sq.QuestionText.Trim(),
+                        QuestionType = NormalizeQuestionType(sq.QuestionType),
                         IsRequired = sq.IsRequired,
-                        IdealAnswer = sq.IdealAnswer,
+                        IdealAnswer = sq.IdealAnswer?.Trim(),
                         OrderIndex = sq.OrderIndex
                     });
                 }
@@ -890,6 +1062,8 @@ namespace HireConnect.API.Controllers
                 Status = job.Status,
                 CreatedAt = job.CreatedAt,
                 IsPaid = job.IsPaid,
+                ViewsCount = job.Views?.Count ?? 0,
+                ApplicantsCount = job.Applications?.Count ?? 0,
                 Company = job.Company == null ? null : new JobCompanyDto
                 {
                     Id = job.Company.Id,
@@ -921,6 +1095,55 @@ namespace HireConnect.API.Controllers
                     }).ToList() ?? new List<ScreeningQuestionResponseDto>()
             };
         }
+
+        private static readonly HashSet<string> AllowedQuestionTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Text", "YesNo", "Number"
+        };
+
+        private static (bool IsValid, string? ErrorMessage) ValidateScreeningQuestions(List<ScreeningQuestionInputDto>? questions)
+        {
+            if (questions == null || questions.Count == 0) return (true, null);
+
+            if (questions.Count > 10)
+            {
+                return (false, "A job can have a maximum of 10 screening questions.");
+            }
+
+            for (int i = 0; i < questions.Count; i++)
+            {
+                var q = questions[i];
+                if (string.IsNullOrWhiteSpace(q.QuestionText))
+                {
+                    return (false, $"Screening question #{i + 1} text cannot be empty.");
+                }
+
+                var text = q.QuestionText.Trim();
+                if (text.Length > 300)
+                {
+                    return (false, $"Screening question #{i + 1} text cannot exceed 300 characters.");
+                }
+
+                var type = string.IsNullOrWhiteSpace(q.QuestionType) ? "Text" : q.QuestionType.Trim();
+                if (!AllowedQuestionTypes.Contains(type))
+                {
+                    return (false, $"Screening question #{i + 1} type '{type}' is invalid. Allowed types are: Text, YesNo, Number.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(q.IdealAnswer) && q.IdealAnswer.Trim().Length > 300)
+                {
+                    return (false, $"Screening question #{i + 1} ideal answer cannot exceed 300 characters.");
+                }
+            }
+
+            return (true, null);
+        }
+
+        private static string NormalizeQuestionType(string? type)
+        {
+            var trimmed = type?.Trim() ?? "Text";
+            return AllowedQuestionTypes.FirstOrDefault(t => t.Equals(trimmed, StringComparison.OrdinalIgnoreCase)) ?? "Text";
+        }
     }
 
     public class JobDto
@@ -945,10 +1168,15 @@ namespace HireConnect.API.Controllers
     {
         public int? Id { get; set; }
         public string QuestionText { get; set; } = string.Empty;
-        public string QuestionType { get; set; } = "Text"; // Text, YesNo, Number, Choice
+        public string QuestionType { get; set; } = "Text"; // Text, YesNo, Number
         public bool IsRequired { get; set; } = true;
         public string? IdealAnswer { get; set; }
         public int OrderIndex { get; set; } = 0;
+    }
+
+    public class ReopenJobDto
+    {
+        public DateTime? Deadline { get; set; }
     }
 
     public class JobResponseDto
@@ -971,6 +1199,8 @@ namespace HireConnect.API.Controllers
         public string Status { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public bool IsPaid { get; set; }
+        public int ViewsCount { get; set; }
+        public int ApplicantsCount { get; set; }
         public JobCompanyDto? Company { get; set; }
         public JobCategoryDto? Category { get; set; }
         public List<string> Skills { get; set; } = new();
