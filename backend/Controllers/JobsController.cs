@@ -1,5 +1,6 @@
 using HireConnect.API.Data;
 using HireConnect.API.Models;
+using HireConnect.API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -552,6 +553,146 @@ namespace HireConnect.API.Controllers
             .ToList();
 
             return Ok(scored);
+        }
+
+        /// <summary>
+        /// GET /api/jobs/employer-analytics
+        /// Returns job-wise views, applies, conversion rate, total views/applies, and 30-day daily trend.
+        /// Strictly isolated to the authenticated employer's own company jobs.
+        /// </summary>
+        [HttpGet("employer-analytics")]
+        [Authorize(Roles = "Employer,Admin")]
+        public async Task<IActionResult> GetEmployerAnalytics()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            // Verify company ownership
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.EmployerId == userId);
+            if (company == null)
+            {
+                var emptyResult = new EmployerAnalyticsDto
+                {
+                    TotalJobs = 0,
+                    TotalViews = 0,
+                    TotalApplications = 0,
+                    OverallConversionRate = 0,
+                    DailyTrends = GenerateEmptyDailyTrends(DateTime.UtcNow.Date.AddDays(-29), DateTime.UtcNow.Date),
+                    JobStats = new List<JobAnalyticsItemDto>()
+                };
+                return Ok(emptyResult);
+            }
+
+            // Fetch all jobs for this employer's company
+            var jobs = await _context.Jobs
+                .Where(j => j.CompanyId == company.Id)
+                .OrderByDescending(j => j.CreatedAt)
+                .Select(j => new
+                {
+                    j.Id,
+                    j.Title,
+                    j.Status,
+                    j.Deadline,
+                    j.CreatedAt
+                })
+                .ToListAsync();
+
+            var jobIds = jobs.Select(j => j.Id).ToList();
+
+            // Total & per-job views count
+            var viewsByJob = await _context.JobViews
+                .Where(v => jobIds.Contains(v.JobId))
+                .GroupBy(v => v.JobId)
+                .Select(g => new { JobId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.JobId, x => x.Count);
+
+            // Total & per-job applications count
+            var appsByJob = await _context.Applications
+                .Where(a => jobIds.Contains(a.JobId))
+                .GroupBy(a => a.JobId)
+                .Select(g => new { JobId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.JobId, x => x.Count);
+
+            // 30 days range
+            var today = DateTime.UtcNow.Date;
+            var startDate = today.AddDays(-29);
+
+            // Daily views in last 30 days
+            var dailyViews = await _context.JobViews
+                .Where(v => jobIds.Contains(v.JobId) && v.ViewedDate >= startDate && v.ViewedDate <= today)
+                .GroupBy(v => v.ViewedDate)
+                .Select(g => new { Date = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Date, x => x.Count);
+
+            // Daily applications in last 30 days
+            var dailyApps = await _context.Applications
+                .Where(a => jobIds.Contains(a.JobId) && a.AppliedAt.Date >= startDate && a.AppliedAt.Date <= today)
+                .GroupBy(a => a.AppliedAt.Date)
+                .Select(g => new { Date = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Date, x => x.Count);
+
+            var dailyTrends = new List<DailyTrendDto>();
+            for (var d = startDate; d <= today; d = d.AddDays(1))
+            {
+                dailyTrends.Add(new DailyTrendDto
+                {
+                    Date = d.ToString("yyyy-MM-dd"),
+                    Views = dailyViews.GetValueOrDefault(d, 0),
+                    Applications = dailyApps.GetValueOrDefault(d, 0)
+                });
+            }
+
+            var totalViews = viewsByJob.Values.Sum();
+            var totalApps = appsByJob.Values.Sum();
+            var overallConversion = totalViews > 0 ? Math.Round((double)totalApps / totalViews * 100, 1) : 0;
+
+            var jobStats = jobs.Select(j =>
+            {
+                var vCount = viewsByJob.GetValueOrDefault(j.Id, 0);
+                var aCount = appsByJob.GetValueOrDefault(j.Id, 0);
+                var conv = vCount > 0 ? Math.Round((double)aCount / vCount * 100, 1) : 0;
+                return new JobAnalyticsItemDto
+                {
+                    JobId = j.Id,
+                    Title = j.Title,
+                    Status = j.Status,
+                    ViewsCount = vCount,
+                    ApplicationsCount = aCount,
+                    ConversionRate = conv,
+                    Deadline = j.Deadline,
+                    CreatedAt = j.CreatedAt
+                };
+            }).ToList();
+
+            var dto = new EmployerAnalyticsDto
+            {
+                TotalJobs = jobs.Count,
+                TotalViews = totalViews,
+                TotalApplications = totalApps,
+                OverallConversionRate = overallConversion,
+                DailyTrends = dailyTrends,
+                JobStats = jobStats
+            };
+
+            return Ok(dto);
+        }
+
+        private static List<DailyTrendDto> GenerateEmptyDailyTrends(DateTime start, DateTime end)
+        {
+            var list = new List<DailyTrendDto>();
+            for (var d = start; d <= end; d = d.AddDays(1))
+            {
+                list.Add(new DailyTrendDto
+                {
+                    Date = d.ToString("yyyy-MM-dd"),
+                    Views = 0,
+                    Applications = 0
+                });
+            }
+            return list;
         }
 
         [HttpGet("my-jobs")]

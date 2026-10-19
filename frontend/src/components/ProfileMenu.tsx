@@ -12,7 +12,8 @@ import {
     LuLogOut,
     LuShieldCheck,
     LuBriefcase,
-    LuUserCheck
+    LuUserCheck,
+    LuBell
 } from 'react-icons/lu';
 
 interface ProfileMenuProps {
@@ -199,6 +200,18 @@ export default function ProfileMenu({ className = '', profileHref, onItemClick }
                         >
                             <LuUser className="w-4 h-4 text-gray-400 group-hover:text-orange" />
                             <span>My Profile</span>
+                        </Link>
+                        <Link
+                            href={user.role === 'Employer' ? '/employer/notifications' : user.role === 'Admin' ? '/admin/dashboard' : '/seeker/notifications'}
+                            role="menuitem"
+                            onClick={() => {
+                                setIsOpen(false);
+                                if (onItemClick) onItemClick();
+                            }}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange/5 hover:text-orange transition-colors"
+                        >
+                            <LuBell className="w-4 h-4 text-gray-400 group-hover:text-orange" />
+                            <span>Notifications</span>
                         </Link>
                     </div>
 

@@ -804,7 +804,7 @@ export default function JobApplicationsPage() {
                                                             Direct Candidate Messaging
                                                         </h4>
                                                         <p className="text-xs text-gray-600 mt-0.5">
-                                                            Chat directly with {seekerInfo.fullName} regarding interviews, screening, or updates.
+                                                            Chat directly with {app.seeker?.user?.fullName || 'this candidate'} regarding interviews, screening, or updates.
                                                         </p>
                                                     </div>
                                                 </div>

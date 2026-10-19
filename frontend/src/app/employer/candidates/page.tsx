@@ -18,7 +18,7 @@ import {
     LuMail,
     LuPhone,
     LuClock,
-    LuAlertCircle
+    LuCircleAlert
 } from 'react-icons/lu';
 
 interface WorkHistory {
@@ -255,7 +255,7 @@ export default function CandidatesSearchPage() {
                 {isUnverifiedCompany && (
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 sm:p-8 text-center space-y-4">
                         <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-600">
-                            <LuAlertCircle className="w-6 h-6" />
+                            <LuCircleAlert className="w-6 h-6" />
                         </div>
                         <h3 className="text-lg font-bold text-charcoal">Company Verification Required</h3>
                         <p className="text-sm text-gray-600 max-w-md mx-auto">
@@ -436,7 +436,7 @@ export default function CandidatesSearchPage() {
                             </div>
                         ) : isError ? (
                             <div className="bg-white rounded-2xl p-12 text-center text-red-500 shadow-sm border border-gray-200/80 space-y-3">
-                                <LuAlertCircle className="w-10 h-10 mx-auto opacity-70" />
+                                <LuCircleAlert className="w-10 h-10 mx-auto opacity-70" />
                                 <p className="text-sm font-semibold">Unable to fetch candidates.</p>
                                 <button
                                     onClick={() => refetch()}
@@ -814,7 +814,7 @@ export default function CandidatesSearchPage() {
                         <form onSubmit={handleSendInvite} className="p-5 space-y-4">
                             {inviteError && (
                                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
-                                    <LuAlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                                    <LuCircleAlert className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                     <span>{inviteError}</span>
                                 </div>
                             )}
@@ -855,18 +855,18 @@ export default function CandidatesSearchPage() {
                             {/* Personal Note */}
                             <div className="space-y-1.5">
                                 <label className="block text-xs font-semibold text-charcoal">
-                                    Personal Note (Optional)
+                                    Personal Note (Optional, max 500 characters)
                                 </label>
                                 <textarea
                                     rows={3}
                                     value={inviteMessage}
                                     onChange={(e) => setInviteMessage(e.target.value)}
-                                    maxLength={1000}
+                                    maxLength={500}
                                     placeholder="Hi! We noticed your profile and think your skills would be a great match for our role..."
                                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                 />
                                 <p className="text-[11px] text-gray-400 text-right">
-                                    {inviteMessage.length}/1000
+                                    {inviteMessage.length}/500
                                 </p>
                             </div>
 

@@ -2,23 +2,29 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
+import { useAuthStore } from '@/store/authStore';
 import { 
     LuBell, 
     LuCheck, 
     LuMessageCircle, 
     LuBriefcase, 
     LuCircleCheck, 
+    LuCircleAlert,
     LuInfo, 
     LuChevronRight,
-    LuSparkles
+    LuSparkles,
+    LuClock
 } from 'react-icons/lu';
 
 export default function NotificationBell() {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
+    const router = useRouter();
+    const { user } = useAuthStore();
 
     // Fetch unread count & recent notifications
     const { data: notifications = [] } = useQuery({
@@ -77,6 +83,12 @@ export default function NotificationBell() {
 
     const getNotificationIcon = (title: string) => {
         const lower = title.toLowerCase();
+        if (lower.includes('expiring')) {
+            return <LuClock className="w-4 h-4 text-amber-500" />;
+        }
+        if (lower.includes('rejected') || lower.includes('revoked')) {
+            return <LuCircleAlert className="w-4 h-4 text-rose-500" />;
+        }
         if (lower.includes('message') || lower.includes('chat')) {
             return <LuMessageCircle className="w-4 h-4 text-blue-500" />;
         }
@@ -92,6 +104,66 @@ export default function NotificationBell() {
         return <LuInfo className="w-4 h-4 text-gray-400" />;
     };
 
+    const getNotificationLink = (notification: any, role?: string): string => {
+        const title = (notification.title || '').toLowerCase();
+
+        if (role === 'Employer') {
+            if (title.includes('job approved') || title.includes('job rejected') || title.includes('expiring')) {
+                return '/employer/manage-jobs';
+            }
+            if (title.includes('verification') || title.includes('company')) {
+                return '/employer/verification';
+            }
+            if (title.includes('candidate accepted') || title.includes('invitation')) {
+                return '/employer/candidates';
+            }
+            if (title.includes('application') || title.includes('applied')) {
+                return '/employer/applications';
+            }
+            if (title.includes('message') || title.includes('chat')) {
+                return '/chat';
+            }
+            return '/employer/dashboard';
+        }
+
+        if (role === 'Admin') {
+            if (title.includes('verification')) {
+                return '/admin/dashboard';
+            }
+            if (title.includes('job')) {
+                return '/admin/dashboard';
+            }
+            return '/admin/dashboard';
+        }
+
+        // Default: JobSeeker
+        if (title.includes('invitation')) {
+            return '/seeker/notifications';
+        }
+        if (title.includes('verification') || title.includes('identity')) {
+            return '/seeker/verification';
+        }
+        if (title.includes('application') || title.includes('status')) {
+            return '/seeker/applied-jobs';
+        }
+        if (title.includes('job alert') || title.includes('match')) {
+            return '/jobs';
+        }
+        if (title.includes('message') || title.includes('chat')) {
+            return '/chat';
+        }
+        return '/seeker/notifications';
+    };
+
+    const handleItemClick = (item: any) => {
+        if (!item.isRead) {
+            markAsReadMutation.mutate(item.id);
+        }
+        const targetLink = getNotificationLink(item, user?.role);
+        setIsOpen(false);
+        router.push(targetLink);
+    };
+
     const formatTime = (dateStr: string) => {
         try {
             return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -101,6 +173,11 @@ export default function NotificationBell() {
     };
 
     const recentList = notifications.slice(0, 5);
+    const allNotificationsLink = user?.role === 'Employer'
+        ? '/employer/notifications'
+        : user?.role === 'Admin'
+        ? '/admin/dashboard'
+        : '/seeker/notifications';
 
     return (
         <div className="relative inline-block" ref={dropdownRef}>
@@ -156,9 +233,7 @@ export default function NotificationBell() {
                             recentList.map((item: any) => (
                                 <div
                                     key={item.id}
-                                    onClick={() => {
-                                        if (!item.isRead) markAsReadMutation.mutate(item.id);
-                                    }}
+                                    onClick={() => handleItemClick(item)}
                                     className={`p-3.5 flex items-start gap-3 hover:bg-gray-50 transition cursor-pointer ${
                                         !item.isRead ? 'bg-orange/5' : ''
                                     }`}
@@ -190,7 +265,7 @@ export default function NotificationBell() {
                     {/* Footer */}
                     <div className="p-2.5 bg-gray-50/60 rounded-b-2xl text-center">
                         <Link
-                            href="/seeker/notifications"
+                            href={allNotificationsLink}
                             onClick={() => setIsOpen(false)}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-orange transition"
                         >

@@ -79,6 +79,7 @@ builder.Services.AddScoped<HireConnect.API.Services.IEmailService, HireConnect.A
 
 // Background Services
 builder.Services.AddHostedService<HireConnect.API.Services.JobAlertBackgroundService>();
+builder.Services.AddHostedService<HireConnect.API.Services.JobExpiryBackgroundService>();
 
 // Payment Services
 builder.Services.AddScoped<IPaymentGatewayService, PayHereGatewayService>();

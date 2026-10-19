@@ -15,7 +15,8 @@ import {
     LuLanguages, 
     LuFileText, 
     LuEye,
-    LuEyeOff
+    LuEyeOff,
+    LuShieldCheck
 } from 'react-icons/lu';
 
 export default function SeekerProfile() {
@@ -272,38 +273,47 @@ export default function SeekerProfile() {
                     </p>
                 </div>
 
-                {/* Open to Work Toggle */}
-                <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 p-3 rounded-xl">
-                    <button
-                        type="button"
-                        onClick={toggleOpenToWork}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                            profile?.isOpenToWork ? 'bg-emerald-500' : 'bg-gray-300'
-                        }`}
-                    >
-                        <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                                profile?.isOpenToWork ? 'translate-x-5' : 'translate-x-0'
+                {/* Open to Work Toggle & Privacy Notice */}
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 p-3 rounded-xl">
+                        <button
+                            type="button"
+                            onClick={toggleOpenToWork}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                profile?.isOpenToWork ? 'bg-emerald-500' : 'bg-gray-300'
                             }`}
-                        />
-                    </button>
-                    <div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-charcoal">
-                            {profile?.isOpenToWork ? (
-                                <>
-                                    <LuEye className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span className="text-emerald-700">Open to Work</span>
-                                </>
-                            ) : (
-                                <>
-                                    <LuEyeOff className="w-3.5 h-3.5 text-gray-500" />
-                                    <span className="text-gray-600">Not Looking</span>
-                                </>
-                            )}
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                    profile?.isOpenToWork ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                        <div>
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-charcoal">
+                                {profile?.isOpenToWork ? (
+                                    <>
+                                        <LuEye className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span className="text-emerald-700">Open to Work</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <LuEyeOff className="w-3.5 h-3.5 text-gray-500" />
+                                        <span className="text-gray-600">Not Looking</span>
+                                    </>
+                                )}
+                            </div>
+                            <p className="text-[11px] text-gray-500">
+                                {profile?.isOpenToWork ? 'Employers can find your profile' : 'Hidden from employer talent search'}
+                            </p>
                         </div>
-                        <p className="text-[11px] text-gray-500">
-                            {profile?.isOpenToWork ? 'Employers can find your profile' : 'Hidden from employer talent search'}
-                        </p>
+                    </div>
+                    {/* Privacy Note */}
+                    <div className="flex items-start gap-1.5 bg-blue-50/70 border border-blue-200/60 rounded-xl p-2.5 max-w-sm text-[11px] text-blue-900 leading-tight">
+                        <LuShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                        <span>
+                            Verified employers can see your name initial, skills and experience. Your email and phone are shared only if you accept an invitation.
+                        </span>
                     </div>
                 </div>
             </div>

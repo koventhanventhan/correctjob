@@ -1,5 +1,6 @@
 using HireConnect.API.Data;
 using HireConnect.API.Models;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -475,6 +476,11 @@ namespace HireConnect.API.Controllers
                 return BadRequest(new { message = "Invalid seeker or job ID." });
             }
 
+            if (!string.IsNullOrEmpty(model.Message) && model.Message.Trim().Length > 500)
+            {
+                return BadRequest(new { message = "Invitation message cannot exceed 500 characters." });
+            }
+
             // Verify the job exists and is Published
             var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == model.JobId);
             if (job == null)
@@ -675,6 +681,8 @@ namespace HireConnect.API.Controllers
     {
         public int SeekerId { get; set; }
         public int JobId { get; set; }
+
+        [MaxLength(500, ErrorMessage = "Invitation message cannot exceed 500 characters.")]
         public string? Message { get; set; }
     }
 

@@ -16,7 +16,7 @@ namespace HireConnect.API.Models
 
         public int SeekerId { get; set; }
 
-        [MaxLength(1000)]
+        [MaxLength(500)]
         public string? Message { get; set; }
 
         [Required]

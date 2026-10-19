@@ -164,8 +164,19 @@ export default function AdminDashboard() {
         try {
             await api.patch(`/admin/jobs/${id}/approve`, "Published", { headers: { 'Content-Type': 'application/json' }});
             refetchJobs();
-        } catch (error) {
+        } catch {
             console.error("Failed to approve job");
+        }
+    };
+
+    const handleRejectJob = async (id: number) => {
+        const reason = prompt("Please provide a reason for rejecting this job posting (optional):");
+        if (reason === null) return;
+        try {
+            await api.patch(`/admin/jobs/${id}/approve`, { status: "Rejected", reason });
+            refetchJobs();
+        } catch {
+            console.error("Failed to reject job");
         }
     };
 
@@ -480,13 +491,21 @@ export default function AdminDashboard() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                {job.status !== 'Approved' && job.status !== 'Published' && (
-                                                    <button 
-                                                        onClick={() => handleApproveJob(job.id)}
-                                                        className="text-charcoal hover:text-charcoal bg-peach px-3 py-1 rounded"
-                                                    >
-                                                        Approve
-                                                    </button>
+                                                {job.status !== 'Approved' && job.status !== 'Published' && job.status !== 'Rejected' && (
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => handleApproveJob(job.id)}
+                                                            className="text-charcoal hover:text-charcoal bg-peach hover:bg-peach/80 px-3 py-1 rounded text-xs font-semibold"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRejectJob(job.id)}
+                                                            className="text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded text-xs font-semibold"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </td>
                                         </tr>

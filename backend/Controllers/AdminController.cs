@@ -104,17 +104,29 @@ namespace HireConnect.API.Controllers
         [HttpPatch("jobs/{id}/approve")]
         public async Task<IActionResult> ApproveJob(int id, [FromBody] JsonElement body)
         {
-            var job = await _context.Jobs.FindAsync(id);
+            var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == id);
             if (job == null) return NotFound();
 
             string? status = null;
+            string? reason = null;
             if (body.ValueKind == JsonValueKind.String)
             {
                 status = body.GetString();
             }
-            else if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("status", out var statusProp))
+            else if (body.ValueKind == JsonValueKind.Object)
             {
-                status = statusProp.GetString();
+                if (body.TryGetProperty("status", out var statusProp))
+                {
+                    status = statusProp.GetString();
+                }
+                if (body.TryGetProperty("reason", out var reasonProp))
+                {
+                    reason = reasonProp.GetString();
+                }
+                else if (body.TryGetProperty("notes", out var notesProp))
+                {
+                    reason = notesProp.GetString();
+                }
             }
 
             if (string.IsNullOrWhiteSpace(status) || string.Equals(status, "Approved", StringComparison.OrdinalIgnoreCase))
@@ -142,6 +154,35 @@ namespace HireConnect.API.Controllers
             {
                 job.ClosedByAdmin = false;
             }
+
+            // Send notification to employer
+            if (job.Company != null && !string.IsNullOrEmpty(job.Company.EmployerId))
+            {
+                if (matchedStatus == "Published")
+                {
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = job.Company.EmployerId,
+                        Title = "Job Approved",
+                        Message = $"Your job posting '{job.Title}' has been approved and published.",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    });
+                }
+                else if (matchedStatus == "Rejected")
+                {
+                    var reasonText = !string.IsNullOrWhiteSpace(reason) ? $" Reason: {reason.Trim()}" : "";
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = job.Company.EmployerId,
+                        Title = "Job Rejected",
+                        Message = $"Your job posting '{job.Title}' was rejected.{reasonText}",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    });
+                }
+            }
+
             await _context.SaveChangesAsync();
             return Ok(new
             {
@@ -194,6 +235,21 @@ namespace HireConnect.API.Controllers
             if (company == null) return NotFound();
 
             company.IsApproved = isApproved;
+
+            if (!string.IsNullOrEmpty(company.EmployerId))
+            {
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = company.EmployerId,
+                    Title = isApproved ? "Company Approved" : "Company Approval Revoked",
+                    Message = isApproved 
+                        ? $"Your company '{company.CompanyName}' has been approved by admin." 
+                        : $"Your company '{company.CompanyName}' approval has been revoked.",
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false
+                });
+            }
+
             await _context.SaveChangesAsync();
             return Ok(new
             {
@@ -397,10 +453,12 @@ namespace HireConnect.API.Controllers
             var notification = new Notification
             {
                 UserId = company.EmployerId,
-                Title = decision.Approved ? "Identity Verified" : "Identity Verification Rejected",
+                Title = decision.Approved ? "Company Verification Approved" : "Company Verification Rejected",
                 Message = decision.Approved 
-                    ? "Your identity verification request has been approved. You can now post jobs." 
-                    : $"Your identity verification request was rejected. Reason: {decision.Notes}"
+                    ? $"Your company verification for '{company.CompanyName}' has been approved. You can now post jobs." 
+                    : $"Your company verification for '{company.CompanyName}' was rejected. Reason: {decision.Notes}",
+                CreatedAt = DateTime.UtcNow,
+                IsRead = false
             };
             _context.Notifications.Add(notification);
 
