@@ -141,6 +141,11 @@ namespace HireConnect.API.Controllers
                 return BadRequest(new { message = $"Invalid status '{status}'. Allowed statuses are: {string.Join(", ", allowedStatuses)}" });
             }
 
+            if (!string.IsNullOrEmpty(reason) && reason.Length > 500)
+            {
+                return BadRequest(new { message = "Rejection reason cannot exceed 500 characters." });
+            }
+
             job.Status = matchedStatus;
             if (matchedStatus == "Published" && job.PublishedAt == null)
             {

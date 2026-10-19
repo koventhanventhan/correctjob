@@ -170,8 +170,12 @@ export default function AdminDashboard() {
     };
 
     const handleRejectJob = async (id: number) => {
-        const reason = prompt("Please provide a reason for rejecting this job posting (optional):");
+        const reason = prompt("Please provide a reason for rejecting this job posting (max 500 characters, optional):");
         if (reason === null) return;
+        if (reason.length > 500) {
+            alert("Rejection reason cannot exceed 500 characters.");
+            return;
+        }
         try {
             await api.patch(`/admin/jobs/${id}/approve`, { status: "Rejected", reason });
             refetchJobs();

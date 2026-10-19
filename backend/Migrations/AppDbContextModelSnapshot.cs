@@ -453,8 +453,8 @@ namespace HireConnect.API.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Message")
-                        .HasMaxLength(1000)
-                        .HasColumnType("varchar(1000)");
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<DateTime?>("RespondedAt")
                         .HasColumnType("datetime(6)");
