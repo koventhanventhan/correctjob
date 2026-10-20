@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using HireConnect.API.Services.Payment;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Caching.Memory;
 
 // Load .env file if present
 var currentDir = Directory.GetCurrentDirectory();
@@ -149,6 +150,69 @@ builder.Services.AddAuthentication(options =>
                 context.Token = accessToken;
             }
             return Task.CompletedTask;
+        },
+        OnTokenValidated = async context =>
+        {
+            var principal = context.Principal;
+            if (principal == null) return;
+
+            var userId = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                         ?? principal.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                context.Fail("User identifier not found in token.");
+                return;
+            }
+
+            var tokenRole = principal.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value 
+                            ?? principal.FindFirst("role")?.Value;
+            var tokenSecurityStamp = principal.FindFirst("security_stamp")?.Value 
+                                     ?? principal.FindFirst(System.Security.Claims.ClaimTypes.SerialNumber)?.Value;
+
+            var cache = context.HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+            var cacheKey = $"user_token_val_{userId}";
+
+            if (!cache.TryGetValue(cacheKey, out UserValidationCacheItem? cached))
+            {
+                var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<User>>();
+                var user = await userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    context.Fail("User does not exist.");
+                    return;
+                }
+
+                var roles = await userManager.GetRolesAsync(user);
+                var currentRole = roles.FirstOrDefault() ?? "JobSeeker";
+
+                cached = new UserValidationCacheItem(
+                    user.IsActive,
+                    currentRole,
+                    user.SecurityStamp ?? "",
+                    user.MustChangePassword
+                );
+
+                // Cache for 30 seconds to minimize DB lookups
+                cache.Set(cacheKey, cached, TimeSpan.FromSeconds(30));
+            }
+
+            if (cached == null || !cached.IsActive)
+            {
+                context.Fail("User account has been blocked or deactivated.");
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(tokenSecurityStamp) && tokenSecurityStamp != cached.SecurityStamp)
+            {
+                context.Fail("Session has been invalidated.");
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(tokenRole) && !string.Equals(tokenRole, cached.Role, StringComparison.OrdinalIgnoreCase))
+            {
+                context.Fail("User role has changed.");
+                return;
+            }
         }
     };
 });
@@ -307,6 +371,9 @@ app.UseAuthorization();
 
 // Maintenance Mode Middleware (Admin is never locked out, non-admins get 503 during maintenance)
 app.UseMiddleware<HireConnect.API.Middleware.MaintenanceModeMiddleware>();
+
+// MustChangePassword Middleware (Enforce password change for users flagged with MustChangePassword=true)
+app.UseMiddleware<HireConnect.API.Middleware.MustChangePasswordMiddleware>();
 
 app.MapGet("/api/settings/maintenance-status", async (HireConnect.API.Services.ISystemSettingService settings) =>
 {

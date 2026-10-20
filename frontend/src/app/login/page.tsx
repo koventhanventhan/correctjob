@@ -33,6 +33,11 @@ export default function LoginPage() {
             const res = await api.post('/auth/login', data);
             setAuth(res.data.user, res.data.token);
             
+            if (res.data.mustChangePassword || res.data.user?.mustChangePassword) {
+                router.push('/change-password');
+                return;
+            }
+
             // Redirect based on role
             const roleToPath: Record<string, string> = {
                 JobSeeker: 'seeker',

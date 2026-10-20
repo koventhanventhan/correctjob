@@ -103,6 +103,14 @@ api.interceptors.response.use(
             }
         }
 
+        if (error.response?.status === 403 && error.response?.data?.code === 'PASSWORD_CHANGE_REQUIRED') {
+            if (typeof window !== 'undefined' && window.location.pathname !== '/change-password') {
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+                window.location.href = '/change-password';
+            }
+            return Promise.reject(error);
+        }
+
         return Promise.reject(error);
     }
 );

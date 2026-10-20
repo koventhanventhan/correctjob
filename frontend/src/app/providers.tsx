@@ -4,8 +4,18 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/services/api';
 
+import { usePathname, useRouter } from 'next/navigation';
+
 function AuthRehydrator({ children }: { children: React.ReactNode }) {
-    const { setAuth, setInitializing, token } = useAuthStore();
+    const { setAuth, setInitializing, token, user } = useAuthStore();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    useEffect(() => {
+        if (user?.mustChangePassword && pathname !== '/change-password' && pathname !== '/login') {
+            router.push('/change-password');
+        }
+    }, [user, pathname, router]);
 
     useEffect(() => {
         const initializeAuth = async () => {

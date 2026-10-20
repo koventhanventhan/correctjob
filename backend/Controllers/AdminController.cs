@@ -8,6 +8,7 @@ using System.Text.Json;
 using HireConnect.API.Services;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace HireConnect.API.Controllers
 {
@@ -21,19 +22,22 @@ namespace HireConnect.API.Controllers
         private readonly ISystemSettingService _settingsService;
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IMemoryCache _memoryCache;
 
         public AdminController(
             AppDbContext context,
             IAuditLogService auditLogService,
             ISystemSettingService settingsService,
             UserManager<User> userManager,
-            RoleManager<IdentityRole> roleManager)
+            RoleManager<IdentityRole> roleManager,
+            IMemoryCache memoryCache)
         {
             _context = context;
             _auditLogService = auditLogService;
             _settingsService = settingsService;
             _userManager = userManager;
             _roleManager = roleManager;
+            _memoryCache = memoryCache;
         }
 
         [HttpGet("users")]
@@ -397,6 +401,9 @@ namespace HireConnect.API.Controllers
                     CreatedAt = DateTime.UtcNow
                 });
 
+                await _userManager.UpdateSecurityStampAsync(user);
+                _memoryCache.Remove($"user_token_val_{user.Id}");
+
                 await _context.SaveChangesAsync();
 
                 // Record immutable audit log
@@ -439,6 +446,8 @@ namespace HireConnect.API.Controllers
                         : $"Your account has been reactivated. Note: {request.Reason.Trim()}",
                     CreatedAt = DateTime.UtcNow
                 });
+
+                _memoryCache.Remove($"user_token_val_{user.Id}");
 
                 await _context.SaveChangesAsync();
 
@@ -612,6 +621,9 @@ namespace HireConnect.API.Controllers
                 Message = "Your administrator privileges on HireConnect have been revoked by a system administrator.",
                 CreatedAt = DateTime.UtcNow
             });
+
+            await _userManager.UpdateSecurityStampAsync(targetUser);
+            _memoryCache.Remove($"user_token_val_{targetUser.Id}");
 
             await _context.SaveChangesAsync();
 

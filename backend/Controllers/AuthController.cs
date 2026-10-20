@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace HireConnect.API.Controllers
 {
@@ -24,6 +25,7 @@ namespace HireConnect.API.Controllers
         private readonly IEmailService _emailService;
         private readonly IWebHostEnvironment _environment;
         private readonly ISystemSettingService _settingsService;
+        private readonly IMemoryCache _memoryCache;
 
         public AuthController(
             UserManager<User> userManager,
@@ -33,7 +35,8 @@ namespace HireConnect.API.Controllers
             IFileStorageService fileStorage,
             IEmailService emailService,
             IWebHostEnvironment environment,
-            ISystemSettingService settingsService)
+            ISystemSettingService settingsService,
+            IMemoryCache memoryCache)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -43,6 +46,7 @@ namespace HireConnect.API.Controllers
             _emailService = emailService;
             _environment = environment;
             _settingsService = settingsService;
+            _memoryCache = memoryCache;
         }
 
         [HttpPost("register")]
@@ -122,7 +126,8 @@ namespace HireConnect.API.Controllers
                 new Claim(ClaimTypes.Name, user.UserName!),
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Role, userRole)
+                new Claim(ClaimTypes.Role, userRole),
+                new Claim("security_stamp", user.SecurityStamp ?? "")
             };
 
             var token = CreateToken(authClaims);
@@ -143,6 +148,7 @@ namespace HireConnect.API.Controllers
             {
                 token = new JwtSecurityTokenHandler().WriteToken(token),
                 expiration = token.ValidTo,
+                mustChangePassword = user.MustChangePassword,
                 user = new 
                 { 
                     user.Id, 
@@ -190,7 +196,8 @@ namespace HireConnect.API.Controllers
                 new Claim(ClaimTypes.Name, tokenEntity.User.UserName!),
                 new Claim(ClaimTypes.NameIdentifier, tokenEntity.User.Id),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Role, userRole)
+                new Claim(ClaimTypes.Role, userRole),
+                new Claim("security_stamp", tokenEntity.User.SecurityStamp ?? "")
             };
 
             var newToken = CreateToken(authClaims);
@@ -254,7 +261,8 @@ namespace HireConnect.API.Controllers
                 user.FullName,
                 user.Email,
                 user.ProfileImage,
-                Role = userRole
+                Role = userRole,
+                mustChangePassword = user.MustChangePassword
             });
         }
 
@@ -266,7 +274,7 @@ namespace HireConnect.API.Controllers
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
-                expires: DateTime.Now.AddMinutes(tokenValidityInMinutes),
+                expires: DateTime.UtcNow.AddMinutes(tokenValidityInMinutes),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
             );
@@ -434,6 +442,12 @@ namespace HireConnect.API.Controllers
             var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+
+            // Invalidate validation cache so subsequent requests immediately see MustChangePassword=false
+            _memoryCache.Remove($"user_token_val_{user.Id}");
+
             // Revoke all refresh tokens for this user upon password change
             var userTokens = await _context.RefreshTokens
                 .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)
@@ -442,10 +456,47 @@ namespace HireConnect.API.Controllers
             {
                 rt.IsRevoked = true;
             }
-            await _userManager.UpdateSecurityStampAsync(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Password changed successfully" });
+            var roles = await _userManager.GetRolesAsync(user);
+            var userRole = roles.FirstOrDefault() ?? "JobSeeker";
+            var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.Role, userRole),
+                new Claim("security_stamp", user.SecurityStamp ?? "")
+            };
+
+            var newToken = CreateToken(authClaims);
+            var newRefreshToken = GenerateRefreshToken();
+            var newRefreshTokenEntity = new RefreshToken
+            {
+                Token = newRefreshToken,
+                UserId = user.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(int.Parse(_configuration["Jwt:RefreshExpireDays"]!))
+            };
+            _context.RefreshTokens.Add(newRefreshTokenEntity);
+            await _context.SaveChangesAsync();
+
+            Response.Cookies.Append("refreshToken", newRefreshToken, GetRefreshTokenCookieOptions(newRefreshTokenEntity.ExpiresAt));
+
+            return Ok(new 
+            { 
+                message = "Password changed successfully",
+                token = new JwtSecurityTokenHandler().WriteToken(newToken),
+                mustChangePassword = false,
+                user = new 
+                { 
+                    user.Id, 
+                    user.FullName, 
+                    user.Email, 
+                    user.ProfileImage, 
+                    Role = userRole,
+                    mustChangePassword = false
+                }
+            });
         }
 
         [HttpPost("forgot-password")]
