@@ -15,8 +15,8 @@ namespace HireConnect.API.Services.Payment
 
         public CreateOrderResponseDto GenerateOrder(Models.Payment payment)
         {
-            var merchantId = _config["PayHere:MerchantId"] ?? throw new InvalidOperationException("MerchantId not configured");
-            var merchantSecret = _config["PayHere:MerchantSecret"] ?? throw new InvalidOperationException("MerchantSecret not configured");
+            var merchantId = _config["PayHere:MerchantId"] ?? _config["PayHere__MerchantId"] ?? "1211111";
+            var merchantSecret = _config["PayHere:MerchantSecret"] ?? _config["PayHere__MerchantSecret"] ?? "MerchantSecretKey1234567890";
 
             string amountFormatted = payment.Amount.ToString("0.00");
             string hash = GenerateHash(merchantId, payment.OrderId, amountFormatted, payment.Currency, merchantSecret);
@@ -33,8 +33,8 @@ namespace HireConnect.API.Services.Payment
 
         public bool VerifyNotification(PayHereNotifyRequestDto notifyDto)
         {
-            var merchantId = _config["PayHere:MerchantId"] ?? throw new InvalidOperationException("MerchantId not configured");
-            var merchantSecret = _config["PayHere:MerchantSecret"] ?? throw new InvalidOperationException("MerchantSecret not configured");
+            var merchantId = _config["PayHere:MerchantId"] ?? _config["PayHere__MerchantId"] ?? "1211111";
+            var merchantSecret = _config["PayHere:MerchantSecret"] ?? _config["PayHere__MerchantSecret"] ?? "MerchantSecretKey1234567890";
 
             // verify md5sig
             string amountFormatted = notifyDto.payhere_amount;

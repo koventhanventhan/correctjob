@@ -914,8 +914,7 @@ namespace HireConnect.API.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("varchar(1000)");
+                        .HasColumnType("longtext");
 
                     b.Property<int?>("JobId")
                         .HasColumnType("int");
@@ -950,6 +949,8 @@ namespace HireConnect.API.Migrations
                     b.HasIndex("ResolvedByAdminId");
 
                     b.HasIndex("ReviewId");
+
+                    b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "CreatedAt");
 

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HireConnect.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261020033308_AddAdminAuditLogsSystemSettingsAndLocations")]
+    [Migration("20261020034933_AddAdminAuditLogsSystemSettingsAndLocations")]
     partial class AddAdminAuditLogsSystemSettingsAndLocations
     {
         /// <inheritdoc />
@@ -917,8 +917,7 @@ namespace HireConnect.API.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("varchar(1000)");
+                        .HasColumnType("longtext");
 
                     b.Property<int?>("JobId")
                         .HasColumnType("int");
@@ -953,6 +952,8 @@ namespace HireConnect.API.Migrations
                     b.HasIndex("ResolvedByAdminId");
 
                     b.HasIndex("ReviewId");
+
+                    b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "CreatedAt");
 

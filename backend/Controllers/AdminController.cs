@@ -16,11 +16,16 @@ namespace HireConnect.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IAuditLogService _auditLogService;
+        private readonly ISystemSettingService _settingsService;
 
-        public AdminController(AppDbContext context, IAuditLogService auditLogService)
+        public AdminController(
+            AppDbContext context,
+            IAuditLogService auditLogService,
+            ISystemSettingService settingsService)
         {
             _context = context;
             _auditLogService = auditLogService;
+            _settingsService = settingsService;
         }
 
         [HttpGet("users")]
@@ -544,6 +549,239 @@ namespace HireConnect.API.Controllers
 
             return Ok(new { data = seekers, totalCount });
         }
+
+        [HttpGet("settings")]
+        public async Task<IActionResult> GetSettings()
+        {
+            var settings = await _settingsService.GetAllSettingsAsync();
+            var fee = await _settingsService.GetJobPostingFeeAsync();
+            var maintenance = await _settingsService.IsMaintenanceModeAsync();
+
+            return Ok(new
+            {
+                settings,
+                jobPostingFee = fee,
+                maintenanceMode = maintenance
+            });
+        }
+
+        [HttpPut("settings/job-posting-fee")]
+        public async Task<IActionResult> UpdateJobPostingFee([FromBody] UpdateJobPostingFeeDto dto)
+        {
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _settingsService.SetJobPostingFeeAsync(dto.Fee, currentAdminId);
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.ErrorMessage });
+            }
+
+            return Ok(new
+            {
+                message = "Job posting fee updated successfully.",
+                jobPostingFee = dto.Fee
+            });
+        }
+
+        [HttpPut("settings/maintenance-mode")]
+        public async Task<IActionResult> UpdateMaintenanceMode([FromBody] UpdateMaintenanceModeDto dto)
+        {
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            await _settingsService.SetMaintenanceModeAsync(dto.Enabled, currentAdminId);
+
+            return Ok(new
+            {
+                message = $"Maintenance mode {(dto.Enabled ? "enabled" : "disabled")} successfully.",
+                maintenanceMode = dto.Enabled
+            });
+        }
+
+        // Strictly Read-Only Audit Log Viewer (No PUT/DELETE exists)
+        [HttpGet("audit-logs")]
+        public async Task<IActionResult> GetAuditLogs(
+            [FromQuery] string? search,
+            [FromQuery] string? action,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var query = _context.AdminAuditLogs
+                .Include(a => a.Admin)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(action))
+            {
+                query = query.Where(a => a.Action == action);
+            }
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(a => 
+                    (a.Details != null && a.Details.Contains(search)) || 
+                    a.Action.Contains(search) || 
+                    a.Admin.FullName.Contains(search) ||
+                    (a.Admin.Email != null && a.Admin.Email.Contains(search)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var logs = await query
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.AdminId,
+                    AdminName = a.Admin.FullName,
+                    AdminEmail = a.Admin.Email,
+                    a.Action,
+                    a.TargetType,
+                    a.TargetId,
+                    a.Details,
+                    a.IpHash,
+                    a.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(new { data = logs, totalCount });
+        }
+
+        [HttpGet("dashboard-stats")]
+        public async Task<IActionResult> GetDashboardStats()
+        {
+            var adminRoleId = await _context.Roles.Where(r => r.Name == "Admin").Select(r => r.Id).FirstOrDefaultAsync();
+            var employerRoleId = await _context.Roles.Where(r => r.Name == "Employer").Select(r => r.Id).FirstOrDefaultAsync();
+            var seekerRoleId = await _context.Roles.Where(r => r.Name == "JobSeeker").Select(r => r.Id).FirstOrDefaultAsync();
+
+            var totalUsers = await _context.Users.CountAsync();
+            var activeUsers = await _context.Users.CountAsync(u => u.IsActive);
+            var blockedUsers = totalUsers - activeUsers;
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            var newUsersLast30Days = await _context.Users.CountAsync(u => u.CreatedAt >= thirtyDaysAgo);
+
+            var adminCount = adminRoleId != null ? await _context.UserRoles.CountAsync(ur => ur.RoleId == adminRoleId) : 0;
+            var employerCount = employerRoleId != null ? await _context.UserRoles.CountAsync(ur => ur.RoleId == employerRoleId) : 0;
+            var seekerCount = seekerRoleId != null ? await _context.UserRoles.CountAsync(ur => ur.RoleId == seekerRoleId) : Math.Max(0, totalUsers - adminCount - employerCount);
+
+            var totalJobs = await _context.Jobs.CountAsync();
+            var draftJobs = await _context.Jobs.CountAsync(j => j.Status == "Draft");
+            var pendingApprovalJobs = await _context.Jobs.CountAsync(j => j.Status == "PendingApproval");
+            var publishedJobs = await _context.Jobs.CountAsync(j => j.Status == "Published" || j.Status == "Approved");
+            var closedJobs = await _context.Jobs.CountAsync(j => j.Status == "Closed");
+            var rejectedJobs = await _context.Jobs.CountAsync(j => j.Status == "Rejected");
+
+            var totalApplications = await _context.Applications.CountAsync();
+            var totalViews = await _context.JobViews.CountAsync();
+            var conversionRate = totalViews > 0 ? Math.Round(((double)totalApplications / totalViews) * 100, 2) : 0.0;
+
+            var completedPayments = _context.Payments.Where(p => p.Status == "Completed");
+            var totalRevenue = await completedPayments.SumAsync(p => (decimal?)p.Amount) ?? 0m;
+            var completedPaymentsCount = await completedPayments.CountAsync();
+            var pendingPaymentsCount = await _context.Payments.CountAsync(p => p.Status == "Pending");
+
+            var pendingJobs = draftJobs + pendingApprovalJobs;
+            var pendingCompanies = await _context.Companies.CountAsync(c => !c.IsApproved);
+            var pendingSeekerVerifications = await _context.SeekerProfiles.CountAsync(s => s.VerificationStatus == "Pending");
+            var pendingEmployerVerifications = await _context.Companies.CountAsync(c => c.VerificationStatus == "Pending");
+            var pendingReviews = await _context.CompanyReviews.CountAsync(r => !r.IsHidden);
+            var pendingReports = await _context.Reports.CountAsync(r => r.Status == "Pending");
+
+            var startDate = DateTime.UtcNow.Date.AddDays(-29);
+            var userSignups = await _context.Users
+                .Where(u => u.CreatedAt >= startDate)
+                .Select(u => u.CreatedAt.Date)
+                .ToListAsync();
+
+            var jobPostings = await _context.Jobs
+                .Where(j => j.CreatedAt >= startDate)
+                .Select(j => j.CreatedAt.Date)
+                .ToListAsync();
+
+            var applicationSubmissions = await _context.Applications
+                .Where(a => a.AppliedAt >= startDate)
+                .Select(a => a.AppliedAt.Date)
+                .ToListAsync();
+
+            var trends30Days = Enumerable.Range(0, 30).Select(i =>
+            {
+                var date = startDate.AddDays(i);
+                var dateStr = date.ToString("yyyy-MM-dd");
+                return new
+                {
+                    date = dateStr,
+                    signups = userSignups.Count(d => d == date),
+                    jobs = jobPostings.Count(d => d == date),
+                    applications = applicationSubmissions.Count(d => d == date)
+                };
+            }).ToList();
+
+            return Ok(new
+            {
+                users = new
+                {
+                    total = totalUsers,
+                    seekers = seekerCount,
+                    employers = employerCount,
+                    admins = adminCount,
+                    active = activeUsers,
+                    blocked = blockedUsers,
+                    newLast30Days = newUsersLast30Days
+                },
+                jobs = new
+                {
+                    total = totalJobs,
+                    draft = draftJobs,
+                    pendingApproval = pendingApprovalJobs,
+                    published = publishedJobs,
+                    closed = closedJobs,
+                    rejected = rejectedJobs
+                },
+                applications = new
+                {
+                    total = totalApplications,
+                    views = totalViews,
+                    conversionRate
+                },
+                revenue = new
+                {
+                    total = totalRevenue,
+                    completedCount = completedPaymentsCount,
+                    pendingCount = pendingPaymentsCount
+                },
+                queues = new
+                {
+                    pendingJobs,
+                    pendingCompanies,
+                    pendingSeekerVerifications,
+                    pendingEmployerVerifications,
+                    pendingReviews,
+                    pendingReports
+                },
+                trends30Days
+            });
+        }
+
+        [HttpPost("audit-logs/test-redaction")]
+        public async Task<IActionResult> TestRedaction([FromBody] TestRedactionRequestDto request)
+        {
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _auditLogService.LogAsync(currentAdminId, "SECURITY_TEST", "SecurityTest", "1", request.Text, ip);
+            return Ok(new { message = "Logged successfully." });
+        }
+    }
+
+    public class TestRedactionRequestDto
+    {
+        public string Text { get; set; } = string.Empty;
+    }
+
+    public class UpdateJobPostingFeeDto
+    {
+        public decimal Fee { get; set; }
+    }
+
+    public class UpdateMaintenanceModeDto
+    {
+        public bool Enabled { get; set; }
     }
 
     public class VerificationDecisionDto

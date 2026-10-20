@@ -14,10 +14,6 @@ namespace HireConnect.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_Reports_UserId",
-                table: "Reports");
-
             migrationBuilder.AlterColumn<string>(
                 name: "Reason",
                 table: "Reports",
@@ -27,18 +23,6 @@ namespace HireConnect.API.Migrations
                 oldClrType: typeof(string),
                 oldType: "varchar(100)",
                 oldMaxLength: 100)
-                .Annotation("MySql:CharSet", "utf8mb4")
-                .OldAnnotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "Description",
-                table: "Reports",
-                type: "varchar(1000)",
-                maxLength: 1000,
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "longtext",
-                oldNullable: true)
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .OldAnnotation("MySql:CharSet", "utf8mb4");
 
@@ -341,23 +325,6 @@ namespace HireConnect.API.Migrations
                 oldMaxLength: 500)
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .OldAnnotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "Description",
-                table: "Reports",
-                type: "longtext",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "varchar(1000)",
-                oldMaxLength: 1000,
-                oldNullable: true)
-                .Annotation("MySql:CharSet", "utf8mb4")
-                .OldAnnotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Reports_UserId",
-                table: "Reports",
-                column: "UserId");
         }
     }
 }

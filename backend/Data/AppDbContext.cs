@@ -171,6 +171,9 @@ namespace HireConnect.API.Data
 
             // Report indexes for queries & duplicate checks
             builder.Entity<Report>()
+                .HasIndex(r => r.UserId);
+
+            builder.Entity<Report>()
                 .HasIndex(r => new { r.UserId, r.JobId });
 
             builder.Entity<Report>()
