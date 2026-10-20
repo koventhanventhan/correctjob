@@ -1,6 +1,7 @@
 using HireConnect.API.Data;
 using HireConnect.API.DTOs.Payment;
 using HireConnect.API.Models;
+using HireConnect.API.Services;
 using HireConnect.API.Services.Payment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,12 +17,18 @@ namespace HireConnect.API.Controllers
         private readonly AppDbContext _context;
         private readonly IPaymentGatewayService _paymentGateway;
         private readonly IConfiguration _config;
+        private readonly ISystemSettingService _settingsService;
 
-        public PaymentsController(AppDbContext context, IPaymentGatewayService paymentGateway, IConfiguration config)
+        public PaymentsController(
+            AppDbContext context,
+            IPaymentGatewayService paymentGateway,
+            IConfiguration config,
+            ISystemSettingService settingsService)
         {
             _context = context;
             _paymentGateway = paymentGateway;
             _config = config;
+            _settingsService = settingsService;
         }
 
         [HttpPost("create-order")]
@@ -40,13 +47,16 @@ namespace HireConnect.API.Controllers
             if (job.IsPaid)
                 return BadRequest(new { message = "Job is already paid." });
 
-            // Create pending payment
+            // Fetch dynamic job posting fee from system settings
+            var postingFee = await _settingsService.GetJobPostingFeeAsync();
+
+            // Create pending payment (Amount is locked in at creation time)
             var payment = new Payment
             {
                 JobId = job.Id,
                 EmployerId = userId,
                 OrderId = $"JOB-{job.Id}-{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}",
-                Amount = 5000.00m, // Flat fee: 5000 LKR
+                Amount = postingFee,
                 Currency = "LKR",
                 Status = "Pending"
             };

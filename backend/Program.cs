@@ -89,6 +89,13 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<HireConnect.API.Services.IResumeExtractorService, HireConnect.API.Services.ResumeExtractorService>();
 builder.Services.AddScoped<HireConnect.API.Services.IResumeMatchingService, HireConnect.API.Services.ResumeMatchingService>();
 
+// Memory Cache
+builder.Services.AddMemoryCache();
+
+// Audit Logging & Platform Settings Services
+builder.Services.AddScoped<HireConnect.API.Services.IAuditLogService, HireConnect.API.Services.AuditLogService>();
+builder.Services.AddScoped<HireConnect.API.Services.ISystemSettingService, HireConnect.API.Services.SystemSettingService>();
+
 // Configure Database
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
@@ -297,6 +304,15 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Maintenance Mode Middleware (Admin is never locked out, non-admins get 503 during maintenance)
+app.UseMiddleware<HireConnect.API.Middleware.MaintenanceModeMiddleware>();
+
+app.MapGet("/api/settings/maintenance-status", async (HireConnect.API.Services.ISystemSettingService settings) =>
+{
+    var isMaintenance = await settings.IsMaintenanceModeAsync();
+    return Results.Ok(new { maintenance = isMaintenance });
+}).AllowAnonymous();
 
 app.MapControllers();
 app.MapHub<HireConnect.API.Hubs.ChatHub>("/chatHub");

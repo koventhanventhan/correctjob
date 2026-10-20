@@ -3,7 +3,9 @@ using HireConnect.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text.Json;
+using HireConnect.API.Services;
 
 namespace HireConnect.API.Controllers
 {
@@ -13,10 +15,12 @@ namespace HireConnect.API.Controllers
     public class AdminController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAuditLogService _auditLogService;
 
-        public AdminController(AppDbContext context)
+        public AdminController(AppDbContext context, IAuditLogService auditLogService)
         {
             _context = context;
+            _auditLogService = auditLogService;
         }
 
         [HttpGet("users")]
@@ -26,7 +30,7 @@ namespace HireConnect.API.Controllers
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(u => u.FullName.Contains(search) || u.Email.Contains(search));
+                query = query.Where(u => u.FullName.Contains(search) || (u.Email != null && u.Email.Contains(search)));
             }
 
             var totalCount = await query.CountAsync();
@@ -271,17 +275,51 @@ namespace HireConnect.API.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound();
 
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Self-block check: Admin cannot block their own account
+            if (currentAdminId == id && !isActive)
+            {
+                return BadRequest(new { message = "You cannot block your own admin account." });
+            }
+
             var isAdmin = await _context.UserRoles
                 .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
                 .AnyAsync(x => x.UserId == id && x.Name == "Admin");
 
+            // Last active Admin check: Prevent blocking the last active admin
             if (isAdmin && !isActive)
             {
-                return BadRequest(new { message = "Cannot block an Admin account." });
+                var adminRoleId = await _context.Roles.Where(r => r.Name == "Admin").Select(r => r.Id).FirstOrDefaultAsync();
+                var activeAdminCount = await _context.UserRoles
+                    .Where(ur => ur.RoleId == adminRoleId)
+                    .Join(_context.Users.Where(u => u.IsActive), ur => ur.UserId, u => u.Id, (ur, u) => u.Id)
+                    .CountAsync();
+
+                if (activeAdminCount <= 1)
+                {
+                    return BadRequest(new { message = "Cannot block the last active administrator." });
+                }
             }
 
             user.IsActive = isActive;
             await _context.SaveChangesAsync();
+
+            // Record immutable audit log
+            if (!string.IsNullOrEmpty(currentAdminId))
+            {
+                var action = isActive ? "USER_UNBLOCKED" : "USER_BLOCKED";
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+                await _auditLogService.LogAsync(
+                    currentAdminId,
+                    action,
+                    "User",
+                    user.Id,
+                    $"Admin changed status of {user.Email} to {(isActive ? "Active" : "Blocked")}",
+                    ip
+                );
+            }
+
             return Ok(new
             {
                 user.Id,
@@ -350,7 +388,7 @@ namespace HireConnect.API.Controllers
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(s => s.User.FullName.Contains(search) || s.User.Email.Contains(search));
+                query = query.Where(s => s.User.FullName.Contains(search) || (s.User.Email != null && s.User.Email.Contains(search)));
             }
 
             var totalCount = await query.CountAsync();
@@ -414,7 +452,7 @@ namespace HireConnect.API.Controllers
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(c => c.Employer.FullName.Contains(search) || c.Employer.Email.Contains(search) || c.CompanyName.Contains(search));
+                query = query.Where(c => c.Employer.FullName.Contains(search) || (c.Employer.Email != null && c.Employer.Email.Contains(search)) || c.CompanyName.Contains(search));
             }
 
             var totalCount = await query.CountAsync();
@@ -480,7 +518,7 @@ namespace HireConnect.API.Controllers
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(s => s.User.FullName.Contains(search) || s.User.Email.Contains(search));
+                query = query.Where(s => s.User.FullName.Contains(search) || (s.User.Email != null && s.User.Email.Contains(search)));
             }
 
             var totalCount = await query.CountAsync();

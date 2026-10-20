@@ -23,6 +23,7 @@ namespace HireConnect.API.Controllers
         private readonly IFileStorageService _fileStorage;
         private readonly IEmailService _emailService;
         private readonly IWebHostEnvironment _environment;
+        private readonly ISystemSettingService _settingsService;
 
         public AuthController(
             UserManager<User> userManager,
@@ -31,7 +32,8 @@ namespace HireConnect.API.Controllers
             AppDbContext context,
             IFileStorageService fileStorage,
             IEmailService emailService,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            ISystemSettingService settingsService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -40,11 +42,21 @@ namespace HireConnect.API.Controllers
             _fileStorage = fileStorage;
             _emailService = emailService;
             _environment = environment;
+            _settingsService = settingsService;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto model)
         {
+            if (await _settingsService.IsMaintenanceModeAsync())
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new 
+                { 
+                    message = "The platform is currently undergoing scheduled maintenance. New registrations are temporarily paused.", 
+                    maintenance = true 
+                });
+            }
+
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var allowedRoles = new[] { "JobSeeker", "Employer" };
@@ -84,6 +96,15 @@ namespace HireConnect.API.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
             var userRole = roles.FirstOrDefault() ?? "JobSeeker";
+
+            if (!roles.Contains("Admin") && await _settingsService.IsMaintenanceModeAsync())
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new 
+                { 
+                    message = "The platform is currently undergoing scheduled maintenance. Only administrators can log in at this time.", 
+                    maintenance = true 
+                });
+            }
 
             var authClaims = new List<Claim>
             {
@@ -135,6 +156,15 @@ namespace HireConnect.API.Controllers
 
             var roles = await _userManager.GetRolesAsync(tokenEntity.User);
             var userRole = roles.FirstOrDefault() ?? "JobSeeker";
+
+            if (!roles.Contains("Admin") && await _settingsService.IsMaintenanceModeAsync())
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new 
+                { 
+                    message = "The platform is currently undergoing scheduled maintenance. Only administrators can access at this time.", 
+                    maintenance = true 
+                });
+            }
 
             var authClaims = new List<Claim>
             {

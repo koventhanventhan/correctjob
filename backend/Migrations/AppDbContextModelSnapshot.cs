@@ -22,6 +22,54 @@ namespace HireConnect.API.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("HireConnect.API.Models.AdminAuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("AdminId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<string>("IpHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<string>("TargetId")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Action", "CreatedAt");
+
+                    b.HasIndex("AdminId", "CreatedAt");
+
+                    b.ToTable("AdminAuditLogs");
+                });
+
             modelBuilder.Entity("HireConnect.API.Models.Application", b =>
                 {
                     b.Property<int>("Id")
@@ -572,6 +620,134 @@ namespace HireConnect.API.Migrations
                     b.ToTable("JobViews");
                 });
 
+            modelBuilder.Entity("HireConnect.API.Models.Location", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("StateOrProvince")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Locations");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Colombo",
+                            StateOrProvince = "Western"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Kandy",
+                            StateOrProvince = "Central"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Galle",
+                            StateOrProvince = "Southern"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Jaffna",
+                            StateOrProvince = "Northern"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Gampaha",
+                            StateOrProvince = "Western"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Negombo",
+                            StateOrProvince = "Western"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Kurunegala",
+                            StateOrProvince = "North Western"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Batticaloa",
+                            StateOrProvince = "Eastern"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Matara",
+                            StateOrProvince = "Southern"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Country = "Sri Lanka",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Anuradhapura",
+                            StateOrProvince = "North Central"
+                        });
+                });
+
             modelBuilder.Entity("HireConnect.API.Models.Message", b =>
                 {
                     b.Property<int>("Id")
@@ -730,19 +906,33 @@ namespace HireConnect.API.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AdminNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("longtext");
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
 
                     b.Property<int?>("JobId")
                         .HasColumnType("int");
 
                     b.Property<string>("Reason")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ResolvedByAdminId")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int?>("ReviewId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -757,7 +947,15 @@ namespace HireConnect.API.Migrations
 
                     b.HasIndex("JobId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ResolvedByAdminId");
+
+                    b.HasIndex("ReviewId");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("UserId", "JobId");
+
+                    b.HasIndex("UserId", "ReviewId");
 
                     b.ToTable("Reports");
                 });
@@ -1126,6 +1324,78 @@ namespace HireConnect.API.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HireConnect.API.Models.SystemSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UpdatedByAdminId")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedByAdminId");
+
+                    b.ToTable("SystemSettings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Fee charged for posting a job in LKR",
+                            Key = "JobPostingFee",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "5000.00"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Platform maintenance mode toggle (true/false)",
+                            Key = "MaintenanceMode",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "false"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Platform public display name",
+                            Key = "PlatformName",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "HireConnect"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Description = "Platform support contact email",
+                            Key = "ContactEmail",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "support@hireconnect.com"
+                        });
+                });
+
             modelBuilder.Entity("HireConnect.API.Models.User", b =>
                 {
                     b.Property<string>("Id")
@@ -1335,6 +1605,17 @@ namespace HireConnect.API.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.AdminAuditLog", b =>
+                {
+                    b.HasOne("HireConnect.API.Models.User", "Admin")
+                        .WithMany()
+                        .HasForeignKey("AdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Admin");
                 });
 
             modelBuilder.Entity("HireConnect.API.Models.Application", b =>
@@ -1591,6 +1872,16 @@ namespace HireConnect.API.Migrations
                         .HasForeignKey("JobId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("HireConnect.API.Models.User", "ResolvedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("ResolvedByAdminId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("HireConnect.API.Models.CompanyReview", "Review")
+                        .WithMany()
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HireConnect.API.Models.User", "User")
                         .WithMany("Reports")
                         .HasForeignKey("UserId")
@@ -1598,6 +1889,10 @@ namespace HireConnect.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Job");
+
+                    b.Navigation("ResolvedByAdmin");
+
+                    b.Navigation("Review");
 
                     b.Navigation("User");
                 });
@@ -1696,6 +1991,16 @@ namespace HireConnect.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Seeker");
+                });
+
+            modelBuilder.Entity("HireConnect.API.Models.SystemSetting", b =>
+                {
+                    b.HasOne("HireConnect.API.Models.User", "UpdatedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByAdminId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("UpdatedByAdmin");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

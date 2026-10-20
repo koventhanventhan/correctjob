@@ -12,14 +12,24 @@ namespace HireConnect.API.Models
 
         public int? JobId { get; set; }
 
+        public int? ReviewId { get; set; }
+
         [Required]
-        [MaxLength(100)]
+        [MaxLength(500)]
         public string Reason { get; set; } = string.Empty;
 
+        [MaxLength(1000)]
         public string? Description { get; set; }
 
         [MaxLength(50)]
-        public string Status { get; set; } = "Pending"; // Pending, Reviewed, Resolved
+        public string Status { get; set; } = "Pending"; // Pending, Reviewed, Resolved, Dismissed
+
+        [MaxLength(1000)]
+        public string? AdminNote { get; set; }
+
+        public DateTime? ResolvedAt { get; set; }
+
+        public string? ResolvedByAdminId { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -28,5 +38,11 @@ namespace HireConnect.API.Models
 
         [ForeignKey(nameof(JobId))]
         public virtual Job? Job { get; set; }
+
+        [ForeignKey(nameof(ReviewId))]
+        public virtual CompanyReview? Review { get; set; }
+
+        [ForeignKey(nameof(ResolvedByAdminId))]
+        public virtual User? ResolvedByAdmin { get; set; }
     }
 }

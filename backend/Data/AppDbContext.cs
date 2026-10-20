@@ -36,6 +36,45 @@ namespace HireConnect.API.Data
         public DbSet<SeekerCertification> SeekerCertifications { get; set; }
         public DbSet<JobView> JobViews { get; set; }
         public DbSet<JobInvitation> Invitations { get; set; }
+        public DbSet<AdminAuditLog> AdminAuditLogs { get; set; }
+        public DbSet<Location> Locations { get; set; }
+        public DbSet<SystemSetting> SystemSettings { get; set; }
+
+        private void EnforceAuditLogImmutability()
+        {
+            var modifiedAuditLogs = ChangeTracker.Entries<AdminAuditLog>()
+                .Where(e => e.State == EntityState.Modified || e.State == EntityState.Deleted)
+                .ToList();
+
+            if (modifiedAuditLogs.Count > 0)
+            {
+                throw new InvalidOperationException("AdminAuditLogs records are immutable and cannot be modified or deleted.");
+            }
+        }
+
+        public override int SaveChanges()
+        {
+            EnforceAuditLogImmutability();
+            return base.SaveChanges();
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            EnforceAuditLogImmutability();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            EnforceAuditLogImmutability();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            EnforceAuditLogImmutability();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -115,6 +154,30 @@ namespace HireConnect.API.Data
                 .WithMany()
                 .HasForeignKey(r => r.JobId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Report -> Review
+            builder.Entity<Report>()
+                .HasOne(r => r.Review)
+                .WithMany()
+                .HasForeignKey(r => r.ReviewId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Report -> ResolvedByAdmin
+            builder.Entity<Report>()
+                .HasOne(r => r.ResolvedByAdmin)
+                .WithMany()
+                .HasForeignKey(r => r.ResolvedByAdminId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Report indexes for queries & duplicate checks
+            builder.Entity<Report>()
+                .HasIndex(r => new { r.UserId, r.JobId });
+
+            builder.Entity<Report>()
+                .HasIndex(r => new { r.UserId, r.ReviewId });
+
+            builder.Entity<Report>()
+                .HasIndex(r => new { r.UserId, r.CreatedAt });
 
             // CompanyReview -> Company
             builder.Entity<CompanyReview>()
@@ -257,6 +320,60 @@ namespace HireConnect.API.Data
                 new Skill { Id = 4, Name = "JavaScript" },
                 new Skill { Id = 5, Name = "TypeScript" },
                 new Skill { Id = 6, Name = ".NET Core" }
+            );
+
+            // AdminAuditLog configuration
+            builder.Entity<AdminAuditLog>()
+                .HasOne(a => a.Admin)
+                .WithMany()
+                .HasForeignKey(a => a.AdminId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<AdminAuditLog>()
+                .HasIndex(a => a.CreatedAt);
+
+            builder.Entity<AdminAuditLog>()
+                .HasIndex(a => new { a.Action, a.CreatedAt });
+
+            builder.Entity<AdminAuditLog>()
+                .HasIndex(a => new { a.AdminId, a.CreatedAt });
+
+            // Location configuration
+            builder.Entity<Location>()
+                .HasIndex(l => l.Name)
+                .IsUnique();
+
+            // SystemSetting configuration
+            builder.Entity<SystemSetting>()
+                .HasIndex(s => s.Key)
+                .IsUnique();
+
+            builder.Entity<SystemSetting>()
+                .HasOne(s => s.UpdatedByAdmin)
+                .WithMany()
+                .HasForeignKey(s => s.UpdatedByAdminId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Seed Data for SystemSettings
+            builder.Entity<SystemSetting>().HasData(
+                new SystemSetting { Id = 1, Key = "JobPostingFee", Value = "5000.00", Description = "Fee charged for posting a job in LKR", UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new SystemSetting { Id = 2, Key = "MaintenanceMode", Value = "false", Description = "Platform maintenance mode toggle (true/false)", UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new SystemSetting { Id = 3, Key = "PlatformName", Value = "HireConnect", Description = "Platform public display name", UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new SystemSetting { Id = 4, Key = "ContactEmail", Value = "support@hireconnect.com", Description = "Platform support contact email", UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            );
+
+            // Seed Data for Locations (Sri Lanka)
+            builder.Entity<Location>().HasData(
+                new Location { Id = 1, Name = "Colombo", StateOrProvince = "Western", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 2, Name = "Kandy", StateOrProvince = "Central", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 3, Name = "Galle", StateOrProvince = "Southern", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 4, Name = "Jaffna", StateOrProvince = "Northern", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 5, Name = "Gampaha", StateOrProvince = "Western", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 6, Name = "Negombo", StateOrProvince = "Western", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 7, Name = "Kurunegala", StateOrProvince = "North Western", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 8, Name = "Batticaloa", StateOrProvince = "Eastern", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 9, Name = "Matara", StateOrProvince = "Southern", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Location { Id = 10, Name = "Anuradhapura", StateOrProvince = "North Central", Country = "Sri Lanka", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         }
     }
