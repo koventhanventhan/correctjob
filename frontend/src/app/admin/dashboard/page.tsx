@@ -7,7 +7,9 @@ import {
     LuChevronLeft, LuChevronRight, LuMessageSquare, LuStar, LuBadgeCheck, 
     LuUserCheck, LuShieldCheck, LuLock, LuSave, LuPen,
     LuLayoutDashboard, LuTrendingUp, LuDollarSign, LuEye, LuClock, 
-    LuCircleCheck, LuCircleAlert, LuArrowRight, LuRefreshCw
+    LuCircleCheck, LuCircleAlert, LuArrowRight, LuRefreshCw,
+    LuUserPlus, LuUserX, LuShieldAlert, LuInfo, LuEyeOff,
+    LuTriangleAlert, LuCheck, LuX
 } from 'react-icons/lu';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -55,7 +57,6 @@ interface DashboardStats {
         pendingCompanies: number;
         pendingSeekerVerifications: number;
         pendingEmployerVerifications: number;
-        pendingReviews: number;
         pendingReports: number;
     };
     trends30Days: TrendPoint[];
@@ -145,10 +146,44 @@ export default function AdminDashboard() {
     const [searchJob, setSearchJob] = useState('');
     const [filterJobStatus, setFilterJobStatus] = useState('');
     const [usersPage, setUsersPage] = useState(1);
+    const [usersPageSize, setUsersPageSize] = useState(10);
+    const [usersRoleFilter, setUsersRoleFilter] = useState('');
+    const [usersStatusFilter, setUsersStatusFilter] = useState('');
+    const [usersSortBy, setUsersSortBy] = useState('createdAt');
+    const [usersSortOrder, setUsersSortOrder] = useState<'desc' | 'asc'>('desc');
     const [companiesPage, setCompaniesPage] = useState(1);
     const [reviewsPage, setReviewsPage] = useState(1);
     const [searchUser, setSearchUser] = useState('');
     const [searchCompany, setSearchCompany] = useState('');
+
+    // User Management Modal & Alert States
+    const [blockModalUser, setBlockModalUser] = useState<{ id: string; fullName: string; email: string; role?: string } | null>(null);
+    const [blockReason, setBlockReason] = useState('');
+    const [blockLoading, setBlockLoading] = useState(false);
+    const [blockError, setBlockError] = useState('');
+
+    const [unblockModalUser, setUnblockModalUser] = useState<{ id: string; fullName: string; email: string } | null>(null);
+    const [unblockReason, setUnblockReason] = useState('');
+    const [unblockLoading, setUnblockLoading] = useState(false);
+    const [unblockError, setUnblockError] = useState('');
+
+    const [demoteModalAdmin, setDemoteModalAdmin] = useState<{ id: string; fullName: string; email: string } | null>(null);
+    const [demoteLoading, setDemoteLoading] = useState(false);
+    const [demoteError, setDemoteError] = useState('');
+
+    const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
+    const [createAdminData, setCreateAdminData] = useState({
+        fullName: '',
+        email: '',
+        password: '',
+        forcePasswordChange: true
+    });
+    const [showCreateAdminPassword, setShowCreateAdminPassword] = useState(false);
+    const [createAdminLoading, setCreateAdminLoading] = useState(false);
+    const [createAdminError, setCreateAdminError] = useState('');
+    const [createAdminSuccess, setCreateAdminSuccess] = useState('');
+
+    const [userActionAlert, setUserActionAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     
     // Job Seekers Tab
     const [jobseekersPage, setJobseekersPage] = useState(1);
@@ -211,9 +246,18 @@ export default function AdminDashboard() {
     });
 
     const { data: usersData, refetch: refetchUsers } = useQuery({
-        queryKey: ['admin-users', usersPage, searchUser],
+        queryKey: ['admin-users', usersPage, usersPageSize, searchUser, usersRoleFilter, usersStatusFilter, usersSortBy, usersSortOrder],
         queryFn: async () => {
-            const res = await api.get(`/admin/users?page=${usersPage}&pageSize=10&search=${searchUser}`);
+            const params = new URLSearchParams({
+                page: usersPage.toString(),
+                pageSize: usersPageSize.toString(),
+                sortBy: usersSortBy,
+                sortOrder: usersSortOrder,
+            });
+            if (searchUser.trim()) params.append('search', searchUser.trim());
+            if (usersRoleFilter) params.append('role', usersRoleFilter);
+            if (usersStatusFilter) params.append('status', usersStatusFilter);
+            const res = await api.get(`/admin/users?${params.toString()}`);
             return res.data;
         }
     });
@@ -271,13 +315,143 @@ export default function AdminDashboard() {
     };
 
     const handleToggleUserBlock = async (id: string, currentStatus: boolean) => {
+        const targetUser = users.find((u: any) => u.id === id) || jobseekers.find((s: any) => s.userId === id);
+        if (currentStatus) {
+            setBlockModalUser({
+                id,
+                fullName: targetUser?.fullName || 'User',
+                email: targetUser?.email || '',
+                role: targetUser?.role || 'User'
+            });
+            setBlockReason('');
+            setBlockError('');
+        } else {
+            setUnblockModalUser({
+                id,
+                fullName: targetUser?.fullName || 'User',
+                email: targetUser?.email || ''
+            });
+            setUnblockReason('');
+            setUnblockError('');
+        }
+    };
+
+    const handleConfirmBlock = async () => {
+        if (!blockModalUser) return;
+        if (!blockReason.trim()) {
+            setBlockError('A reason is required to block an account.');
+            return;
+        }
+        if (blockReason.length > 500) {
+            setBlockError('Reason cannot exceed 500 characters.');
+            return;
+        }
+        setBlockLoading(true);
+        setBlockError('');
         try {
-            await api.patch(`/admin/users/${id}/block`, !currentStatus, { headers: { 'Content-Type': 'application/json' }});
+            await api.patch(`/admin/users/${blockModalUser.id}/block`, {
+                block: true,
+                reason: blockReason.trim()
+            });
+            setBlockModalUser(null);
+            setBlockReason('');
             refetchUsers();
             refetchJobseekers();
             refetchStats();
-        } catch {
-            console.error("Failed to block/unblock user");
+            setUserActionAlert({ type: 'success', message: `User ${blockModalUser.fullName} has been blocked and sessions revoked.` });
+        } catch (err: any) {
+            const msg = err.response?.data?.message || err.response?.data || 'Failed to block user.';
+            setBlockError(typeof msg === 'string' ? msg : 'Failed to block user.');
+        } finally {
+            setBlockLoading(false);
+        }
+    };
+
+    const handleConfirmUnblock = async () => {
+        if (!unblockModalUser) return;
+        setUnblockLoading(true);
+        setUnblockError('');
+        try {
+            await api.patch(`/admin/users/${unblockModalUser.id}/block`, {
+                block: false,
+                reason: unblockReason.trim() || undefined
+            });
+            setUnblockModalUser(null);
+            setUnblockReason('');
+            refetchUsers();
+            refetchJobseekers();
+            refetchStats();
+            setUserActionAlert({ type: 'success', message: `User ${unblockModalUser.fullName} has been unblocked.` });
+        } catch (err: any) {
+            const msg = err.response?.data?.message || err.response?.data || 'Failed to unblock user.';
+            setUnblockError(typeof msg === 'string' ? msg : 'Failed to unblock user.');
+        } finally {
+            setUnblockLoading(false);
+        }
+    };
+
+    const handleConfirmDemote = async () => {
+        if (!demoteModalAdmin) return;
+        setDemoteLoading(true);
+        setDemoteError('');
+        try {
+            await api.delete(`/admin/admins/${demoteModalAdmin.id}`);
+            setDemoteModalAdmin(null);
+            refetchUsers();
+            refetchStats();
+            setUserActionAlert({ type: 'success', message: `Administrator privileges removed for ${demoteModalAdmin.fullName}. Role demoted to JobSeeker.` });
+        } catch (err: any) {
+            const msg = err.response?.data?.message || err.response?.data || 'Failed to demote admin.';
+            setDemoteError(typeof msg === 'string' ? msg : 'Failed to demote admin.');
+        } finally {
+            setDemoteLoading(false);
+        }
+    };
+
+    const handleCreateAdmin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCreateAdminLoading(true);
+        setCreateAdminError('');
+        setCreateAdminSuccess('');
+
+        if (!createAdminData.fullName.trim()) {
+            setCreateAdminError('Full name is required.');
+            setCreateAdminLoading(false);
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(createAdminData.email)) {
+            setCreateAdminError('Please provide a valid email address.');
+            setCreateAdminLoading(false);
+            return;
+        }
+        const pwd = createAdminData.password;
+        if (pwd.length < 12 || !/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/[0-9]/.test(pwd) || !/[^a-zA-Z0-9]/.test(pwd)) {
+            setCreateAdminError('Password does not satisfy all security requirements.');
+            setCreateAdminLoading(false);
+            return;
+        }
+
+        try {
+            await api.post('/admin/admins', {
+                fullName: createAdminData.fullName.trim(),
+                email: createAdminData.email.trim(),
+                password: createAdminData.password,
+                forcePasswordChangeOnFirstLogin: createAdminData.forcePasswordChange
+            });
+            setCreateAdminSuccess(`Admin account created successfully for ${createAdminData.email}.`);
+            setCreateAdminData({ fullName: '', email: '', password: '', forcePasswordChange: true });
+            refetchUsers();
+            refetchStats();
+            setTimeout(() => {
+                setIsCreateAdminOpen(false);
+                setCreateAdminSuccess('');
+            }, 1200);
+        } catch (err: any) {
+            const msg = err.response?.data?.message || err.response?.data?.[0]?.description || err.response?.data || 'Failed to create admin.';
+            setCreateAdminError(typeof msg === 'string' ? msg : 'Failed to create admin.');
+        } finally {
+            setCreateAdminLoading(false);
         }
     };
 
@@ -436,6 +610,7 @@ export default function AdminDashboard() {
     const totalJobs = jobsData?.totalCount || 0;
     const jobs = jobsData?.data || [];
     const totalUsers = usersData?.totalCount || 0;
+    const totalUsersPages = usersData?.totalPages || Math.ceil(totalUsers / usersPageSize) || 1;
     const totalCompanies = companiesData?.totalCount || 0;
     const totalReviews = reviewsData?.totalCount || 0;
     const users = usersData?.data || [];
@@ -1406,66 +1581,516 @@ export default function AdminDashboard() {
                 )}
                 
                 {activeTab === 'users' && (
-                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                         <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center">
-                            <h3 className="text-lg font-display font-bold text-charcoal">All Users</h3>
-                            <div className="flex items-center border rounded px-2 bg-warmwhite">
-                                <LuSearch className="w-4 h-4 text-gray-400" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search users..." 
-                                    className="p-1 outline-none text-sm"
-                                    value={searchUser}
-                                    onChange={(e) => { setSearchUser(e.target.value); setUsersPage(1); }}
-                                />
+                    <div className="space-y-6">
+                        {/* Action feedback alert */}
+                        {userActionAlert && (
+                            <div className={`p-4 rounded-xl flex items-center justify-between border shadow-sm ${
+                                userActionAlert.type === 'success' 
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                            }`}>
+                                <div className="flex items-center gap-2 text-sm font-medium">
+                                    {userActionAlert.type === 'success' ? (
+                                        <LuCircleCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                                    ) : (
+                                        <LuCircleAlert className="w-5 h-5 text-rose-600 flex-shrink-0" />
+                                    )}
+                                    <span>{userActionAlert.message}</span>
+                                </div>
+                                <button 
+                                    onClick={() => setUserActionAlert(null)} 
+                                    className="text-gray-400 hover:text-gray-600 p-1"
+                                >
+                                    <LuX className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Header & Create Admin Action */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-xl font-display font-bold text-charcoal">User Management</h3>
+                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange/10 text-orange border border-orange/20">
+                                        {totalUsers} {totalUsers === 1 ? 'Account' : 'Accounts'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Manage platform users, enforce security policies, block abusive accounts, and provision administrators.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setIsCreateAdminOpen(true);
+                                    setCreateAdminError('');
+                                    setCreateAdminSuccess('');
+                                }}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange to-amber-500 hover:from-orange/90 hover:to-amber-500/90 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all text-sm flex-shrink-0"
+                            >
+                                <LuUserPlus className="w-4 h-4" />
+                                <span>Create Admin</span>
+                            </button>
+                        </div>
+
+                        {/* Search and Filters Strip */}
+                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                                {/* Search */}
+                                <div className="lg:col-span-2 relative">
+                                    <LuSearch className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search by name or email..." 
+                                        className="w-full pl-9 pr-8 py-2 text-sm bg-warmwhite/60 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all"
+                                        value={searchUser}
+                                        onChange={(e) => { setSearchUser(e.target.value); setUsersPage(1); }}
+                                    />
+                                    {searchUser && (
+                                        <button 
+                                            onClick={() => { setSearchUser(''); setUsersPage(1); }}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            <LuX className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Role Filter */}
+                                <div>
+                                    <select
+                                        value={usersRoleFilter}
+                                        onChange={(e) => { setUsersRoleFilter(e.target.value); setUsersPage(1); }}
+                                        className="w-full py-2 px-3 text-sm bg-warmwhite/60 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all text-charcoal"
+                                    >
+                                        <option value="">All Roles</option>
+                                        <option value="JobSeeker">Job Seekers</option>
+                                        <option value="Employer">Employers</option>
+                                        <option value="Admin">Administrators</option>
+                                    </select>
+                                </div>
+
+                                {/* Status Filter */}
+                                <div>
+                                    <select
+                                        value={usersStatusFilter}
+                                        onChange={(e) => { setUsersStatusFilter(e.target.value); setUsersPage(1); }}
+                                        className="w-full py-2 px-3 text-sm bg-warmwhite/60 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all text-charcoal"
+                                    >
+                                        <option value="">All Statuses</option>
+                                        <option value="active">Active Only</option>
+                                        <option value="blocked">Blocked Only</option>
+                                    </select>
+                                </div>
+
+                                {/* Sort Selector */}
+                                <div>
+                                    <select
+                                        value={`${usersSortBy}_${usersSortOrder}`}
+                                        onChange={(e) => {
+                                            const [sortBy, sortOrder] = e.target.value.split('_');
+                                            setUsersSortBy(sortBy);
+                                            setUsersSortOrder(sortOrder as 'desc' | 'asc');
+                                            setUsersPage(1);
+                                        }}
+                                        className="w-full py-2 px-3 text-sm bg-warmwhite/60 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all text-charcoal"
+                                    >
+                                        <option value="createdAt_desc">Newest Joined</option>
+                                        <option value="createdAt_asc">Oldest Joined</option>
+                                        <option value="fullName_asc">Name (A-Z)</option>
+                                        <option value="fullName_desc">Name (Z-A)</option>
+                                        <option value="email_asc">Email (A-Z)</option>
+                                        <option value="lastLogin_desc">Recent Login</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Active Filters Summary & Page Size */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-medium text-charcoal">Filters:</span>
+                                    {!searchUser && !usersRoleFilter && !usersStatusFilter ? (
+                                        <span className="italic text-gray-400">None applied</span>
+                                    ) : (
+                                        <>
+                                            {searchUser && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-charcoal">
+                                                    Search: &quot;{searchUser}&quot;
+                                                    <button onClick={() => { setSearchUser(''); setUsersPage(1); }}>
+                                                        <LuX className="w-3 h-3 hover:text-red-500" />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {usersRoleFilter && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-charcoal">
+                                                    Role: {usersRoleFilter}
+                                                    <button onClick={() => { setUsersRoleFilter(''); setUsersPage(1); }}>
+                                                        <LuX className="w-3 h-3 hover:text-red-500" />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {usersStatusFilter && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-charcoal">
+                                                    Status: {usersStatusFilter}
+                                                    <button onClick={() => { setUsersStatusFilter(''); setUsersPage(1); }}>
+                                                        <LuX className="w-3 h-3 hover:text-red-500" />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    setSearchUser('');
+                                                    setUsersRoleFilter('');
+                                                    setUsersStatusFilter('');
+                                                    setUsersSortBy('createdAt');
+                                                    setUsersSortOrder('desc');
+                                                    setUsersPage(1);
+                                                }}
+                                                className="text-orange hover:underline font-semibold ml-1"
+                                            >
+                                                Reset filters
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span>Rows:</span>
+                                    <select
+                                        value={usersPageSize}
+                                        onChange={(e) => { setUsersPageSize(Number(e.target.value)); setUsersPage(1); }}
+                                        className="bg-transparent border border-gray-200 rounded px-1.5 py-0.5 text-xs text-charcoal focus:outline-none"
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-white">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name / Email</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-100">
-                                    {users.map((u: any) => (
-                                        <tr key={u.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="font-medium text-charcoal">{u.fullName}</div>
-                                                <div className="text-sm text-gray-500">{u.email}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {u.role}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                    {u.isActive ? 'Active' : 'Blocked'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button 
-                                                    onClick={() => handleToggleUserBlock(u.id, u.isActive)}
-                                                    className={`${u.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
-                                                >
-                                                    {u.isActive ? 'Block' : 'Unblock'}
-                                                </button>
-                                            </td>
+
+                        {/* Desktop Table View */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hidden md:block">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50/70">
+                                        <tr>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status & Security</th>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Activity</th>
+                                            <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-100">
+                                        {users.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-400">
+                                                    No users found matching current filters.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            users.map((u: any) => {
+                                                const isSelf = u.id === user?.id;
+                                                const initials = u.fullName ? u.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
+                                                return (
+                                                    <tr key={u.id} className="hover:bg-warmwhite/40 transition-colors">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0 ${
+                                                                    u.role === 'Admin'
+                                                                        ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                                                        : u.role === 'Employer'
+                                                                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                                                        : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                                                }`}>
+                                                                    {initials}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-semibold text-charcoal text-sm">{u.fullName}</span>
+                                                                        {isSelf && (
+                                                                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                                                                You
+                                                                            </span>
+                                                                        )}
+                                                                        {u.mustChangePassword && (
+                                                                            <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-yellow-50 text-yellow-800 border border-yellow-200">
+                                                                                Pwd Reset Req.
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500">{u.email}</div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            {u.role === 'Admin' ? (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                                                    <LuShieldCheck className="w-3.5 h-3.5" /> Admin
+                                                                </span>
+                                                            ) : u.role === 'Employer' ? (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                                                    <LuBuilding className="w-3.5 h-3.5" /> Employer
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                    <LuUserCheck className="w-3.5 h-3.5" /> Job Seeker
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            {u.isActive ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                                    Active
+                                                                </span>
+                                                            ) : (
+                                                                <div>
+                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                                                        Blocked
+                                                                    </span>
+                                                                    {u.blockedReason && (
+                                                                        <p className="text-[11px] text-rose-600 mt-1 max-w-xs truncate" title={u.blockedReason}>
+                                                                            Reason: {u.blockedReason}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-gray-400">Joined:</span>
+                                                                <span>{new Date(u.createdAt).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 mt-0.5">
+                                                                <span className="text-gray-400">Login:</span>
+                                                                <span>{u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                                            {isSelf ? (
+                                                                <span className="text-gray-400 italic font-normal">
+                                                                    Protected (Self)
+                                                                </span>
+                                                            ) : (
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    {u.isActive ? (
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                setBlockModalUser(u);
+                                                                                setBlockReason('');
+                                                                                setBlockError('');
+                                                                            }}
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 text-rose-700 bg-rose-50/60 hover:bg-rose-100 font-semibold transition-colors"
+                                                                        >
+                                                                            <LuUserX className="w-3.5 h-3.5" />
+                                                                            Block
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                setUnblockModalUser(u);
+                                                                                setUnblockReason('');
+                                                                                setUnblockError('');
+                                                                            }}
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100 font-semibold transition-colors"
+                                                                        >
+                                                                            <LuUserCheck className="w-3.5 h-3.5" />
+                                                                            Unblock
+                                                                        </button>
+                                                                    )}
+
+                                                                    {u.role === 'Admin' && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setDemoteModalAdmin(u);
+                                                                                setDemoteError('');
+                                                                            }}
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-200 text-amber-800 bg-amber-50/60 hover:bg-amber-100 font-semibold transition-colors"
+                                                                            title="Demote administrator to JobSeeker"
+                                                                        >
+                                                                            <LuShieldAlert className="w-3.5 h-3.5" />
+                                                                            Demote
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Desktop Pagination */}
+                            <div className="px-6 py-3.5 bg-gray-50/50 flex items-center justify-between border-t border-gray-100">
+                                <span className="text-xs text-gray-500">
+                                    Showing {totalUsers > 0 ? ((usersPage - 1) * usersPageSize) + 1 : 0} to {Math.min(usersPage * usersPageSize, totalUsers)} of {totalUsers} users
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 mr-2">
+                                        Page {usersPage} of {totalUsersPages}
+                                    </span>
+                                    <button 
+                                        disabled={usersPage <= 1} 
+                                        onClick={() => setUsersPage(p => Math.max(1, p - 1))} 
+                                        className="p-1.5 border border-gray-200 rounded-lg bg-white disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <LuChevronLeft className="w-4 h-4 text-gray-600" />
+                                    </button>
+                                    <button 
+                                        disabled={usersPage >= totalUsersPages} 
+                                        onClick={() => setUsersPage(p => p + 1)} 
+                                        className="p-1.5 border border-gray-200 rounded-lg bg-white disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <LuChevronRight className="w-4 h-4 text-gray-600" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        {/* Pagination */}
-                        <div className="px-6 py-3 bg-white flex items-center justify-between border-t border-gray-100">
-                            <span className="text-sm text-gray-500">Total: {totalUsers}</span>
-                            <div className="flex space-x-2">
-                                <button disabled={usersPage === 1} onClick={() => setUsersPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
-                                <button disabled={usersPage * 10 >= totalUsers} onClick={() => setUsersPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
+
+                        {/* Mobile Cards View */}
+                        <div className="md:hidden space-y-3">
+                            {users.length === 0 ? (
+                                <div className="bg-white p-8 rounded-xl text-center text-sm text-gray-400 border border-gray-100">
+                                    No users found matching current filters.
+                                </div>
+                            ) : (
+                                users.map((u: any) => {
+                                    const isSelf = u.id === user?.id;
+                                    const initials = u.fullName ? u.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
+                                    return (
+                                        <div key={u.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-3">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0 ${
+                                                        u.role === 'Admin'
+                                                            ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                                            : u.role === 'Employer'
+                                                            ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                                            : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                                    }`}>
+                                                        {initials}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="font-semibold text-charcoal text-sm">{u.fullName}</span>
+                                                            {isSelf && (
+                                                                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                                                    You
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">{u.email}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1">
+                                                    {u.role === 'Admin' ? (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                                            Admin
+                                                        </span>
+                                                    ) : u.role === 'Employer' ? (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                                            Employer
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                            Job Seeker
+                                                        </span>
+                                                    )}
+                                                    {u.isActive ? (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                            Active
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                                                            Blocked
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Blocked Reason Banner */}
+                                            {!u.isActive && u.blockedReason && (
+                                                <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-100 text-xs text-rose-700">
+                                                    <span className="font-semibold">Reason:</span> {u.blockedReason}
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                                                <div>Joined: {new Date(u.createdAt).toLocaleDateString()}</div>
+                                                <div>Login: {u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never'}</div>
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="pt-2 border-t border-gray-100 flex items-center justify-end gap-2">
+                                                {isSelf ? (
+                                                    <span className="text-xs text-gray-400 italic">Protected (Self)</span>
+                                                ) : (
+                                                    <>
+                                                        {u.isActive ? (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setBlockModalUser(u);
+                                                                    setBlockReason('');
+                                                                    setBlockError('');
+                                                                }}
+                                                                className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 bg-rose-50/60 font-semibold text-xs"
+                                                            >
+                                                                <LuUserX className="w-3.5 h-3.5" /> Block
+                                                            </button>
+                                                        ) : (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setUnblockModalUser(u);
+                                                                    setUnblockReason('');
+                                                                    setUnblockError('');
+                                                                }}
+                                                                className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50/60 font-semibold text-xs"
+                                                            >
+                                                                <LuUserCheck className="w-3.5 h-3.5" /> Unblock
+                                                            </button>
+                                                        )}
+                                                        {u.role === 'Admin' && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setDemoteModalAdmin(u);
+                                                                    setDemoteError('');
+                                                                }}
+                                                                className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-amber-200 text-amber-800 bg-amber-50/60 font-semibold text-xs"
+                                                            >
+                                                                <LuShieldAlert className="w-3.5 h-3.5" /> Demote
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+
+                            {/* Mobile Pagination */}
+                            <div className="p-4 bg-white rounded-xl border border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                                <span>Page {usersPage} of {totalUsersPages}</span>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        disabled={usersPage <= 1} 
+                                        onClick={() => setUsersPage(p => Math.max(1, p - 1))} 
+                                        className="p-1.5 border border-gray-200 rounded-lg bg-white disabled:opacity-40"
+                                    >
+                                        <LuChevronLeft className="w-4 h-4 text-gray-600" />
+                                    </button>
+                                    <button 
+                                        disabled={usersPage >= totalUsersPages} 
+                                        onClick={() => setUsersPage(p => p + 1)} 
+                                        className="p-1.5 border border-gray-200 rounded-lg bg-white disabled:opacity-40"
+                                    >
+                                        <LuChevronRight className="w-4 h-4 text-gray-600" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1973,6 +2598,413 @@ export default function AdminDashboard() {
                                     {passwordSaving ? 'Updating...' : 'Update Password'}
                                 </button>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Block User Modal */}
+                {blockModalUser && (
+                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 flex-shrink-0">
+                                    <LuShieldAlert className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-charcoal">Block User Account</h3>
+                                    <p className="text-xs text-gray-500">Suspend access and invalidate active sessions.</p>
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-gray-50 rounded-xl mb-4 text-xs space-y-1">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Target User:</span>
+                                    <span className="font-semibold text-charcoal">{blockModalUser.fullName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Email:</span>
+                                    <span className="text-charcoal">{blockModalUser.email}</span>
+                                </div>
+                                {blockModalUser.role && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-400">Role:</span>
+                                        <span className="font-medium text-charcoal">{blockModalUser.role}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl mb-4 text-xs text-rose-700 flex items-start gap-2">
+                                <LuInfo className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <span>Blocking this user will immediately revoke all active refresh tokens and log them out across all devices.</span>
+                            </div>
+
+                            <div className="space-y-1.5 mb-4">
+                                <div className="flex justify-between items-center text-xs">
+                                    <label className="font-semibold text-charcoal">
+                                        Reason for Blocking <span className="text-rose-500">*</span>
+                                    </label>
+                                    <span className={`text-[11px] ${blockReason.length > 500 ? 'text-rose-600 font-bold' : 'text-gray-400'}`}>
+                                        {blockReason.length} / 500
+                                    </span>
+                                </div>
+                                <textarea
+                                    rows={3}
+                                    required
+                                    maxLength={500}
+                                    placeholder="Specify the violation or reason for suspension (e.g. Terms violation, spam posting)..."
+                                    value={blockReason}
+                                    onChange={(e) => setBlockReason(e.target.value)}
+                                    className="w-full text-xs p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-500 outline-none resize-none transition-all"
+                                />
+                                {blockError && (
+                                    <p className="text-xs text-rose-600 font-medium">{blockError}</p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    disabled={blockLoading}
+                                    onClick={() => { setBlockModalUser(null); setBlockReason(''); setBlockError(''); }}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={blockLoading || !blockReason.trim() || blockReason.length > 500}
+                                    onClick={handleConfirmBlock}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                                >
+                                    {blockLoading ? (
+                                        <>
+                                            <LuRefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                            <span>Blocking...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <LuUserX className="w-3.5 h-3.5" />
+                                            <span>Confirm Block</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Unblock User Modal */}
+                {unblockModalUser && (
+                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                                    <LuCircleCheck className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-charcoal">Unblock User Account</h3>
+                                    <p className="text-xs text-gray-500">Restore access and permit new logins.</p>
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-gray-50 rounded-xl mb-4 text-xs space-y-1">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Target User:</span>
+                                    <span className="font-semibold text-charcoal">{unblockModalUser.fullName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Email:</span>
+                                    <span className="text-charcoal">{unblockModalUser.email}</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5 mb-4">
+                                <label className="text-xs font-semibold text-charcoal">
+                                    Optional Note / Unblock Reason
+                                </label>
+                                <textarea
+                                    rows={2}
+                                    maxLength={500}
+                                    placeholder="Optional audit note (e.g. Appeal approved, verification completed)..."
+                                    value={unblockReason}
+                                    onChange={(e) => setUnblockReason(e.target.value)}
+                                    className="w-full text-xs p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none resize-none transition-all"
+                                />
+                                {unblockError && (
+                                    <p className="text-xs text-rose-600 font-medium">{unblockError}</p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    disabled={unblockLoading}
+                                    onClick={() => { setUnblockModalUser(null); setUnblockReason(''); setUnblockError(''); }}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={unblockLoading}
+                                    onClick={handleConfirmUnblock}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                                >
+                                    {unblockLoading ? (
+                                        <>
+                                            <LuRefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                            <span>Unblocking...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <LuUserCheck className="w-3.5 h-3.5" />
+                                            <span>Confirm Unblock</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Create Admin Modal */}
+                {isCreateAdminOpen && (
+                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-orange/10 flex items-center justify-center text-orange flex-shrink-0">
+                                    <LuUserPlus className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-charcoal">Create Administrator</h3>
+                                    <p className="text-xs text-gray-500">Provision a new administrator account with system-level access.</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleCreateAdmin} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-charcoal mb-1">
+                                        Full Name <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. John Doe"
+                                        value={createAdminData.fullName}
+                                        onChange={(e) => setCreateAdminData({ ...createAdminData, fullName: e.target.value })}
+                                        className="w-full text-xs p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-charcoal mb-1">
+                                        Email Address <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="email"
+                                        required
+                                        placeholder="admin@hireconnect.com"
+                                        value={createAdminData.email}
+                                        onChange={(e) => setCreateAdminData({ ...createAdminData, email: e.target.value })}
+                                        className="w-full text-xs p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-charcoal mb-1">
+                                        Initial Password <span className="text-rose-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showCreateAdminPassword ? 'text' : 'password'}
+                                            required
+                                            placeholder="Strong admin password"
+                                            value={createAdminData.password}
+                                            onChange={(e) => setCreateAdminData({ ...createAdminData, password: e.target.value })}
+                                            className="w-full text-xs p-2.5 pr-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCreateAdminPassword(!showCreateAdminPassword)}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            {showCreateAdminPassword ? <LuEyeOff className="w-4 h-4" /> : <LuEye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+
+                                    {/* Password Checklist */}
+                                    <div className="mt-2.5 p-3 bg-gray-50 rounded-xl space-y-1.5 text-[11px]">
+                                        <span className="font-semibold text-charcoal block mb-1">Password Requirements:</span>
+                                        {(() => {
+                                            const pwd = createAdminData.password;
+                                            const hasMinLen = pwd.length >= 12;
+                                            const hasUpper = /[A-Z]/.test(pwd);
+                                            const hasLower = /[a-z]/.test(pwd);
+                                            const hasDigit = /[0-9]/.test(pwd);
+                                            const hasSpecial = /[^a-zA-Z0-9]/.test(pwd);
+
+                                            return (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                    <div className={`flex items-center gap-1.5 ${hasMinLen ? 'text-emerald-700 font-medium' : 'text-gray-500'}`}>
+                                                        {hasMinLen ? <LuCheck className="w-3.5 h-3.5 text-emerald-600" /> : <span className="w-1.5 h-1.5 rounded-full bg-gray-300 ml-1 mr-1" />}
+                                                        <span>At least 12 characters</span>
+                                                    </div>
+                                                    <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-700 font-medium' : 'text-gray-500'}`}>
+                                                        {hasUpper ? <LuCheck className="w-3.5 h-3.5 text-emerald-600" /> : <span className="w-1.5 h-1.5 rounded-full bg-gray-300 ml-1 mr-1" />}
+                                                        <span>Uppercase letter (A-Z)</span>
+                                                    </div>
+                                                    <div className={`flex items-center gap-1.5 ${hasLower ? 'text-emerald-700 font-medium' : 'text-gray-500'}`}>
+                                                        {hasLower ? <LuCheck className="w-3.5 h-3.5 text-emerald-600" /> : <span className="w-1.5 h-1.5 rounded-full bg-gray-300 ml-1 mr-1" />}
+                                                        <span>Lowercase letter (a-z)</span>
+                                                    </div>
+                                                    <div className={`flex items-center gap-1.5 ${hasDigit ? 'text-emerald-700 font-medium' : 'text-gray-500'}`}>
+                                                        {hasDigit ? <LuCheck className="w-3.5 h-3.5 text-emerald-600" /> : <span className="w-1.5 h-1.5 rounded-full bg-gray-300 ml-1 mr-1" />}
+                                                        <span>Numeric digit (0-9)</span>
+                                                    </div>
+                                                    <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-700 font-medium' : 'text-gray-500'}`}>
+                                                        {hasSpecial ? <LuCheck className="w-3.5 h-3.5 text-emerald-600" /> : <span className="w-1.5 h-1.5 rounded-full bg-gray-300 ml-1 mr-1" />}
+                                                        <span>Special symbol (!@#$...)</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    <input
+                                        type="checkbox"
+                                        id="forcePwdChange"
+                                        checked={createAdminData.forcePasswordChange}
+                                        onChange={(e) => setCreateAdminData({ ...createAdminData, forcePasswordChange: e.target.checked })}
+                                        className="w-4 h-4 text-orange focus:ring-orange border-gray-300 rounded cursor-pointer"
+                                    />
+                                    <label htmlFor="forcePwdChange" className="text-xs text-charcoal font-medium cursor-pointer">
+                                        Require password change on first login (Recommended)
+                                    </label>
+                                </div>
+
+                                {createAdminError && (
+                                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+                                        {createAdminError}
+                                    </div>
+                                )}
+
+                                {createAdminSuccess && (
+                                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700">
+                                        {createAdminSuccess}
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        disabled={createAdminLoading}
+                                        onClick={() => {
+                                            setIsCreateAdminOpen(false);
+                                            setCreateAdminError('');
+                                            setCreateAdminSuccess('');
+                                        }}
+                                        className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={
+                                            createAdminLoading ||
+                                            !createAdminData.fullName.trim() ||
+                                            !createAdminData.email.trim() ||
+                                            createAdminData.password.length < 12 ||
+                                            !/[A-Z]/.test(createAdminData.password) ||
+                                            !/[a-z]/.test(createAdminData.password) ||
+                                            !/[0-9]/.test(createAdminData.password) ||
+                                            !/[^a-zA-Z0-9]/.test(createAdminData.password)
+                                        }
+                                        className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 disabled:opacity-50 rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                                    >
+                                        {createAdminLoading ? (
+                                            <>
+                                                <LuRefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                <span>Creating Admin...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <LuUserPlus className="w-3.5 h-3.5" />
+                                                <span>Create Admin</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Demote Admin Modal */}
+                {demoteModalAdmin && (
+                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
+                                    <LuTriangleAlert className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-charcoal">Demote Administrator</h3>
+                                    <p className="text-xs text-gray-500">Revoke administrative privileges.</p>
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-gray-50 rounded-xl mb-4 text-xs space-y-1">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Target User:</span>
+                                    <span className="font-semibold text-charcoal">{demoteModalAdmin.fullName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Email:</span>
+                                    <span className="text-charcoal">{demoteModalAdmin.email}</span>
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4 text-xs text-amber-800 flex items-start gap-2">
+                                <LuInfo className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <span>This action will strip all administrator privileges, change the user&apos;s role to JobSeeker, and terminate their active administrative sessions.</span>
+                            </div>
+
+                            {demoteError && (
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl mb-4 text-xs text-rose-700">
+                                    {demoteError}
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    disabled={demoteLoading}
+                                    onClick={() => { setDemoteModalAdmin(null); setDemoteError(''); }}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={demoteLoading}
+                                    onClick={handleConfirmDemote}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                                >
+                                    {demoteLoading ? (
+                                        <>
+                                            <LuRefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                            <span>Demoting...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <LuShieldAlert className="w-3.5 h-3.5" />
+                                            <span>Confirm Demote</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

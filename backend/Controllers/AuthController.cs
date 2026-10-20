@@ -85,7 +85,15 @@ namespace HireConnect.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null || !user.IsActive) return Unauthorized(new { message = "Invalid credentials or inactive account" });
+            if (user == null) return Unauthorized(new { message = "Invalid credentials" });
+
+            if (!user.IsActive)
+            {
+                var blockedMessage = !string.IsNullOrWhiteSpace(user.BlockedReason)
+                    ? $"Your account has been blocked: {user.BlockedReason}"
+                    : "Your account has been blocked by an administrator.";
+                return Unauthorized(new { message = blockedMessage, isBlocked = true, blockedReason = user.BlockedReason });
+            }
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, lockoutOnFailure: true);
             if (result.IsLockedOut)
@@ -93,6 +101,9 @@ namespace HireConnect.API.Controllers
                 return StatusCode(StatusCodes.Status423Locked, new { message = "Account locked due to multiple failed login attempts. Please try again after 15 minutes." });
             }
             if (!result.Succeeded) return Unauthorized(new { message = "Invalid credentials" });
+
+            user.LastLogin = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
 
             var roles = await _userManager.GetRolesAsync(user);
             var userRole = roles.FirstOrDefault() ?? "JobSeeker";
@@ -132,7 +143,15 @@ namespace HireConnect.API.Controllers
             {
                 token = new JwtSecurityTokenHandler().WriteToken(token),
                 expiration = token.ValidTo,
-                user = new { user.Id, user.FullName, user.Email, user.ProfileImage, Role = userRole }
+                user = new 
+                { 
+                    user.Id, 
+                    user.FullName, 
+                    user.Email, 
+                    user.ProfileImage, 
+                    Role = userRole,
+                    mustChangePassword = user.MustChangePassword
+                }
             });
         }
 

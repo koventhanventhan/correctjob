@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 using HireConnect.API.Services;
+using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 
 namespace HireConnect.API.Controllers
 {
@@ -17,28 +19,75 @@ namespace HireConnect.API.Controllers
         private readonly AppDbContext _context;
         private readonly IAuditLogService _auditLogService;
         private readonly ISystemSettingService _settingsService;
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
         public AdminController(
             AppDbContext context,
             IAuditLogService auditLogService,
-            ISystemSettingService settingsService)
+            ISystemSettingService settingsService,
+            UserManager<User> userManager,
+            RoleManager<IdentityRole> roleManager)
         {
             _context = context;
             _auditLogService = auditLogService;
             _settingsService = settingsService;
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         [HttpGet("users")]
-        public async Task<IActionResult> GetUsers([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetUsers(
+            [FromQuery] string? search,
+            [FromQuery] string? role,
+            [FromQuery] string? status,
+            [FromQuery] string? sortBy = "createdAt",
+            [FromQuery] string? sortOrder = "desc",
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
+            pageSize = Math.Clamp(pageSize, 1, 50);
+            page = Math.Max(1, page);
+
             var query = _context.Users.AsQueryable();
 
-            if (!string.IsNullOrEmpty(search))
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(u => u.FullName.Contains(search) || (u.Email != null && u.Email.Contains(search)));
+                var trimmed = search.Trim();
+                query = query.Where(u => u.FullName.Contains(trimmed) || (u.Email != null && u.Email.Contains(trimmed)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(u => u.IsActive);
+                }
+                else if (status.Equals("Blocked", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(u => !u.IsActive);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                var roleId = await _context.Roles.Where(r => r.Name == role).Select(r => r.Id).FirstOrDefaultAsync();
+                if (roleId != null)
+                {
+                    query = query.Where(u => _context.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == roleId));
+                }
             }
 
             var totalCount = await query.CountAsync();
+
+            bool isAsc = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase);
+            query = sortBy?.ToLowerInvariant() switch
+            {
+                "fullname" => isAsc ? query.OrderBy(u => u.FullName) : query.OrderByDescending(u => u.FullName),
+                "email" => isAsc ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
+                "lastlogin" => isAsc ? query.OrderBy(u => u.LastLogin) : query.OrderByDescending(u => u.LastLogin),
+                _ => isAsc ? query.OrderBy(u => u.CreatedAt) : query.OrderByDescending(u => u.CreatedAt)
+            };
 
             var users = await query
                 .Skip((page - 1) * pageSize)
@@ -49,6 +98,10 @@ namespace HireConnect.API.Controllers
                     u.FullName, 
                     u.Email, 
                     u.IsActive,
+                    u.CreatedAt,
+                    u.BlockedReason,
+                    u.LastLogin,
+                    u.MustChangePassword,
                     Role = _context.UserRoles
                         .Where(ur => ur.UserId == u.Id)
                         .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
@@ -56,7 +109,7 @@ namespace HireConnect.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new { data = users, totalCount });
+            return Ok(new { data = users, totalCount, page, pageSize });
         }
 
         [HttpGet("jobs")]
@@ -275,64 +328,304 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpPatch("users/{id}/block")]
-        public async Task<IActionResult> BlockUser(string id, [FromBody] bool isActive = false)
+        public async Task<IActionResult> BlockUser(string id, [FromBody] BlockUserRequestDto request)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
+            if (user == null) return NotFound(new { message = "User not found." });
 
-            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-            // Self-block check: Admin cannot block their own account
-            if (currentAdminId == id && !isActive)
+            bool isBlocking = request.IsBlocked.HasValue ? request.IsBlocked.Value : (request.IsActive.HasValue ? !request.IsActive.Value : true);
+
+            if (isBlocking)
             {
-                return BadRequest(new { message = "You cannot block your own admin account." });
-            }
-
-            var isAdmin = await _context.UserRoles
-                .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
-                .AnyAsync(x => x.UserId == id && x.Name == "Admin");
-
-            // Last active Admin check: Prevent blocking the last active admin
-            if (isAdmin && !isActive)
-            {
-                var adminRoleId = await _context.Roles.Where(r => r.Name == "Admin").Select(r => r.Id).FirstOrDefaultAsync();
-                var activeAdminCount = await _context.UserRoles
-                    .Where(ur => ur.RoleId == adminRoleId)
-                    .Join(_context.Users.Where(u => u.IsActive), ur => ur.UserId, u => u.Id, (ur, u) => u.Id)
-                    .CountAsync();
-
-                if (activeAdminCount <= 1)
+                // Reason is required when blocking
+                if (string.IsNullOrWhiteSpace(request.Reason))
                 {
-                    return BadRequest(new { message = "Cannot block the last active administrator." });
+                    return BadRequest(new { message = "A reason is required to block a user." });
                 }
-            }
 
-            user.IsActive = isActive;
-            await _context.SaveChangesAsync();
+                if (request.Reason.Trim().Length > 500)
+                {
+                    return BadRequest(new { message = "Reason cannot exceed 500 characters." });
+                }
 
-            // Record immutable audit log
-            if (!string.IsNullOrEmpty(currentAdminId))
-            {
-                var action = isActive ? "USER_UNBLOCKED" : "USER_BLOCKED";
-                var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+                // Self-block check: Admin cannot block their own account
+                if (currentAdminId == id)
+                {
+                    return BadRequest(new { message = "You cannot block your own admin account." });
+                }
+
+                var isAdmin = await _context.UserRoles
+                    .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+                    .AnyAsync(x => x.UserId == id && x.Name == "Admin");
+
+                // Last active Admin check: Prevent blocking the last active admin
+                if (isAdmin)
+                {
+                    var adminRoleId = await _context.Roles.Where(r => r.Name == "Admin").Select(r => r.Id).FirstOrDefaultAsync();
+                    var activeAdminCount = await _context.UserRoles
+                        .Where(ur => ur.RoleId == adminRoleId)
+                        .Join(_context.Users.Where(u => u.IsActive), ur => ur.UserId, u => u.Id, (ur, u) => u.Id)
+                        .CountAsync();
+
+                    if (activeAdminCount <= 1)
+                    {
+                        return BadRequest(new { message = "Cannot block the last active administrator." });
+                    }
+                }
+
+                user.IsActive = false;
+                user.BlockedReason = request.Reason.Trim();
+
+                // Revoke all active refresh tokens for this user
+                var activeTokens = await _context.RefreshTokens
+                    .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)
+                    .ToListAsync();
+                foreach (var token in activeTokens)
+                {
+                    token.IsRevoked = true;
+                }
+
+                // Send notification with reason
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = user.Id,
+                    Title = "Account Suspended",
+                    Message = $"Your account has been blocked by an administrator. Reason: {request.Reason.Trim()}",
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+
+                // Record immutable audit log
                 await _auditLogService.LogAsync(
                     currentAdminId,
-                    action,
+                    "BLOCK_USER",
                     "User",
                     user.Id,
-                    $"Admin changed status of {user.Email} to {(isActive ? "Active" : "Blocked")}",
+                    $"User {user.Email} blocked. Reason: {request.Reason.Trim()}",
                     ip
                 );
+
+                return Ok(new
+                {
+                    user.Id,
+                    user.FullName,
+                    user.Email,
+                    user.IsActive,
+                    user.BlockedReason,
+                    message = "User blocked successfully and all active sessions revoked."
+                });
             }
+            else
+            {
+                if (request.Reason?.Trim().Length > 500)
+                {
+                    return BadRequest(new { message = "Reason cannot exceed 500 characters." });
+                }
+
+                user.IsActive = true;
+                user.BlockedReason = null;
+
+                // Send notification
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = user.Id,
+                    Title = "Account Reactivated",
+                    Message = string.IsNullOrWhiteSpace(request.Reason)
+                        ? "Your account has been reactivated by an administrator."
+                        : $"Your account has been reactivated. Note: {request.Reason.Trim()}",
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+
+                // Record immutable audit log
+                await _auditLogService.LogAsync(
+                    currentAdminId,
+                    "UNBLOCK_USER",
+                    "User",
+                    user.Id,
+                    $"User {user.Email} unblocked. Note: {request.Reason?.Trim() ?? "None"}",
+                    ip
+                );
+
+                return Ok(new
+                {
+                    user.Id,
+                    user.FullName,
+                    user.Email,
+                    user.IsActive,
+                    message = "User unblocked successfully."
+                });
+            }
+        }
+
+        [HttpPost("admins")]
+        public async Task<IActionResult> CreateAdmin([FromBody] CreateAdminRequestDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) || !new EmailAddressAttribute().IsValid(request.Email))
+            {
+                return BadRequest(new { message = "A valid email address is required." });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.FullName))
+            {
+                return BadRequest(new { message = "Full name is required." });
+            }
+
+            var existingUser = await _userManager.FindByEmailAsync(request.Email);
+            if (existingUser != null)
+            {
+                return Conflict(new { message = "A user with this email address already exists." });
+            }
+
+            // Strong password policy: Identity rules + min 12 characters
+            if (string.IsNullOrEmpty(request.Password) || request.Password.Length < 12)
+            {
+                return BadRequest(new { message = "Admin password must be at least 12 characters long." });
+            }
+            if (!request.Password.Any(char.IsUpper))
+            {
+                return BadRequest(new { message = "Admin password must contain at least one uppercase letter." });
+            }
+            if (!request.Password.Any(char.IsLower))
+            {
+                return BadRequest(new { message = "Admin password must contain at least one lowercase letter." });
+            }
+            if (!request.Password.Any(char.IsDigit))
+            {
+                return BadRequest(new { message = "Admin password must contain at least one number." });
+            }
+            if (!request.Password.Any(ch => !char.IsLetterOrDigit(ch)))
+            {
+                return BadRequest(new { message = "Admin password must contain at least one special character." });
+            }
+
+            var newAdmin = new User
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                FullName = request.FullName.Trim(),
+                IsActive = true,
+                MustChangePassword = request.ForcePasswordChangeOnFirstLogin,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var createResult = await _userManager.CreateAsync(newAdmin, request.Password);
+            if (!createResult.Succeeded)
+            {
+                return BadRequest(new { message = string.Join("; ", createResult.Errors.Select(e => e.Description)) });
+            }
+
+            if (!await _roleManager.RoleExistsAsync("Admin"))
+            {
+                await _roleManager.CreateAsync(new IdentityRole("Admin"));
+            }
+
+            await _userManager.AddToRoleAsync(newAdmin, "Admin");
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            // Record audit log (password is NEVER logged)
+            await _auditLogService.LogAsync(
+                currentAdminId,
+                "CREATE_ADMIN",
+                "User",
+                newAdmin.Id,
+                $"Admin account created for {newAdmin.Email} (ForcePasswordChange: {newAdmin.MustChangePassword})",
+                ip
+            );
 
             return Ok(new
             {
-                user.Id,
-                user.FullName,
-                user.Email,
-                user.IsActive,
-                message = $"User {(isActive ? "unblocked" : "blocked")} successfully."
+                message = "Administrator account created successfully.",
+                admin = new
+                {
+                    newAdmin.Id,
+                    newAdmin.FullName,
+                    newAdmin.Email,
+                    Role = "Admin",
+                    newAdmin.IsActive,
+                    newAdmin.CreatedAt,
+                    newAdmin.MustChangePassword
+                }
             });
+        }
+
+        [HttpDelete("admins/{id}")]
+        public async Task<IActionResult> RemoveAdmin(string id)
+        {
+            var targetUser = await _userManager.FindByIdAsync(id);
+            if (targetUser == null)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+
+            if (!await _userManager.IsInRoleAsync(targetUser, "Admin"))
+            {
+                return BadRequest(new { message = "User is not an administrator." });
+            }
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Self-removal protection
+            if (currentAdminId == id)
+            {
+                return BadRequest(new { message = "You cannot remove or demote your own administrator account." });
+            }
+
+            // Last active Admin protection
+            var adminRoleId = await _context.Roles.Where(r => r.Name == "Admin").Select(r => r.Id).FirstOrDefaultAsync();
+            var activeAdminCount = await _context.UserRoles
+                .Where(ur => ur.RoleId == adminRoleId)
+                .Join(_context.Users.Where(u => u.IsActive), ur => ur.UserId, u => u.Id, (ur, u) => u.Id)
+                .CountAsync();
+
+            if (activeAdminCount <= 1)
+            {
+                return BadRequest(new { message = "Cannot remove the last active administrator." });
+            }
+
+            await _userManager.RemoveFromRoleAsync(targetUser, "Admin");
+            if (!await _userManager.IsInRoleAsync(targetUser, "JobSeeker"))
+            {
+                await _userManager.AddToRoleAsync(targetUser, "JobSeeker");
+            }
+
+            // Revoke active refresh tokens
+            var activeTokens = await _context.RefreshTokens
+                .Where(rt => rt.UserId == targetUser.Id && !rt.IsRevoked)
+                .ToListAsync();
+            foreach (var token in activeTokens)
+            {
+                token.IsRevoked = true;
+            }
+
+            _context.Notifications.Add(new Notification
+            {
+                UserId = targetUser.Id,
+                Title = "Administrator Privileges Revoked",
+                Message = "Your administrator privileges on HireConnect have been revoked by a system administrator.",
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _auditLogService.LogAsync(
+                currentAdminId ?? "admin",
+                "REMOVE_ADMIN",
+                "User",
+                targetUser.Id,
+                $"Admin privileges revoked for {targetUser.Email}",
+                ip
+            );
+
+            return Ok(new { message = "Administrator privileges revoked successfully." });
         }
 
         [HttpDelete("jobs/{id}")]
@@ -681,7 +974,6 @@ namespace HireConnect.API.Controllers
             var pendingCompanies = await _context.Companies.CountAsync(c => !c.IsApproved);
             var pendingSeekerVerifications = await _context.SeekerProfiles.CountAsync(s => s.VerificationStatus == "Pending");
             var pendingEmployerVerifications = await _context.Companies.CountAsync(c => c.VerificationStatus == "Pending");
-            var pendingReviews = await _context.CompanyReviews.CountAsync(r => !r.IsHidden);
             var pendingReports = await _context.Reports.CountAsync(r => r.Status == "Pending");
 
             var startDate = DateTime.UtcNow.Date.AddDays(-29);
@@ -752,7 +1044,6 @@ namespace HireConnect.API.Controllers
                     pendingCompanies,
                     pendingSeekerVerifications,
                     pendingEmployerVerifications,
-                    pendingReviews,
                     pendingReports
                 },
                 trends30Days
@@ -767,6 +1058,21 @@ namespace HireConnect.API.Controllers
             await _auditLogService.LogAsync(currentAdminId, "SECURITY_TEST", "SecurityTest", "1", request.Text, ip);
             return Ok(new { message = "Logged successfully." });
         }
+    }
+
+    public class BlockUserRequestDto
+    {
+        public bool? IsActive { get; set; }
+        public bool? IsBlocked { get; set; }
+        public string? Reason { get; set; }
+    }
+
+    public class CreateAdminRequestDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public bool ForcePasswordChangeOnFirstLogin { get; set; } = true;
     }
 
     public class TestRedactionRequestDto

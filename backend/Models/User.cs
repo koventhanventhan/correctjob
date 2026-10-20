@@ -15,6 +15,13 @@ namespace HireConnect.API.Models
 
         public bool IsActive { get; set; } = true;
 
+        [MaxLength(500)]
+        public string? BlockedReason { get; set; }
+
+        public DateTime? LastLogin { get; set; }
+
+        public bool MustChangePassword { get; set; } = false;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [JsonIgnore]
