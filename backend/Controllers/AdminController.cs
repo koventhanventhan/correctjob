@@ -10,6 +10,7 @@ using HireConnect.API.Services;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Caching.Memory;
+using System.Text;
 
 namespace HireConnect.API.Controllers
 {
@@ -859,15 +860,117 @@ namespace HireConnect.API.Controllers
         [HttpGet("settings")]
         public async Task<IActionResult> GetSettings()
         {
-            var settings = await _settingsService.GetAllSettingsAsync();
+            var siteName = await _settingsService.GetSettingAsync("SiteName");
+            if (string.IsNullOrWhiteSpace(siteName))
+            {
+                siteName = await _settingsService.GetSettingAsync("PlatformName", "HireConnect");
+            }
             var fee = await _settingsService.GetJobPostingFeeAsync();
+            var contactEmail = await _settingsService.GetSettingAsync("ContactEmail", "support@hireconnect.com");
             var maintenance = await _settingsService.IsMaintenanceModeAsync();
+
+            return Ok(new AdminSystemSettingsDto
+            {
+                SiteName = siteName,
+                JobPostingFee = fee,
+                ContactEmail = contactEmail,
+                MaintenanceMode = maintenance
+            });
+        }
+
+        [HttpPut("settings")]
+        public async Task<IActionResult> UpdateSettings([FromBody] UpdateAdminSystemSettingsDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (dto.JobPostingFee < 0 || dto.JobPostingFee > 1000000m)
+            {
+                return BadRequest(new { message = "Job posting fee must be between 0 and 1,000,000 LKR." });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.SiteName) || dto.SiteName.Length > 100)
+            {
+                return BadRequest(new { message = "SiteName is required and must not exceed 100 characters." });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.ContactEmail) || !new EmailAddressAttribute().IsValid(dto.ContactEmail))
+            {
+                return BadRequest(new { message = "A valid ContactEmail is required." });
+            }
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // 1. SiteName
+            var currentSiteName = await _settingsService.GetSettingAsync("SiteName");
+            if (string.IsNullOrWhiteSpace(currentSiteName))
+            {
+                currentSiteName = await _settingsService.GetSettingAsync("PlatformName", "HireConnect");
+            }
+
+            if (!string.Equals(currentSiteName, dto.SiteName, StringComparison.Ordinal))
+            {
+                await _settingsService.SetSettingAsync("SiteName", dto.SiteName, currentAdminId, "Platform public display name");
+                await _settingsService.SetSettingAsync("PlatformName", dto.SiteName, currentAdminId, "Platform public display name");
+                if (!string.IsNullOrEmpty(currentAdminId))
+                {
+                    await _auditLogService.LogAsync(
+                        currentAdminId,
+                        "UPDATE_SETTING_SITENAME",
+                        "SystemSetting",
+                        "SiteName",
+                        $"Changed SiteName from '{currentSiteName}' to '{dto.SiteName}'"
+                    );
+                }
+            }
+
+            // 2. JobPostingFee
+            var currentFee = await _settingsService.GetJobPostingFeeAsync();
+            if (currentFee != dto.JobPostingFee)
+            {
+                var feeResult = await _settingsService.SetJobPostingFeeAsync(dto.JobPostingFee, currentAdminId);
+                if (!feeResult.Success)
+                {
+                    return BadRequest(new { message = feeResult.ErrorMessage });
+                }
+            }
+
+            // 3. ContactEmail
+            var currentEmail = await _settingsService.GetSettingAsync("ContactEmail", "support@hireconnect.com");
+            if (!string.Equals(currentEmail, dto.ContactEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                await _settingsService.SetSettingAsync("ContactEmail", dto.ContactEmail, currentAdminId, "Platform support contact email");
+                if (!string.IsNullOrEmpty(currentAdminId))
+                {
+                    await _auditLogService.LogAsync(
+                        currentAdminId,
+                        "UPDATE_SETTING_CONTACT_EMAIL",
+                        "SystemSetting",
+                        "ContactEmail",
+                        $"Changed ContactEmail from '{currentEmail}' to '{dto.ContactEmail}'"
+                    );
+                }
+            }
+
+            // 4. MaintenanceMode
+            var currentMaintenance = await _settingsService.IsMaintenanceModeAsync();
+            if (currentMaintenance != dto.MaintenanceMode)
+            {
+                await _settingsService.SetMaintenanceModeAsync(dto.MaintenanceMode, currentAdminId);
+            }
 
             return Ok(new
             {
-                settings,
-                jobPostingFee = fee,
-                maintenanceMode = maintenance
+                message = "System settings updated successfully.",
+                settings = new AdminSystemSettingsDto
+                {
+                    SiteName = dto.SiteName,
+                    JobPostingFee = dto.JobPostingFee,
+                    ContactEmail = dto.ContactEmail,
+                    MaintenanceMode = dto.MaintenanceMode
+                }
             });
         }
 
@@ -901,21 +1004,52 @@ namespace HireConnect.API.Controllers
             });
         }
 
-        // Strictly Read-Only Audit Log Viewer (No PUT/DELETE exists)
+        // Strictly Read-Only Audit Log Viewer (No PUT/DELETE exists, IpHash strictly omitted)
         [HttpGet("audit-logs")]
         public async Task<IActionResult> GetAuditLogs(
             [FromQuery] string? search,
             [FromQuery] string? action,
+            [FromQuery] string? admin,
+            [FromQuery] string? targetType,
+            [FromQuery] DateTime? dateFrom,
+            [FromQuery] DateTime? dateTo,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
+            pageSize = Math.Clamp(pageSize, 1, 50);
+            page = Math.Max(1, page);
+
             var query = _context.AdminAuditLogs
                 .Include(a => a.Admin)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(action))
+            if (!string.IsNullOrWhiteSpace(action))
             {
                 query = query.Where(a => a.Action == action);
+            }
+
+            if (!string.IsNullOrWhiteSpace(admin))
+            {
+                var adminTrimmed = admin.Trim();
+                query = query.Where(a => 
+                    a.AdminId == adminTrimmed ||
+                    (a.Admin != null && a.Admin.FullName.Contains(adminTrimmed)) ||
+                    (a.Admin != null && a.Admin.Email != null && a.Admin.Email.Contains(adminTrimmed)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(targetType))
+            {
+                query = query.Where(a => a.TargetType == targetType);
+            }
+
+            if (dateFrom.HasValue)
+            {
+                query = query.Where(a => a.CreatedAt >= dateFrom.Value.ToUniversalTime());
+            }
+
+            if (dateTo.HasValue)
+            {
+                query = query.Where(a => a.CreatedAt <= dateTo.Value.ToUniversalTime());
             }
 
             if (!string.IsNullOrEmpty(search))
@@ -932,22 +1066,158 @@ namespace HireConnect.API.Controllers
                 .OrderByDescending(a => a.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(a => new
+                .Select(a => new AdminAuditLogDto
                 {
-                    a.Id,
-                    a.AdminId,
-                    AdminName = a.Admin.FullName,
-                    AdminEmail = a.Admin.Email,
-                    a.Action,
-                    a.TargetType,
-                    a.TargetId,
-                    a.Details,
-                    a.IpHash,
-                    a.CreatedAt
+                    Id = a.Id,
+                    AdminId = a.AdminId,
+                    AdminName = a.Admin != null ? a.Admin.FullName : "Unknown Admin",
+                    AdminEmail = a.Admin != null ? a.Admin.Email : null,
+                    Action = a.Action,
+                    TargetType = a.TargetType,
+                    TargetId = a.TargetId,
+                    Details = a.Details,
+                    CreatedAt = a.CreatedAt
                 })
                 .ToListAsync();
 
-            return Ok(new { data = logs, totalCount });
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            return Ok(new { data = logs, totalCount, page, pageSize, totalPages });
+        }
+
+        // CSV Export for Users (read-only, sanitized, max 10k rows, strictly NO email/phone/password/id card)
+        [HttpGet("export/users")]
+        public async Task<IActionResult> ExportUsersCsv()
+        {
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var users = await _context.Users
+                .OrderByDescending(u => u.CreatedAt)
+                .Take(10000)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.FullName,
+                    u.IsActive,
+                    u.CreatedAt,
+                    Role = _context.UserRoles
+                        .Where(ur => ur.UserId == u.Id)
+                        .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                        .FirstOrDefault() ?? "JobSeeker"
+                })
+                .ToListAsync();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Name,Role,Status,CreatedAt");
+            foreach (var u in users)
+            {
+                var name = SanitizeCsvCell(u.FullName);
+                var role = SanitizeCsvCell(u.Role);
+                var status = SanitizeCsvCell(u.IsActive ? "Active" : "Blocked");
+                var createdAt = SanitizeCsvCell(u.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+                sb.AppendLine($"{name},{role},{status},{createdAt}");
+            }
+
+            if (!string.IsNullOrEmpty(currentAdminId))
+            {
+                await _auditLogService.LogAsync(
+                    currentAdminId,
+                    "EXPORT_USERS_CSV",
+                    "User",
+                    null,
+                    $"Exported {users.Count} users to CSV"
+                );
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+            return File(bytes, "text/csv; charset=utf-8", $"users_export_{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
+        }
+
+        // CSV Export for Jobs (read-only, sanitized, max 10k rows)
+        [HttpGet("export/jobs")]
+        public async Task<IActionResult> ExportJobsCsv()
+        {
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var jobs = await _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category)
+                .OrderByDescending(j => j.CreatedAt)
+                .Take(10000)
+                .Select(j => new
+                {
+                    j.Id,
+                    j.Title,
+                    CompanyName = j.Company != null ? j.Company.CompanyName : "N/A",
+                    CategoryName = j.Category != null ? j.Category.Name : "N/A",
+                    j.Location,
+                    JobType = j.JobType ?? "N/A",
+                    j.Status,
+                    j.CreatedAt
+                })
+                .ToListAsync();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("JobId,Title,Company,Category,Location,JobType,Status,CreatedAt");
+            foreach (var j in jobs)
+            {
+                var id = SanitizeCsvCell(j.Id.ToString());
+                var title = SanitizeCsvCell(j.Title);
+                var company = SanitizeCsvCell(j.CompanyName);
+                var category = SanitizeCsvCell(j.CategoryName);
+                var location = SanitizeCsvCell(j.Location);
+                var jobType = SanitizeCsvCell(j.JobType);
+                var status = SanitizeCsvCell(j.Status);
+                var createdAt = SanitizeCsvCell(j.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+                sb.AppendLine($"{id},{title},{company},{category},{location},{jobType},{status},{createdAt}");
+            }
+
+            if (!string.IsNullOrEmpty(currentAdminId))
+            {
+                await _auditLogService.LogAsync(
+                    currentAdminId,
+                    "EXPORT_JOBS_CSV",
+                    "Job",
+                    null,
+                    $"Exported {jobs.Count} jobs to CSV"
+                );
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+            return File(bytes, "text/csv; charset=utf-8", $"jobs_export_{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
+        }
+
+        private static string SanitizeCsvCell(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+
+            var cell = value;
+
+            // CSV Formula Injection Defense: prefix with ' if cell starts with =, +, -, @, \t, or \r
+            if (cell.Length > 0)
+            {
+                char firstChar = cell[0];
+                if (firstChar == '=' || firstChar == '+' || firstChar == '-' || firstChar == '@' || firstChar == '\t' || firstChar == '\r')
+                {
+                    cell = "'" + cell;
+                }
+                else
+                {
+                    var trimmed = cell.TrimStart();
+                    if (trimmed.Length > 0 && (trimmed[0] == '=' || trimmed[0] == '+' || trimmed[0] == '-' || trimmed[0] == '@' || trimmed[0] == '\t' || trimmed[0] == '\r'))
+                    {
+                        cell = "'" + cell;
+                    }
+                }
+            }
+
+            // Escape double quotes and quote cell if needed
+            if (cell.Contains('"') || cell.Contains(',') || cell.Contains('\n') || cell.Contains('\r') || cell.Contains(';'))
+            {
+                cell = "\"" + cell.Replace("\"", "\"\"") + "\"";
+            }
+
+            return cell;
         }
 
         [HttpGet("dashboard-stats")]

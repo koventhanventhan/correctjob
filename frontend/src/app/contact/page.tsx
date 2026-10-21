@@ -1,8 +1,21 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '@/services/api';
+import { LuMail } from 'react-icons/lu';
 
 export default function ContactPage() {
     const [msg, setMsg] = useState('');
+    const [siteName, setSiteName] = useState('HireConnect');
+    const [contactEmail, setContactEmail] = useState('support@hireconnect.com');
+
+    useEffect(() => {
+        api.get('/settings/public')
+            .then(res => {
+                if (res.data?.siteName) setSiteName(res.data.siteName);
+                if (res.data?.contactEmail) setContactEmail(res.data.contactEmail);
+            })
+            .catch(() => {});
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -13,8 +26,12 @@ export default function ContactPage() {
         <div className="min-h-screen bg-warmwhite py-16 px-4 sm:px-6 lg:px-8">
             <div className="max-w-xl mx-auto bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-extrabold text-charcoal">Contact Us</h1>
-                    <p className="mt-2 text-lg text-gray-600">Have a question? We'd love to hear from you.</p>
+                    <h1 className="text-3xl font-extrabold text-charcoal">Contact {siteName}</h1>
+                    <p className="mt-2 text-base text-gray-600">Have a question? We'd love to hear from you.</p>
+                    <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-orange/10 text-orange rounded-full text-sm font-medium">
+                        <LuMail className="w-4 h-4" />
+                        <a href={`mailto:${contactEmail}`} className="hover:underline">{contactEmail}</a>
+                    </div>
                 </div>
 
                 {msg ? (

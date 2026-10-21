@@ -15,8 +15,10 @@ namespace HireConnect.API.Middleware
         {
             var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
 
-            // Always allow maintenance status and health checks so frontend/status monitors know the state
+            // Always allow maintenance status, public settings, and health checks so frontend/status monitors know the state
             if (path == "/api/settings/maintenance-status" || 
+                path == "/api/settings/public" ||
+                path == "/api/settings" ||
                 path == "/api/health" ||
                 path.StartsWith("/swagger") ||
                 path == "/favicon.ico")

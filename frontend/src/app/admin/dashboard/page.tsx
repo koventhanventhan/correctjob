@@ -3,14 +3,14 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import { 
-    LuUsers, LuBuilding, LuBriefcase, LuSearch, 
+    LuUsers, LuUser, LuBuilding, LuBriefcase, LuSearch, 
     LuChevronLeft, LuChevronRight, LuMessageSquare, LuStar, LuBadgeCheck, 
     LuUserCheck, LuShieldCheck, LuLock, LuSave, LuPen,
     LuLayoutDashboard, LuTrendingUp, LuDollarSign, LuEye, LuClock, 
     LuCircleCheck, LuCircleAlert, LuArrowRight, LuRefreshCw,
     LuUserPlus, LuUserX, LuShieldAlert, LuInfo, LuEyeOff,
     LuTriangleAlert, LuCheck, LuX, LuFlag, LuTag, LuMapPin, LuCreditCard,
-    LuPlus
+    LuPlus, LuDownload
 } from 'react-icons/lu';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
     const { user, isInitializing } = useAuthStore();
     const router = useRouter();
     const { setUser } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'users' | 'jobseekers' | 'companies' | 'reviews' | 'verifications' | 'employer-verifications' | 'reports' | 'categories' | 'locations' | 'payments' | 'profile'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'users' | 'jobseekers' | 'companies' | 'reviews' | 'verifications' | 'employer-verifications' | 'reports' | 'categories' | 'locations' | 'payments' | 'settings' | 'audit-logs' | 'profile'>('overview');
 
     // Profile editing state
     const [profileData, setProfileData] = useState({ fullName: '', email: '' });
@@ -230,6 +230,29 @@ export default function AdminDashboard() {
     const [paymentsDateFrom, setPaymentsDateFrom] = useState('');
     const [paymentsDateTo, setPaymentsDateTo] = useState('');
 
+    // System Settings State
+    const [settingsForm, setSettingsForm] = useState({
+        siteName: 'HireConnect',
+        jobPostingFee: 5000,
+        contactEmail: 'support@hireconnect.com',
+        maintenanceMode: false
+    });
+    const [settingsSaving, setSettingsSaving] = useState(false);
+    const [settingsMsg, setSettingsMsg] = useState<{ text: string; isError: boolean } | null>(null);
+    const [maintenanceConfirmOpen, setMaintenanceConfirmOpen] = useState(false);
+
+    // Audit Logs State
+    const [auditPage, setAuditPage] = useState(1);
+    const [auditSearch, setAuditSearch] = useState('');
+    const [auditActionFilter, setAuditActionFilter] = useState('');
+    const [auditAdminFilter, setAuditAdminFilter] = useState('');
+    const [auditTargetTypeFilter, setAuditTargetTypeFilter] = useState('');
+    const [auditDateFrom, setAuditDateFrom] = useState('');
+    const [auditDateTo, setAuditDateTo] = useState('');
+
+    // CSV Export State
+    const [exportingType, setExportingType] = useState<'users' | 'jobs' | null>(null);
+
     // Reviews Moderation
     const [reviewModerateModal, setReviewModerateModal] = useState<{ id: number; action: 'Hide' | 'Unhide' | 'Delete'; headline: string } | null>(null);
     const [reviewModerateReason, setReviewModerateReason] = useState('');
@@ -360,6 +383,117 @@ export default function AdminDashboard() {
             return res.data;
         }
     });
+
+    // System Settings Query
+    const { data: settingsData, refetch: refetchSettings, isLoading: isSettingsLoading } = useQuery({
+        queryKey: ['admin-system-settings'],
+        queryFn: async () => {
+            const res = await api.get('/admin/settings');
+            return res.data;
+        }
+    });
+
+    useEffect(() => {
+        if (settingsData) {
+            setSettingsForm({
+                siteName: settingsData.siteName || 'HireConnect',
+                jobPostingFee: typeof settingsData.jobPostingFee === 'number' ? settingsData.jobPostingFee : 5000,
+                contactEmail: settingsData.contactEmail || 'support@hireconnect.com',
+                maintenanceMode: Boolean(settingsData.maintenanceMode)
+            });
+        }
+    }, [settingsData]);
+
+    const handleSaveSettings = async (overrideMaintenance?: boolean) => {
+        setSettingsMsg(null);
+
+        if (!settingsForm.siteName.trim()) {
+            setSettingsMsg({ text: 'Site Name is required.', isError: true });
+            return;
+        }
+        if (settingsForm.siteName.trim().length > 100) {
+            setSettingsMsg({ text: 'Site Name cannot exceed 100 characters.', isError: true });
+            return;
+        }
+        if (settingsForm.jobPostingFee < 0 || settingsForm.jobPostingFee > 1000000) {
+            setSettingsMsg({ text: 'Job posting fee must be between 0 and 1,000,000 LKR.', isError: true });
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(settingsForm.contactEmail.trim())) {
+            setSettingsMsg({ text: 'Please enter a valid contact email address.', isError: true });
+            return;
+        }
+
+        const targetMaintenance = overrideMaintenance !== undefined ? overrideMaintenance : settingsForm.maintenanceMode;
+        if (targetMaintenance && !settingsData?.maintenanceMode && overrideMaintenance === undefined) {
+            setMaintenanceConfirmOpen(true);
+            return;
+        }
+
+        setSettingsSaving(true);
+        try {
+            const payload = {
+                siteName: settingsForm.siteName.trim(),
+                jobPostingFee: Number(settingsForm.jobPostingFee),
+                contactEmail: settingsForm.contactEmail.trim(),
+                maintenanceMode: targetMaintenance
+            };
+            const res = await api.put('/admin/settings', payload);
+            setSettingsMsg({ text: res.data?.message || 'Settings saved successfully!', isError: false });
+            refetchSettings();
+            setMaintenanceConfirmOpen(false);
+        } catch (e: any) {
+            const errorMsg = e.response?.data?.message || 'Failed to update settings.';
+            setSettingsMsg({ text: errorMsg, isError: true });
+        } finally {
+            setSettingsSaving(false);
+        }
+    };
+
+    // Audit Logs Query
+    const { data: auditLogsData, refetch: refetchAuditLogs, isLoading: isAuditLoading } = useQuery({
+        queryKey: ['admin-audit-logs', auditPage, auditSearch, auditActionFilter, auditAdminFilter, auditTargetTypeFilter, auditDateFrom, auditDateTo],
+        queryFn: async () => {
+            const params = new URLSearchParams({ page: auditPage.toString(), pageSize: '20' });
+            if (auditSearch.trim()) params.append('search', auditSearch.trim());
+            if (auditActionFilter) params.append('action', auditActionFilter);
+            if (auditAdminFilter.trim()) params.append('admin', auditAdminFilter.trim());
+            if (auditTargetTypeFilter) params.append('targetType', auditTargetTypeFilter);
+            if (auditDateFrom) params.append('dateFrom', auditDateFrom);
+            if (auditDateTo) params.append('dateTo', auditDateTo);
+            const res = await api.get(`/admin/audit-logs?${params.toString()}`);
+            return res.data;
+        }
+    });
+
+    // CSV Export Handler
+    const handleDownloadCsv = async (type: 'users' | 'jobs') => {
+        try {
+            setExportingType(type);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/export/${type}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!res.ok) throw new Error('Failed to export CSV');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${type}_export_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (e: any) {
+            console.error(e);
+            alert('Failed to export CSV: ' + (e.message || 'Unknown error'));
+        } finally {
+            setExportingType(null);
+        }
+    };
 
     const handleApproveJob = async (id: number) => {
         try {
@@ -1057,6 +1191,22 @@ export default function AdminDashboard() {
                         <span>Platform Payments</span>
                     </button>
 
+                    <button 
+                        onClick={() => setActiveTab('settings')} 
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'settings' ? 'bg-orange text-white shadow-sm' : 'text-gray-700 hover:bg-peach'}`}
+                    >
+                        <LuSettings className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <span>System Settings</span>
+                    </button>
+
+                    <button 
+                        onClick={() => setActiveTab('audit-logs')} 
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'audit-logs' ? 'bg-orange text-white shadow-sm' : 'text-gray-700 hover:bg-peach'}`}
+                    >
+                        <LuClock className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <span>Audit Logs</span>
+                    </button>
+
                     <div className="border-t border-gray-100 my-2 mx-1"></div>
 
                     <button 
@@ -1071,8 +1221,8 @@ export default function AdminDashboard() {
                         href="/admin/settings" 
                         className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-peach transition-all"
                     >
-                        <LuSettings className="mr-3 h-5 w-5 flex-shrink-0" />
-                        <span>Settings</span>
+                        <LuUser className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <span>Account Settings</span>
                     </Link>
                 </nav>
             </div>
@@ -1088,13 +1238,7 @@ export default function AdminDashboard() {
                         name="tabs"
                         className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-orange focus:outline-none focus:ring-orange sm:text-sm"
                         value={activeTab}
-                        onChange={(e) => {
-                            if (e.target.value === 'settings') {
-                                router.push('/admin/settings');
-                            } else {
-                                setActiveTab(e.target.value as any);
-                            }
-                        }}
+                        onChange={(e) => setActiveTab(e.target.value as any)}
                     >
                         <option value="overview">Overview & Analytics</option>
                         <option value="jobs">Manage Jobs</option>
@@ -1108,8 +1252,9 @@ export default function AdminDashboard() {
                         <option value="categories">Manage Categories</option>
                         <option value="locations">Manage Locations</option>
                         <option value="payments">Platform Payments</option>
+                        <option value="settings">System Settings</option>
+                        <option value="audit-logs">Audit Logs</option>
                         <option value="profile">Profile & Security</option>
-                        <option value="settings">Settings (Redirect)</option>
                     </select>
                 </div>
 
@@ -1799,7 +1944,15 @@ export default function AdminDashboard() {
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-100 bg-white flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                             <h3 className="text-lg font-display font-bold text-charcoal">Manage Jobs</h3>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                    onClick={() => handleDownloadCsv('jobs')}
+                                    disabled={exportingType === 'jobs'}
+                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 text-charcoal border border-gray-200 font-semibold rounded-lg shadow-sm transition-all text-xs flex-shrink-0 disabled:opacity-50"
+                                >
+                                    <LuDownload className="w-3.5 h-3.5 text-orange" />
+                                    <span>{exportingType === 'jobs' ? 'Exporting...' : 'Export Jobs CSV'}</span>
+                                </button>
                                 <select 
                                     className="border rounded p-1 text-sm bg-warmwhite"
                                     value={filterJobStatus}
@@ -1920,17 +2073,27 @@ export default function AdminDashboard() {
                                     Manage platform users, enforce security policies, block abusive accounts, and provision administrators.
                                 </p>
                             </div>
-                            <button
-                                onClick={() => {
-                                    setIsCreateAdminOpen(true);
-                                    setCreateAdminError('');
-                                    setCreateAdminSuccess('');
-                                }}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange to-amber-500 hover:from-orange/90 hover:to-amber-500/90 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all text-sm flex-shrink-0"
-                            >
-                                <LuUserPlus className="w-4 h-4" />
-                                <span>Create Admin</span>
-                            </button>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                    onClick={() => handleDownloadCsv('users')}
+                                    disabled={exportingType === 'users'}
+                                    className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-white hover:bg-gray-50 text-charcoal border border-gray-200 font-semibold rounded-xl shadow-sm transition-all text-sm flex-shrink-0 disabled:opacity-50"
+                                >
+                                    <LuDownload className="w-4 h-4 text-orange" />
+                                    <span>{exportingType === 'users' ? 'Exporting...' : 'Export Users CSV'}</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setIsCreateAdminOpen(true);
+                                        setCreateAdminError('');
+                                        setCreateAdminSuccess('');
+                                    }}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange to-amber-500 hover:from-orange/90 hover:to-amber-500/90 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all text-sm flex-shrink-0"
+                                >
+                                    <LuUserPlus className="w-4 h-4" />
+                                    <span>Create Admin</span>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Search and Filters Strip */}
@@ -3579,6 +3742,424 @@ export default function AdminDashboard() {
                     </div>
                 )}
 
+                {/* SYSTEM SETTINGS TAB */}
+                {activeTab === 'settings' && (
+                    <div className="space-y-6 max-w-4xl">
+                        {/* Header */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl font-display font-bold text-charcoal flex items-center gap-2">
+                                    <LuSettings className="w-5 h-5 text-orange" />
+                                    System & Platform Settings
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Configure global platform configurations, job posting rates, contact details, and maintenance mode.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => refetchSettings()}
+                                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50"
+                                    title="Reload settings"
+                                >
+                                    <LuRefreshCw className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Settings Form Card */}
+                        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+                            {settingsMsg && (
+                                <div className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2.5 ${settingsMsg.isError ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                                    {settingsMsg.isError ? <LuTriangleAlert className="w-4 h-4 shrink-0" /> : <LuCircleCheck className="w-4 h-4 shrink-0" />}
+                                    <span>{settingsMsg.text}</span>
+                                </div>
+                            )}
+
+                            {isSettingsLoading ? (
+                                <div className="py-12 text-center text-xs text-gray-400">Loading system settings...</div>
+                            ) : (
+                                <form onSubmit={(e) => { e.preventDefault(); handleSaveSettings(); }} className="space-y-6">
+                                    {/* Site Name */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                            Platform Display Name (Site Name) <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            maxLength={100}
+                                            required
+                                            value={settingsForm.siteName}
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, siteName: e.target.value })}
+                                            placeholder="e.g. CorrectJob or HireConnect"
+                                            className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange/20 focus:border-orange transition-all"
+                                        />
+                                        <p className="text-[11px] text-gray-400 mt-1">Displayed in website header, footer, page titles, and notification emails (Max 100 characters).</p>
+                                    </div>
+
+                                    {/* Job Posting Fee */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                            Job Posting Fee (LKR) <span className="text-rose-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">LKR</span>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                max={1000000}
+                                                step="100"
+                                                required
+                                                value={settingsForm.jobPostingFee}
+                                                onChange={(e) => setSettingsForm({ ...settingsForm, jobPostingFee: Number(e.target.value) })}
+                                                className="w-full pl-14 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange/20 focus:border-orange transition-all font-semibold text-charcoal"
+                                            />
+                                        </div>
+                                        <p className="text-[11px] text-gray-400 mt-1">Standard listing fee charged to employers per paid job post. Valid range: 0.00 to 1,000,000.00 LKR.</p>
+                                    </div>
+
+                                    {/* Contact Email */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                            Support Contact Email <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="email"
+                                            required
+                                            value={settingsForm.contactEmail}
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, contactEmail: e.target.value })}
+                                            placeholder="support@correctjob.com"
+                                            className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange/20 focus:border-orange transition-all"
+                                        />
+                                        <p className="text-[11px] text-gray-400 mt-1">Direct support email shown on public contact page and system communications.</p>
+                                    </div>
+
+                                    {/* Maintenance Mode */}
+                                    <div className="pt-4 border-t border-gray-100">
+                                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200/80">
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-charcoal">Platform Maintenance Mode</span>
+                                                    {settingsForm.maintenanceMode && (
+                                                        <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 rounded-full border border-amber-200">ACTIVE</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-gray-500">
+                                                    When enabled, non-admin visitors receive a 503 Maintenance page. Admins retain full access.
+                                                </p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={settingsForm.maintenanceMode}
+                                                    onChange={(e) => {
+                                                        const newVal = e.target.checked;
+                                                        if (newVal) {
+                                                            setMaintenanceConfirmOpen(true);
+                                                        } else {
+                                                            setSettingsForm({ ...settingsForm, maintenanceMode: false });
+                                                        }
+                                                    }}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {/* Save Button */}
+                                    <div className="pt-2 flex justify-end">
+                                        <button
+                                            type="submit"
+                                            disabled={settingsSaving}
+                                            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-orange hover:bg-orange/90 rounded-xl shadow-sm transition-all disabled:opacity-50"
+                                        >
+                                            <LuSave className="w-4 h-4" />
+                                            {settingsSaving ? 'Saving Changes...' : 'Save Settings'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+
+                        {/* Quick Platform Data Export Card */}
+                        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                            <div>
+                                <h3 className="text-base font-bold text-charcoal flex items-center gap-2">
+                                    <LuDownload className="w-4 h-4 text-orange" />
+                                    Platform Data Exports (CSV)
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Download sanitized CSV exports with formula injection defense and privacy redaction (passwords, payment cards, identity IDs omitted).
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleDownloadCsv('users')}
+                                    disabled={exportingType === 'users'}
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-charcoal bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                                >
+                                    <LuDownload className="w-3.5 h-3.5 text-orange" />
+                                    {exportingType === 'users' ? 'Generating Users CSV...' : 'Download Users CSV'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleDownloadCsv('jobs')}
+                                    disabled={exportingType === 'jobs'}
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-charcoal bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                                >
+                                    <LuDownload className="w-3.5 h-3.5 text-orange" />
+                                    {exportingType === 'jobs' ? 'Generating Jobs CSV...' : 'Download Jobs CSV'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* AUDIT LOGS TAB (STRICTLY READ-ONLY) */}
+                {activeTab === 'audit-logs' && (
+                    <div className="space-y-6 max-w-7xl">
+                        {/* Header Banner */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl font-display font-bold text-charcoal flex items-center gap-2">
+                                    <LuClock className="w-5 h-5 text-orange" />
+                                    Admin Audit Logs
+                                    <span className="text-xs font-semibold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">Read-Only & Immutable</span>
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Tamper-proof record of all admin administrative operations, category edits, moderation decisions, and system setting changes.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => refetchAuditLogs()}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-all"
+                                >
+                                    <LuRefreshCw className="w-3.5 h-3.5" />
+                                    Refresh
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Search and Filters */}
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                                {/* Search */}
+                                <div className="relative sm:col-span-2">
+                                    <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search details or action..."
+                                        value={auditSearch}
+                                        onChange={(e) => { setAuditSearch(e.target.value); setAuditPage(1); }}
+                                        className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange focus:bg-white"
+                                    />
+                                </div>
+
+                                {/* Action Filter */}
+                                <div>
+                                    <select
+                                        value={auditActionFilter}
+                                        onChange={(e) => { setAuditActionFilter(e.target.value); setAuditPage(1); }}
+                                        className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange focus:bg-white"
+                                    >
+                                        <option value="">All Actions</option>
+                                        <option value="UPDATE_REPORT_STATUS">Report Status</option>
+                                        <option value="CLOSE_JOB_FROM_REPORT">Close Job (Report)</option>
+                                        <option value="MODERATE_REVIEW">Moderate Review</option>
+                                        <option value="CREATE_CATEGORY">Create Category</option>
+                                        <option value="UPDATE_CATEGORY">Update Category</option>
+                                        <option value="DELETE_CATEGORY">Delete Category</option>
+                                        <option value="CREATE_LOCATION">Create Location</option>
+                                        <option value="UPDATE_LOCATION">Update Location</option>
+                                        <option value="DELETE_LOCATION">Delete Location</option>
+                                        <option value="UPDATE_SETTING_SITENAME">Update SiteName</option>
+                                        <option value="SETTING_JOB_POSTING_FEE_UPDATED">Update Fee</option>
+                                        <option value="UPDATE_SETTING_CONTACT_EMAIL">Update ContactEmail</option>
+                                        <option value="SETTING_MAINTENANCE_MODE_UPDATED">Update Maintenance</option>
+                                        <option value="EXPORT_USERS_CSV">Export Users CSV</option>
+                                        <option value="EXPORT_JOBS_CSV">Export Jobs CSV</option>
+                                    </select>
+                                </div>
+
+                                {/* Target Type Filter */}
+                                <div>
+                                    <select
+                                        value={auditTargetTypeFilter}
+                                        onChange={(e) => { setAuditTargetTypeFilter(e.target.value); setAuditPage(1); }}
+                                        className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange focus:bg-white"
+                                    >
+                                        <option value="">All Target Types</option>
+                                        <option value="Report">Report</option>
+                                        <option value="Job">Job</option>
+                                        <option value="Review">Review</option>
+                                        <option value="Category">Category</option>
+                                        <option value="Location">Location</option>
+                                        <option value="SystemSetting">SystemSetting</option>
+                                        <option value="User">User</option>
+                                    </select>
+                                </div>
+
+                                {/* Admin Filter */}
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder="Filter by admin..."
+                                        value={auditAdminFilter}
+                                        onChange={(e) => { setAuditAdminFilter(e.target.value); setAuditPage(1); }}
+                                        className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange focus:bg-white"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Date Range & Reset */}
+                            <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-gray-100 text-xs">
+                                <span className="text-gray-400 font-medium">Date Range:</span>
+                                <input
+                                    type="date"
+                                    value={auditDateFrom}
+                                    onChange={(e) => { setAuditDateFrom(e.target.value); setAuditPage(1); }}
+                                    className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs"
+                                    title="Date From"
+                                />
+                                <span className="text-gray-400">to</span>
+                                <input
+                                    type="date"
+                                    value={auditDateTo}
+                                    onChange={(e) => { setAuditDateTo(e.target.value); setAuditPage(1); }}
+                                    className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs"
+                                    title="Date To"
+                                />
+                                {(auditSearch || auditActionFilter || auditAdminFilter || auditTargetTypeFilter || auditDateFrom || auditDateTo) && (
+                                    <button
+                                        onClick={() => {
+                                            setAuditSearch('');
+                                            setAuditActionFilter('');
+                                            setAuditAdminFilter('');
+                                            setAuditTargetTypeFilter('');
+                                            setAuditDateFrom('');
+                                            setAuditDateTo('');
+                                            setAuditPage(1);
+                                        }}
+                                        className="text-orange hover:underline font-semibold ml-auto"
+                                    >
+                                        Clear All Filters
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Audit Logs Content (Desktop Table + Mobile Cards) */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            {/* Mobile Card View (375px responsive) */}
+                            <div className="md:hidden divide-y divide-gray-100 p-4 space-y-3">
+                                {isAuditLoading ? (
+                                    <div className="py-8 text-center text-xs text-gray-400">Loading audit logs...</div>
+                                ) : auditLogsData?.data?.length === 0 ? (
+                                    <div className="py-8 text-center text-xs text-gray-400">No audit log records found matching your filters.</div>
+                                ) : (
+                                    auditLogsData?.data?.map((log: any) => (
+                                        <div key={log.id} className="p-3 bg-gray-50/60 rounded-xl space-y-2 border border-gray-100 text-xs">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <span className="font-bold text-charcoal">{log.adminName}</span>
+                                                <span className="text-[10px] text-gray-400 shrink-0">{new Date(log.createdAt).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange/10 text-orange">
+                                                    {log.action}
+                                                </span>
+                                                {log.targetType && (
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600">
+                                                        {log.targetType}{log.targetId ? ` #${log.targetId}` : ''}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {log.details && (
+                                                <p className="text-gray-600 text-[11px] leading-relaxed break-words bg-white p-2 rounded-lg border border-gray-100">
+                                                    {log.details}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-100">
+                                    <thead className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        <tr>
+                                            <th className="px-6 py-3.5 text-left">Timestamp</th>
+                                            <th className="px-6 py-3.5 text-left">Admin</th>
+                                            <th className="px-6 py-3.5 text-left">Action</th>
+                                            <th className="px-6 py-3.5 text-left">Target</th>
+                                            <th className="px-6 py-3.5 text-left">Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 text-xs">
+                                        {isAuditLoading ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-8 text-center text-gray-400">Loading audit records...</td>
+                                            </tr>
+                                        ) : auditLogsData?.data?.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-8 text-center text-gray-400">No audit log records found.</td>
+                                            </tr>
+                                        ) : (
+                                            auditLogsData?.data?.map((log: any) => (
+                                                <tr key={log.id} className="hover:bg-gray-50/60 transition-colors">
+                                                    <td className="px-6 py-3.5 whitespace-nowrap text-gray-400 font-mono text-[11px]">
+                                                        {new Date(log.createdAt).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-6 py-3.5 whitespace-nowrap">
+                                                        <div className="font-bold text-charcoal">{log.adminName}</div>
+                                                        {log.adminEmail && <div className="text-[11px] text-gray-400">{log.adminEmail}</div>}
+                                                    </td>
+                                                    <td className="px-6 py-3.5 whitespace-nowrap">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange/10 text-orange">
+                                                            {log.action}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-3.5 whitespace-nowrap text-gray-600 font-medium">
+                                                        {log.targetType ? `${log.targetType}${log.targetId ? ` #${log.targetId}` : ''}` : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-3.5 text-gray-600 max-w-md truncate" title={log.details || ''}>
+                                                        {log.details || '-'}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            <div className="px-6 py-3.5 bg-white flex items-center justify-between border-t border-gray-100 text-xs text-gray-500">
+                                <span>Total Records: <strong>{auditLogsData?.totalCount ?? 0}</strong></span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={auditPage <= 1}
+                                        onClick={() => setAuditPage(p => p - 1)}
+                                        className="p-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40"
+                                    >
+                                        <LuChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <span className="font-semibold">Page {auditPage} of {auditLogsData?.totalPages || 1}</span>
+                                    <button
+                                        disabled={auditPage >= (auditLogsData?.totalPages || 1)}
+                                        onClick={() => setAuditPage(p => p + 1)}
+                                        className="p-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40"
+                                    >
+                                        <LuChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'profile' && (
                     <div className="max-w-2xl">
                         <h2 className="text-2xl font-display font-bold text-charcoal mb-6">Profile & Security</h2>
@@ -4513,6 +5094,39 @@ export default function AdminDashboard() {
                                     className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50"
                                 >
                                     {locLoading ? 'Deleting...' : 'Confirm Delete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Maintenance Mode Confirmation Modal */}
+                {maintenanceConfirmOpen && (
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                            <div className="flex items-center gap-3 text-amber-600">
+                                <LuTriangleAlert className="w-6 h-6 shrink-0" />
+                                <h3 className="font-bold text-charcoal">Enable Maintenance Mode?</h3>
+                            </div>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                                Are you sure you want to turn ON <strong>Maintenance Mode</strong>? All non-admin users and visitors will be temporarily blocked from browsing jobs, applying, or submitting content with a <strong>503 Service Unavailable</strong> message until disabled.
+                            </p>
+                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                                <button
+                                    onClick={() => setMaintenanceConfirmOpen(false)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setSettingsForm(prev => ({ ...prev, maintenanceMode: true }));
+                                        handleSaveSettings(true);
+                                    }}
+                                    disabled={settingsSaving}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm disabled:opacity-50"
+                                >
+                                    {settingsSaving ? 'Enabling...' : 'Confirm Enable'}
                                 </button>
                             </div>
                         </div>

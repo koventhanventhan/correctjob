@@ -1,7 +1,20 @@
+'use client';
 import Link from 'next/link';
 import { LuBriefcase } from 'react-icons/lu';
+import { useEffect, useState } from 'react';
+import api from '@/services/api';
 
 export default function Footer() {
+    const [siteName, setSiteName] = useState('HireConnect');
+
+    useEffect(() => {
+        api.get('/settings/public')
+            .then(res => {
+                if (res.data?.siteName) setSiteName(res.data.siteName);
+            })
+            .catch(() => {});
+    }, []);
+
     return (
         <footer className="bg-gray-900 text-white mt-auto">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -9,7 +22,7 @@ export default function Footer() {
                     <div className="col-span-1 md:col-span-1">
                         <Link href="/" className="flex items-center gap-2 mb-4">
                             <LuBriefcase className="h-8 w-8 text-orange" />
-                            <span className="font-bold text-xl tracking-tight">HireConnect</span>
+                            <span className="font-bold text-xl tracking-tight">{siteName}</span>
                         </Link>
                         <p className="text-gray-400 text-sm">
                             Connecting top talent with the best employers worldwide. Your next career move starts here.
@@ -45,7 +58,7 @@ export default function Footer() {
                 </div>
                 <div className="mt-8 border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
                     <p className="text-gray-400 text-sm">
-                        &copy; {new Date().getFullYear()} HireConnect. All rights reserved.
+                        &copy; {new Date().getFullYear()} {siteName}. All rights reserved.
                     </p>
                 </div>
             </div>
