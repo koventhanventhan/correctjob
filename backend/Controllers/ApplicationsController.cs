@@ -45,6 +45,7 @@ namespace HireConnect.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "JobSeeker")]
+        [RequestSizeLimit(10485760)] // 10MB limit
         public async Task<IActionResult> Apply([FromForm] ApplicationDto model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

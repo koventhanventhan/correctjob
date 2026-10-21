@@ -8,6 +8,8 @@ using System.Text;
 using HireConnect.API.Services.Payment;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 // Load .env file if present
 var currentDir = Directory.GetCurrentDirectory();
@@ -217,8 +219,110 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Configure CORS
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000" };
+// Configure upload limits (MaxRequestBodySize and FormOptions)
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 15 * 1024 * 1024; // 15 MB
+    options.ValueLengthLimit = 1024 * 1024; // 1 MB
+    options.MultipartHeadersLengthLimit = 16384;
+});
+
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 15 * 1024 * 1024; // 15 MB
+});
+
+// Configure ASP.NET Core IP-based Rate Limiter for auth endpoints
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            "{\"message\":\"Too many requests. Please try again later.\",\"statusCode\":429}",
+            cancellationToken: token);
+    };
+
+    static string GetClientIp(HttpContext httpContext)
+    {
+        return httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown_ip";
+    }
+
+    // Login: 10 requests / min
+    options.AddPolicy("LoginLimiter", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            GetClientIp(httpContext),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Register: 5 requests / min
+    options.AddPolicy("RegisterLimiter", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            GetClientIp(httpContext),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Forgot Password & Reset Password: 3 requests / min
+    options.AddPolicy("PasswordResetLimiter", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            GetClientIp(httpContext),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Refresh Token: 20 requests / min
+    options.AddPolicy("RefreshTokenLimiter", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            GetClientIp(httpContext),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Change Password: 5 requests / min
+    options.AddPolicy("ChangePasswordLimiter", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            GetClientIp(httpContext),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
+// Configure CORS - strictly loaded from configuration in production (no wildcard or AllowAnyOrigin)
+var allowedOriginsConfig = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+string[] allowedOrigins;
+if (builder.Environment.IsDevelopment())
+{
+    allowedOrigins = (allowedOriginsConfig != null && allowedOriginsConfig.Length > 0)
+        ? allowedOriginsConfig
+        : new[] { "http://localhost:3000" };
+}
+else
+{
+    if (allowedOriginsConfig == null || allowedOriginsConfig.Length == 0 || allowedOriginsConfig.Any(o => o.Trim() == "*"))
+    {
+        throw new InvalidOperationException("Production requires explicitly configured non-wildcard Cors:AllowedOrigins in configuration/environment variables.");
+    }
+    allowedOrigins = allowedOriginsConfig;
+}
 
 builder.Services.AddCors(options =>
 {
@@ -261,9 +365,61 @@ if (string.IsNullOrWhiteSpace(ipHashSalt))
     }
 }
 
+// Production configuration validation: fail-fast on missing required configuration keys
+if (!builder.Environment.IsDevelopment())
+{
+    var requiredProductionSettings = new (string ConfigPath, string EnvVarName)[]
+    {
+        ("ConnectionStrings:DefaultConnection", "ConnectionStrings__DefaultConnection"),
+        ("Jwt:Key", "Jwt__Key"),
+        ("Security:IpHashSalt", "Security__IpHashSalt"),
+        ("Admin:Email", "Admin__Email"),
+        ("Admin:Password", "Admin__Password"),
+        ("EmailSettings:SmtpHost", "EmailSettings__SmtpHost"),
+        ("EmailSettings:SmtpUsername", "EmailSettings__SmtpUsername"),
+        ("EmailSettings:SmtpPassword", "EmailSettings__SmtpPassword"),
+        ("PayHere:MerchantId", "PayHere__MerchantId"),
+        ("PayHere:MerchantSecret", "PayHere__MerchantSecret")
+    };
+
+    var missingKeys = new List<string>();
+    foreach (var (path, envVar) in requiredProductionSettings)
+    {
+        var val = builder.Configuration[path] ?? Environment.GetEnvironmentVariable(envVar);
+        if (string.IsNullOrWhiteSpace(val) || val.Contains("CHANGE_ME") || val.StartsWith("your-", StringComparison.OrdinalIgnoreCase))
+        {
+            missingKeys.Add($"{path} (or {envVar})");
+        }
+    }
+
+    if (missingKeys.Count > 0)
+    {
+        throw new InvalidOperationException(
+            $"[FATAL STARTUP ERROR] Missing or placeholder configuration keys in Production environment:\n - " +
+            string.Join("\n - ", missingKeys) +
+            "\nPlease supply valid production credentials in environment variables.");
+    }
+}
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+// Security Headers Middleware (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, X-XSS-Protection, HSTS in production)
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+
+    if (!app.Environment.IsDevelopment())
+    {
+        context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    }
+
+    await next();
+});
 
 // Seed roles and admin user (explicit migrations via dotnet ef database update)
 using (var scope = app.Services.CreateScope())
@@ -316,6 +472,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
+
+app.UseRateLimiter();
 
 var uploadsDir = Path.Combine(builder.Environment.ContentRootPath, "uploads");
 if (!Directory.Exists(uploadsDir))

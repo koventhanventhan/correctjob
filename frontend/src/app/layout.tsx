@@ -16,8 +16,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "HireConnect",
-  description: "Find Your Dream Job Today",
+  title: "HireConnect - Find Your Dream Job & Hire Top Talent",
+  description: "HireConnect is a premier career platform connecting job seekers with leading employers across technology, finance, marketing, and more.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

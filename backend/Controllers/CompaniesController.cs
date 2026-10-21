@@ -132,6 +132,7 @@ namespace HireConnect.API.Controllers
 
         [HttpPost("upload-logo")]
         [Authorize(Roles = "Employer")]
+        [RequestSizeLimit(3145728)] // 3MB limit
         public async Task<IActionResult> UploadLogo(IFormFile? file)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -165,6 +166,7 @@ namespace HireConnect.API.Controllers
 
         [HttpPost("upload-banner")]
         [Authorize(Roles = "Employer")]
+        [RequestSizeLimit(6291456)] // 6MB limit
         public async Task<IActionResult> UploadBanner(IFormFile? file)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -198,6 +200,7 @@ namespace HireConnect.API.Controllers
 
         [HttpPost("verify-identity")]
         [Authorize(Roles = "Employer")]
+        [RequestSizeLimit(12582912)] // 12MB limit
         public async Task<IActionResult> VerifyIdentity([FromForm] IFormFile? idCardFront, [FromForm] IFormFile? idCardBack)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

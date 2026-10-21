@@ -10,6 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HireConnect.API.Controllers
 {
@@ -50,6 +51,7 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpPost("register")]
+        [EnableRateLimiting("RegisterLimiter")]
         public async Task<IActionResult> Register([FromBody] RegisterDto model)
         {
             if (await _settingsService.IsMaintenanceModeAsync())
@@ -86,6 +88,7 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("LoginLimiter")]
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
@@ -162,6 +165,7 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpPost("refresh-token")]
+        [EnableRateLimiting("RefreshTokenLimiter")]
         public async Task<IActionResult> RefreshToken()
         {
             var refreshToken = Request.Cookies["refreshToken"];
@@ -433,6 +437,7 @@ namespace HireConnect.API.Controllers
 
         [HttpPost("change-password")]
         [Authorize]
+        [EnableRateLimiting("ChangePasswordLimiter")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -500,6 +505,7 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpPost("forgot-password")]
+        [EnableRateLimiting("PasswordResetLimiter")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
         {
             if (string.IsNullOrWhiteSpace(model.Email))
@@ -521,6 +527,7 @@ namespace HireConnect.API.Controllers
         }
 
         [HttpPost("reset-password")]
+        [EnableRateLimiting("PasswordResetLimiter")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);

@@ -21,6 +21,13 @@ namespace HireConnect.API.Controllers
             var categories = await _context.Categories
                 .Where(c => c.IsActive)
                 .OrderBy(c => c.Name)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    c.Description,
+                    c.IsActive
+                })
                 .ToListAsync();
 
             return Ok(categories);

@@ -185,8 +185,9 @@ export default function NotificationBell() {
             <button
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
-                className="relative p-2 text-gray-500 hover:text-charcoal hover:bg-gray-100 rounded-full transition-colors focus:outline-hidden"
-                aria-label="Notifications"
+                className="relative p-2 text-gray-500 hover:text-charcoal hover:bg-gray-100 rounded-full transition-colors focus:outline-hidden cursor-pointer"
+                aria-expanded={isOpen}
+                aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
             >
                 <LuBell className="w-5 h-5" />
                 {unreadCount > 0 && (

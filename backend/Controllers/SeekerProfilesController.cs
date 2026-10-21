@@ -433,7 +433,17 @@ namespace HireConnect.API.Controllers
 
             _context.SeekerWorkHistories.Add(item);
             await _context.SaveChangesAsync();
-            return Ok(item);
+            return Ok(new
+            {
+                item.Id,
+                item.JobTitle,
+                item.Company,
+                item.Location,
+                item.StartDate,
+                item.EndDate,
+                item.IsCurrent,
+                item.Description
+            });
         }
 
         [HttpPut("work-history/{id}")]
@@ -454,7 +464,17 @@ namespace HireConnect.API.Controllers
             item.Description = model.Description;
 
             await _context.SaveChangesAsync();
-            return Ok(item);
+            return Ok(new
+            {
+                item.Id,
+                item.JobTitle,
+                item.Company,
+                item.Location,
+                item.StartDate,
+                item.EndDate,
+                item.IsCurrent,
+                item.Description
+            });
         }
 
         [HttpDelete("work-history/{id}")]
@@ -492,7 +512,16 @@ namespace HireConnect.API.Controllers
 
             _context.SeekerEducations.Add(item);
             await _context.SaveChangesAsync();
-            return Ok(item);
+            return Ok(new
+            {
+                item.Id,
+                item.Institution,
+                item.Degree,
+                item.FieldOfStudy,
+                item.StartDate,
+                item.EndDate,
+                item.IsCurrent
+            });
         }
 
         [HttpPut("education/{id}")]
@@ -512,7 +541,16 @@ namespace HireConnect.API.Controllers
             item.IsCurrent = model.IsCurrent;
 
             await _context.SaveChangesAsync();
-            return Ok(item);
+            return Ok(new
+            {
+                item.Id,
+                item.Institution,
+                item.Degree,
+                item.FieldOfStudy,
+                item.StartDate,
+                item.EndDate,
+                item.IsCurrent
+            });
         }
 
         [HttpDelete("education/{id}")]
@@ -546,7 +584,12 @@ namespace HireConnect.API.Controllers
 
             _context.SeekerSkills.Add(item);
             await _context.SaveChangesAsync();
-            return Ok(item);
+            return Ok(new
+            {
+                item.Id,
+                item.SkillName,
+                item.YearsExperience
+            });
         }
 
         [HttpDelete("skills/{id}")]
@@ -580,7 +623,12 @@ namespace HireConnect.API.Controllers
 
             _context.SeekerLanguages.Add(item);
             await _context.SaveChangesAsync();
-            return Ok(item);
+            return Ok(new
+            {
+                item.Id,
+                item.Language,
+                item.Proficiency
+            });
         }
 
         [HttpDelete("languages/{id}")]
@@ -617,7 +665,15 @@ namespace HireConnect.API.Controllers
 
             _context.SeekerCertifications.Add(item);
             await _context.SaveChangesAsync();
-            return Ok(item);
+            return Ok(new
+            {
+                item.Id,
+                item.Name,
+                item.IssuingOrganization,
+                item.IssueDate,
+                item.ExpiryDate,
+                item.CredentialUrl
+            });
         }
 
         [HttpDelete("certifications/{id}")]
