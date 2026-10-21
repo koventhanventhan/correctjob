@@ -9,7 +9,8 @@ import {
     LuLayoutDashboard, LuTrendingUp, LuDollarSign, LuEye, LuClock, 
     LuCircleCheck, LuCircleAlert, LuArrowRight, LuRefreshCw,
     LuUserPlus, LuUserX, LuShieldAlert, LuInfo, LuEyeOff,
-    LuTriangleAlert, LuCheck, LuX
+    LuTriangleAlert, LuCheck, LuX, LuFlag, LuTag, LuMapPin, LuCreditCard,
+    LuPlus
 } from 'react-icons/lu';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -66,7 +67,7 @@ export default function AdminDashboard() {
     const { user, isInitializing } = useAuthStore();
     const router = useRouter();
     const { setUser } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'users' | 'jobseekers' | 'companies' | 'reviews' | 'verifications' | 'employer-verifications' | 'profile'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'users' | 'jobseekers' | 'companies' | 'reviews' | 'verifications' | 'employer-verifications' | 'reports' | 'categories' | 'locations' | 'payments' | 'profile'>('overview');
 
     // Profile editing state
     const [profileData, setProfileData] = useState({ fullName: '', email: '' });
@@ -197,6 +198,43 @@ export default function AdminDashboard() {
     const [employerVerificationsPage, setEmployerVerificationsPage] = useState(1);
     const [searchEmployerVerification, setSearchEmployerVerification] = useState('');
 
+    // Reports Tab
+    const [reportsPage, setReportsPage] = useState(1);
+    const [reportsStatusFilter, setReportsStatusFilter] = useState('');
+    const [reportsTypeFilter, setReportsTypeFilter] = useState('');
+    const [searchReport, setSearchReport] = useState('');
+    const [reportActionLoading, setReportActionLoading] = useState<number | null>(null);
+    const [reportStatusModal, setReportStatusModal] = useState<{id: number; currentStatus: string} | null>(null);
+    const [reportNewStatus, setReportNewStatus] = useState('');
+    const [reportAdminNote, setReportAdminNote] = useState('');
+    const [reportDirectActionModal, setReportDirectActionModal] = useState<{id: number; type: string} | null>(null);
+    const [reportDirectAction, setReportDirectAction] = useState('');
+    const [reportDirectReason, setReportDirectReason] = useState('');
+
+    // Categories Tab
+    const [catEditModal, setCatEditModal] = useState<{id?: number; name: string; description: string; isActive: boolean} | null>(null);
+    const [catLoading, setCatLoading] = useState(false);
+    const [catError, setCatError] = useState('');
+    const [catDeleteConfirm, setCatDeleteConfirm] = useState<{id: number; name: string} | null>(null);
+
+    // Locations Tab
+    const [locEditModal, setLocEditModal] = useState<{id?: number; name: string; stateOrProvince: string; country: string; isActive: boolean} | null>(null);
+    const [locLoading, setLocLoading] = useState(false);
+    const [locError, setLocError] = useState('');
+    const [locDeleteConfirm, setLocDeleteConfirm] = useState<{id: number; name: string} | null>(null);
+
+    // Payments Tab
+    const [paymentsPage, setPaymentsPage] = useState(1);
+    const [paymentsStatusFilter, setPaymentsStatusFilter] = useState('');
+    const [searchPayment, setSearchPayment] = useState('');
+    const [paymentsDateFrom, setPaymentsDateFrom] = useState('');
+    const [paymentsDateTo, setPaymentsDateTo] = useState('');
+
+    // Reviews Moderation
+    const [reviewModerateModal, setReviewModerateModal] = useState<{ id: number; action: 'Hide' | 'Unhide' | 'Delete'; headline: string } | null>(null);
+    const [reviewModerateReason, setReviewModerateReason] = useState('');
+    const [reviewModerateLoading, setReviewModerateLoading] = useState(false);
+
     // Dashboard Stats Query
     const { 
         data: dashboardStats, 
@@ -274,6 +312,51 @@ export default function AdminDashboard() {
         queryKey: ['admin-reviews', reviewsPage],
         queryFn: async () => {
             const res = await api.get(`/admin/reviews?page=${reviewsPage}&pageSize=10`);
+            return res.data;
+        }
+    });
+
+    // Admin Reports Query
+    const { data: reportsData, refetch: refetchReports } = useQuery({
+        queryKey: ['admin-reports', reportsPage, reportsStatusFilter, reportsTypeFilter, searchReport],
+        queryFn: async () => {
+            const params = new URLSearchParams({ page: reportsPage.toString(), pageSize: '20' });
+            if (reportsStatusFilter) params.append('status', reportsStatusFilter);
+            if (reportsTypeFilter) params.append('type', reportsTypeFilter);
+            if (searchReport.trim()) params.append('search', searchReport.trim());
+            const res = await api.get(`/admin/reports?${params.toString()}`);
+            return res.data;
+        }
+    });
+
+    // Admin Categories Query
+    const { data: categoriesData, refetch: refetchCategories } = useQuery({
+        queryKey: ['admin-categories'],
+        queryFn: async () => {
+            const res = await api.get('/admin/categories');
+            return res.data;
+        }
+    });
+
+    // Admin Locations Query
+    const { data: locationsData, refetch: refetchLocations } = useQuery({
+        queryKey: ['admin-locations'],
+        queryFn: async () => {
+            const res = await api.get('/admin/locations');
+            return res.data;
+        }
+    });
+
+    // Admin Payments Query
+    const { data: paymentsData, refetch: refetchPayments } = useQuery({
+        queryKey: ['admin-payments', paymentsPage, paymentsStatusFilter, searchPayment, paymentsDateFrom, paymentsDateTo],
+        queryFn: async () => {
+            const params = new URLSearchParams({ page: paymentsPage.toString(), pageSize: '20' });
+            if (paymentsStatusFilter) params.append('status', paymentsStatusFilter);
+            if (searchPayment.trim()) params.append('search', searchPayment.trim());
+            if (paymentsDateFrom) params.append('dateFrom', paymentsDateFrom);
+            if (paymentsDateTo) params.append('dateTo', paymentsDateTo);
+            const res = await api.get(`/admin/payments?${params.toString()}`);
             return res.data;
         }
     });
@@ -455,13 +538,195 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleToggleReviewVisibility = async (id: number) => {
+    const handleModerateReview = async () => {
+        if (!reviewModerateModal) return;
+        if (!reviewModerateReason.trim()) {
+            alert("A reason is required for review moderation.");
+            return;
+        }
+        setReviewModerateLoading(true);
         try {
-            await api.patch(`/admin/reviews/${id}/toggle-visibility`);
+            await api.patch(`/admin/reviews/${reviewModerateModal.id}/moderate`, {
+                action: reviewModerateModal.action,
+                reason: reviewModerateReason.trim()
+            });
             refetchReviews();
-            refetchStats();
-        } catch {
-            console.error("Failed to toggle review visibility");
+            if (refetchReports) refetchReports();
+            setReviewModerateModal(null);
+            setReviewModerateReason('');
+        } catch (err: any) {
+            alert(err?.response?.data?.message || "Failed to moderate review.");
+        } finally {
+            setReviewModerateLoading(false);
+        }
+    };
+
+    const handleSaveReportStatus = async () => {
+        if (!reportStatusModal) return;
+        setReportActionLoading(reportStatusModal.id);
+        try {
+            await api.patch(`/admin/reports/${reportStatusModal.id}/status`, {
+                status: reportNewStatus,
+                adminNote: reportAdminNote.trim() || undefined
+            });
+            refetchReports();
+            setReportStatusModal(null);
+            setReportNewStatus('');
+            setReportAdminNote('');
+        } catch (err: any) {
+            alert(err?.response?.data?.message || "Failed to update report status.");
+        } finally {
+            setReportActionLoading(null);
+        }
+    };
+
+    const handleExecuteReportAction = async () => {
+        if (!reportDirectActionModal) return;
+        if (!reportDirectReason.trim()) {
+            alert("Please provide a reason for this action.");
+            return;
+        }
+        setReportActionLoading(reportDirectActionModal.id);
+        try {
+            await api.post(`/admin/reports/${reportDirectActionModal.id}/action`, {
+                action: reportDirectAction,
+                reason: reportDirectReason.trim()
+            });
+            refetchReports();
+            refetchJobs();
+            refetchReviews();
+            setReportDirectActionModal(null);
+            setReportDirectAction('');
+            setReportDirectReason('');
+        } catch (err: any) {
+            alert(err?.response?.data?.message || "Failed to perform action.");
+        } finally {
+            setReportActionLoading(null);
+        }
+    };
+
+    const handleSaveCategory = async () => {
+        if (!catEditModal) return;
+        if (!catEditModal.name.trim()) {
+            setCatError("Category name is required.");
+            return;
+        }
+        if (catEditModal.name.trim().length > 100) {
+            setCatError("Category name cannot exceed 100 characters.");
+            return;
+        }
+        setCatLoading(true);
+        setCatError('');
+        try {
+            if (catEditModal.id) {
+                await api.put(`/admin/categories/${catEditModal.id}`, {
+                    name: catEditModal.name.trim(),
+                    description: catEditModal.description?.trim() || null,
+                    isActive: catEditModal.isActive
+                });
+            } else {
+                await api.post('/admin/categories', {
+                    name: catEditModal.name.trim(),
+                    description: catEditModal.description?.trim() || null
+                });
+            }
+            refetchCategories();
+            setCatEditModal(null);
+        } catch (err: any) {
+            setCatError(err?.response?.data?.message || "Failed to save category.");
+        } finally {
+            setCatLoading(false);
+        }
+    };
+
+    const handleToggleCategoryActive = async (cat: any) => {
+        try {
+            await api.put(`/admin/categories/${cat.id}`, {
+                name: cat.name,
+                description: cat.description,
+                isActive: !cat.isActive
+            });
+            refetchCategories();
+        } catch (err: any) {
+            alert(err?.response?.data?.message || "Failed to update category.");
+        }
+    };
+
+    const handleDeleteCategory = async () => {
+        if (!catDeleteConfirm) return;
+        setCatLoading(true);
+        try {
+            await api.delete(`/admin/categories/${catDeleteConfirm.id}`);
+            refetchCategories();
+            setCatDeleteConfirm(null);
+        } catch (err: any) {
+            alert(err?.response?.data?.message || "Failed to delete category.");
+        } finally {
+            setCatLoading(false);
+        }
+    };
+
+    const handleSaveLocation = async () => {
+        if (!locEditModal) return;
+        if (!locEditModal.name.trim()) {
+            setLocError("Location name is required.");
+            return;
+        }
+        if (locEditModal.name.trim().length > 100) {
+            setLocError("Location name cannot exceed 100 characters.");
+            return;
+        }
+        setLocLoading(true);
+        setLocError('');
+        try {
+            if (locEditModal.id) {
+                await api.put(`/admin/locations/${locEditModal.id}`, {
+                    name: locEditModal.name.trim(),
+                    stateOrProvince: locEditModal.stateOrProvince?.trim() || null,
+                    country: locEditModal.country?.trim() || "Sri Lanka",
+                    isActive: locEditModal.isActive
+                });
+            } else {
+                await api.post('/admin/locations', {
+                    name: locEditModal.name.trim(),
+                    stateOrProvince: locEditModal.stateOrProvince?.trim() || null,
+                    country: locEditModal.country?.trim() || "Sri Lanka"
+                });
+            }
+            refetchLocations();
+            setLocEditModal(null);
+        } catch (err: any) {
+            setLocError(err?.response?.data?.message || "Failed to save location.");
+        } finally {
+            setLocLoading(false);
+        }
+    };
+
+    const handleToggleLocationActive = async (loc: any) => {
+        try {
+            await api.put(`/admin/locations/${loc.id}`, {
+                name: loc.name,
+                stateOrProvince: loc.stateOrProvince,
+                country: loc.country,
+                isActive: !loc.isActive
+            });
+            refetchLocations();
+        } catch (err: any) {
+            alert(err?.response?.data?.message || "Failed to update location.");
+        }
+    };
+
+    const handleDeleteLocation = async () => {
+        if (!locDeleteConfirm) return;
+        setLocLoading(true);
+        try {
+            await api.delete(`/admin/locations/${locDeleteConfirm.id}`);
+            refetchLocations();
+            setLocDeleteConfirm(null);
+        } catch (err: any) {
+            alert(err?.response?.data?.message || "Failed to delete location.");
+        } finally {
+            setLocLoading(false);
         }
     };
 
@@ -760,6 +1025,38 @@ export default function AdminDashboard() {
                         )}
                     </button>
 
+                    <button 
+                        onClick={() => setActiveTab('reports')} 
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'reports' ? 'bg-orange text-white shadow-sm' : 'text-gray-700 hover:bg-peach'}`}
+                    >
+                        <LuFlag className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <span>Reports Moderation</span>
+                    </button>
+
+                    <button 
+                        onClick={() => setActiveTab('categories')} 
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'categories' ? 'bg-orange text-white shadow-sm' : 'text-gray-700 hover:bg-peach'}`}
+                    >
+                        <LuTag className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <span>Manage Categories</span>
+                    </button>
+
+                    <button 
+                        onClick={() => setActiveTab('locations')} 
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'locations' ? 'bg-orange text-white shadow-sm' : 'text-gray-700 hover:bg-peach'}`}
+                    >
+                        <LuMapPin className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <span>Manage Locations</span>
+                    </button>
+
+                    <button 
+                        onClick={() => setActiveTab('payments')} 
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-orange text-white shadow-sm' : 'text-gray-700 hover:bg-peach'}`}
+                    >
+                        <LuCreditCard className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <span>Platform Payments</span>
+                    </button>
+
                     <div className="border-t border-gray-100 my-2 mx-1"></div>
 
                     <button 
@@ -807,6 +1104,10 @@ export default function AdminDashboard() {
                         <option value="reviews">Manage Reviews</option>
                         <option value="verifications">ID Verifications (Seeker)</option>
                         <option value="employer-verifications">ID Verifications (Employer)</option>
+                        <option value="reports">Reports Moderation</option>
+                        <option value="categories">Manage Categories</option>
+                        <option value="locations">Manage Locations</option>
+                        <option value="payments">Platform Payments</option>
                         <option value="profile">Profile & Security</option>
                         <option value="settings">Settings (Redirect)</option>
                     </select>
@@ -2291,12 +2592,38 @@ export default function AdminDashboard() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button 
-                                                    onClick={() => handleToggleReviewVisibility(r.id)}
-                                                    className={`${!r.isHidden ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
-                                                >
-                                                    {!r.isHidden ? 'Hide' : 'Show'}
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {!r.isHidden ? (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setReviewModerateModal({ id: r.id, action: 'Hide', headline: r.headline });
+                                                                setReviewModerateReason('');
+                                                            }}
+                                                            className="text-amber-600 hover:text-amber-900 bg-amber-50 px-2.5 py-1 rounded text-xs font-medium border border-amber-200"
+                                                        >
+                                                            Hide
+                                                        </button>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setReviewModerateModal({ id: r.id, action: 'Unhide', headline: r.headline });
+                                                                setReviewModerateReason('');
+                                                            }}
+                                                            className="text-green-600 hover:text-green-900 bg-green-50 px-2.5 py-1 rounded text-xs font-medium border border-green-200"
+                                                        >
+                                                            Unhide
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => {
+                                                            setReviewModerateModal({ id: r.id, action: 'Delete', headline: r.headline });
+                                                            setReviewModerateReason('');
+                                                        }}
+                                                        className="text-red-600 hover:text-red-900 bg-red-50 px-2.5 py-1 rounded text-xs font-medium border border-red-200"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -2468,6 +2795,785 @@ export default function AdminDashboard() {
                             <div className="flex space-x-2">
                                 <button disabled={employerVerificationsPage === 1} onClick={() => setEmployerVerificationsPage(p => p - 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronLeft className="w-4 h-4"/></button>
                                 <button disabled={employerVerificationsPage * 10 >= totalEmployerVerifications} onClick={() => setEmployerVerificationsPage(p => p + 1)} className="p-1 border rounded disabled:opacity-50"><LuChevronRight className="w-4 h-4"/></button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* REPORTS MODERATION TAB */}
+                {activeTab === 'reports' && (
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-xl font-display font-bold text-charcoal">Reports Moderation</h3>
+                                <p className="text-xs text-gray-500 mt-1">Review flagged jobs and company reviews submitted by community members.</p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <select
+                                    value={reportsStatusFilter}
+                                    onChange={(e) => { setReportsStatusFilter(e.target.value); setReportsPage(1); }}
+                                    className="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-orange"
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Reviewed">Reviewed</option>
+                                    <option value="Resolved">Resolved</option>
+                                    <option value="Dismissed">Dismissed</option>
+                                </select>
+                                <select
+                                    value={reportsTypeFilter}
+                                    onChange={(e) => { setReportsTypeFilter(e.target.value); setReportsPage(1); }}
+                                    className="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-orange"
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="Job">Job Postings</option>
+                                    <option value="Review">Company Reviews</option>
+                                </select>
+                                <div className="flex items-center border border-gray-200 rounded-lg px-2.5 py-1.5 bg-gray-50">
+                                    <LuSearch className="w-4 h-4 text-gray-400 mr-2" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search reports..."
+                                        className="bg-transparent outline-none text-xs w-40 sm:w-48 text-charcoal"
+                                        value={searchReport}
+                                        onChange={(e) => { setSearchReport(e.target.value); setReportsPage(1); }}
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => refetchReports()}
+                                    className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+                                    title="Refresh"
+                                >
+                                    <LuRefreshCw className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Mobile Card View (375px responsive) */}
+                        <div className="block lg:hidden divide-y divide-gray-100">
+                            {(!reportsData?.data || reportsData.data.length === 0) ? (
+                                <div className="p-8 text-center text-gray-400 text-sm">No reports match your filters.</div>
+                            ) : (
+                                reportsData.data.map((r: any) => (
+                                    <div key={r.id} className="p-4 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                                                r.reportType === 'Job' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-purple-50 text-purple-700 border border-purple-200'
+                                            }`}>
+                                                {r.reportType} Report #{r.id}
+                                            </span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                r.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                                                r.status === 'Reviewed' ? 'bg-blue-100 text-blue-800' :
+                                                r.status === 'Dismissed' ? 'bg-gray-100 text-gray-700' :
+                                                'bg-amber-100 text-amber-800'
+                                            }`}>
+                                                {r.status}
+                                            </span>
+                                        </div>
+
+                                        <div>
+                                            <div className="text-xs text-gray-500 uppercase font-bold">Target Summary</div>
+                                            <div className="text-sm font-semibold text-charcoal">{r.targetSummary}</div>
+                                            <div className="text-xs text-gray-400">Target ID: #{r.targetId ?? 'N/A'}</div>
+                                        </div>
+
+                                        <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-xs">
+                                            <div className="font-semibold text-charcoal mb-0.5">Reason: {r.reason}</div>
+                                            {r.description && <p className="text-gray-600 italic">"{r.description}"</p>}
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-xs text-gray-400">
+                                            <span>Reporter: <strong className="text-gray-600">{r.reporterName}</strong></span>
+                                            <span>{new Date(r.createdAt).toLocaleDateString()}</span>
+                                        </div>
+
+                                        {r.adminNote && (
+                                            <div className="text-xs bg-amber-50 border border-amber-200 rounded p-2 text-amber-800">
+                                                <strong>Admin Note:</strong> {r.adminNote}
+                                            </div>
+                                        )}
+
+                                        <div className="pt-2 flex flex-wrap gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setReportStatusModal({ id: r.id, currentStatus: r.status });
+                                                    setReportNewStatus(r.status);
+                                                    setReportAdminNote(r.adminNote || '');
+                                                }}
+                                                className="px-3 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg transition-colors"
+                                            >
+                                                Update Status
+                                            </button>
+                                            {r.reportType === 'Job' && (
+                                                <button
+                                                    onClick={() => {
+                                                        setReportDirectActionModal({ id: r.id, type: 'Job' });
+                                                        setReportDirectAction('CloseJob');
+                                                        setReportDirectReason(`Closed due to community report #${r.id}: ${r.reason}`);
+                                                    }}
+                                                    className="px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition-colors"
+                                                >
+                                                    Close Job
+                                                </button>
+                                            )}
+                                            {r.reportType === 'Review' && (
+                                                <>
+                                                    <button
+                                                        onClick={() => {
+                                                            setReportDirectActionModal({ id: r.id, type: 'Review' });
+                                                            setReportDirectAction('HideReview');
+                                                            setReportDirectReason(`Hidden due to community report #${r.id}: ${r.reason}`);
+                                                        }}
+                                                        className="px-3 py-1.5 text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg transition-colors"
+                                                    >
+                                                        Hide Review
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setReportDirectActionModal({ id: r.id, type: 'Review' });
+                                                            setReportDirectAction('DeleteReview');
+                                                            setReportDirectReason(`Deleted due to community report #${r.id}: ${r.reason}`);
+                                                        }}
+                                                        className="px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition-colors"
+                                                    >
+                                                        Delete Review
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden lg:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50/60">
+                                    <tr>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type / ID</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Target</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reporter</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reason & Details</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Note</th>
+                                        <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {(!reportsData?.data || reportsData.data.length === 0) ? (
+                                        <tr>
+                                            <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-400">
+                                                No reports found matching your criteria.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        reportsData.data.map((r: any) => (
+                                            <tr key={r.id} className="hover:bg-gray-50/80 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                                                        r.reportType === 'Job' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                    }`}>
+                                                        {r.reportType} #{r.id}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 max-w-xs">
+                                                    <div className="text-sm font-semibold text-charcoal truncate" title={r.targetSummary}>{r.targetSummary}</div>
+                                                    <div className="text-xs text-gray-400">ID: #{r.targetId ?? 'N/A'}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                    {r.reporterName}
+                                                </td>
+                                                <td className="px-6 py-4 max-w-xs text-xs">
+                                                    <div className="font-semibold text-charcoal">{r.reason}</div>
+                                                    {r.description && <div className="text-gray-500 truncate" title={r.description}>{r.description}</div>}
+                                                    <div className="text-gray-400 mt-1">{new Date(r.createdAt).toLocaleDateString()}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        r.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                                                        r.status === 'Reviewed' ? 'bg-blue-100 text-blue-800' :
+                                                        r.status === 'Dismissed' ? 'bg-gray-100 text-gray-700' :
+                                                        'bg-amber-100 text-amber-800'
+                                                    }`}>
+                                                        {r.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 max-w-xs text-xs text-gray-600">
+                                                    {r.adminNote ? (
+                                                        <span className="truncate block" title={r.adminNote}>{r.adminNote}</span>
+                                                    ) : (
+                                                        <span className="text-gray-400 italic">None</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <button
+                                                            onClick={() => {
+                                                                setReportStatusModal({ id: r.id, currentStatus: r.status });
+                                                                setReportNewStatus(r.status);
+                                                                setReportAdminNote(r.adminNote || '');
+                                                            }}
+                                                            className="text-gray-700 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded transition-colors"
+                                                        >
+                                                            Status
+                                                        </button>
+                                                        {r.reportType === 'Job' && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setReportDirectActionModal({ id: r.id, type: 'Job' });
+                                                                    setReportDirectAction('CloseJob');
+                                                                    setReportDirectReason(`Closed due to community report #${r.id}: ${r.reason}`);
+                                                                }}
+                                                                className="text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded transition-colors"
+                                                            >
+                                                                Close Job
+                                                            </button>
+                                                        )}
+                                                        {r.reportType === 'Review' && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setReportDirectActionModal({ id: r.id, type: 'Review' });
+                                                                        setReportDirectAction('HideReview');
+                                                                        setReportDirectReason(`Hidden due to community report #${r.id}: ${r.reason}`);
+                                                                    }}
+                                                                    className="text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded transition-colors"
+                                                                >
+                                                                    Hide
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setReportDirectActionModal({ id: r.id, type: 'Review' });
+                                                                        setReportDirectAction('DeleteReview');
+                                                                        setReportDirectReason(`Deleted due to community report #${r.id}: ${r.reason}`);
+                                                                    }}
+                                                                    className="text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded transition-colors"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="px-6 py-3.5 bg-white flex items-center justify-between border-t border-gray-100 text-xs text-gray-500">
+                            <span>Total Reports: <strong>{reportsData?.totalCount ?? 0}</strong></span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    disabled={reportsPage <= 1}
+                                    onClick={() => setReportsPage(p => p - 1)}
+                                    className="p-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40"
+                                >
+                                    <LuChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="font-semibold">Page {reportsPage}</span>
+                                <button
+                                    disabled={reportsPage * 20 >= (reportsData?.totalCount ?? 0)}
+                                    onClick={() => setReportsPage(p => p + 1)}
+                                    className="p-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40"
+                                >
+                                    <LuChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* CATEGORIES MANAGEMENT TAB */}
+                {activeTab === 'categories' && (
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-xl font-display font-bold text-charcoal">Manage Job Categories</h3>
+                                <p className="text-xs text-gray-500 mt-1">Configure industry job categories. Categories linked to active jobs cannot be deleted, but may be disabled.</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setCatEditModal({ name: '', description: '', isActive: true });
+                                    setCatError('');
+                                }}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange text-white text-xs font-semibold rounded-lg hover:bg-orange/90 shadow-sm transition-colors"
+                            >
+                                <LuPlus className="w-4 h-4" />
+                                <span>Add Category</span>
+                            </button>
+                        </div>
+
+                        {/* Mobile Cards */}
+                        <div className="block md:hidden divide-y divide-gray-100">
+                            {(!categoriesData?.data || categoriesData.data.length === 0) ? (
+                                <div className="p-8 text-center text-gray-400 text-sm">No categories available.</div>
+                            ) : (
+                                categoriesData.data.map((cat: any) => (
+                                    <div key={cat.id} className="p-4 space-y-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-sm text-charcoal">{cat.name}</span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                cat.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {cat.isActive ? 'Active' : 'Disabled'}
+                                            </span>
+                                        </div>
+                                        {cat.description && <p className="text-xs text-gray-500">{cat.description}</p>}
+                                        <div className="text-xs text-gray-400">
+                                            Jobs Assigned: <strong className="text-gray-700">{cat.jobCount}</strong>
+                                        </div>
+                                        <div className="pt-2 flex items-center justify-end gap-2 border-t border-gray-50">
+                                            <button
+                                                onClick={() => {
+                                                    setCatEditModal({ id: cat.id, name: cat.name, description: cat.description || '', isActive: cat.isActive });
+                                                    setCatError('');
+                                                }}
+                                                className="px-2.5 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleToggleCategoryActive(cat)}
+                                                className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                                                    cat.isActive ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-green-50 text-green-700 border border-green-200'
+                                                }`}
+                                            >
+                                                {cat.isActive ? 'Disable' : 'Enable'}
+                                            </button>
+                                            <button
+                                                onClick={() => setCatDeleteConfirm({ id: cat.id, name: cat.name })}
+                                                className="px-2.5 py-1 text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 rounded hover:bg-rose-100 transition-colors"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Desktop Table */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50/60">
+                                    <tr>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category Name</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Associated Jobs</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {(!categoriesData?.data || categoriesData.data.length === 0) ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-400">
+                                                No categories found. Click "Add Category" to create one.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        categoriesData.data.map((cat: any) => (
+                                            <tr key={cat.id} className="hover:bg-gray-50/80 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-charcoal">
+                                                    {cat.name}
+                                                </td>
+                                                <td className="px-6 py-4 text-xs text-gray-600 max-w-sm">
+                                                    {cat.description || <span className="text-gray-400 italic">No description</span>}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-100">
+                                                        {cat.jobCount} Jobs
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        cat.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {cat.isActive ? 'Active' : 'Disabled'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setCatEditModal({ id: cat.id, name: cat.name, description: cat.description || '', isActive: cat.isActive });
+                                                                setCatError('');
+                                                            }}
+                                                            className="text-gray-700 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded transition-colors"
+                                                            title="Edit Category"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleToggleCategoryActive(cat)}
+                                                            className={`px-2.5 py-1 rounded transition-colors ${
+                                                                cat.isActive ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200' : 'text-green-700 bg-green-50 hover:bg-green-100 border border-green-200'
+                                                            }`}
+                                                        >
+                                                            {cat.isActive ? 'Disable' : 'Enable'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setCatDeleteConfirm({ id: cat.id, name: cat.name })}
+                                                            className="text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded transition-colors"
+                                                            title="Delete Category"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* LOCATIONS MANAGEMENT TAB */}
+                {activeTab === 'locations' && (
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-xl font-display font-bold text-charcoal">Manage Locations</h3>
+                                <p className="text-xs text-gray-500 mt-1">Configure predefined cities and districts across Sri Lanka used in job postings and search filters.</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setLocEditModal({ name: '', stateOrProvince: '', country: 'Sri Lanka', isActive: true });
+                                    setLocError('');
+                                }}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange text-white text-xs font-semibold rounded-lg hover:bg-orange/90 shadow-sm transition-colors"
+                            >
+                                <LuPlus className="w-4 h-4" />
+                                <span>Add Location</span>
+                            </button>
+                        </div>
+
+                        {/* Mobile Cards */}
+                        <div className="block md:hidden divide-y divide-gray-100">
+                            {(!locationsData?.data || locationsData.data.length === 0) ? (
+                                <div className="p-8 text-center text-gray-400 text-sm">No locations available.</div>
+                            ) : (
+                                locationsData.data.map((loc: any) => (
+                                    <div key={loc.id} className="p-4 space-y-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-sm text-charcoal">{loc.name}</span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                loc.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {loc.isActive ? 'Active' : 'Disabled'}
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            {loc.stateOrProvince ? `${loc.stateOrProvince}, ` : ''}{loc.country}
+                                        </div>
+                                        <div className="pt-2 flex items-center justify-end gap-2 border-t border-gray-50">
+                                            <button
+                                                onClick={() => {
+                                                    setLocEditModal({ id: loc.id, name: loc.name, stateOrProvince: loc.stateOrProvince || '', country: loc.country || 'Sri Lanka', isActive: loc.isActive });
+                                                    setLocError('');
+                                                }}
+                                                className="px-2.5 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleToggleLocationActive(loc)}
+                                                className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                                                    loc.isActive ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-green-50 text-green-700 border border-green-200'
+                                                }`}
+                                            >
+                                                {loc.isActive ? 'Disable' : 'Enable'}
+                                            </button>
+                                            <button
+                                                onClick={() => setLocDeleteConfirm({ id: loc.id, name: loc.name })}
+                                                className="px-2.5 py-1 text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 rounded hover:bg-rose-100 transition-colors"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Desktop Table */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50/60">
+                                    <tr>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">City / Location</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">State / Province</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Country</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {(!locationsData?.data || locationsData.data.length === 0) ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-400">
+                                                No locations found. Click "Add Location" to create one.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        locationsData.data.map((loc: any) => (
+                                            <tr key={loc.id} className="hover:bg-gray-50/80 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-charcoal">
+                                                    {loc.name}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600">
+                                                    {loc.stateOrProvince || '—'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600">
+                                                    {loc.country}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        loc.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {loc.isActive ? 'Active' : 'Disabled'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setLocEditModal({ id: loc.id, name: loc.name, stateOrProvince: loc.stateOrProvince || '', country: loc.country || 'Sri Lanka', isActive: loc.isActive });
+                                                                setLocError('');
+                                                            }}
+                                                            className="text-gray-700 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded transition-colors"
+                                                            title="Edit Location"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleToggleLocationActive(loc)}
+                                                            className={`px-2.5 py-1 rounded transition-colors ${
+                                                                loc.isActive ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200' : 'text-green-700 bg-green-50 hover:bg-green-100 border border-green-200'
+                                                            }`}
+                                                        >
+                                                            {loc.isActive ? 'Disable' : 'Enable'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setLocDeleteConfirm({ id: loc.id, name: loc.name })}
+                                                            className="text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded transition-colors"
+                                                            title="Delete Location"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* PLATFORM PAYMENTS TAB (READ-ONLY) */}
+                {activeTab === 'payments' && (
+                    <div className="space-y-6">
+                        {/* Revenue Metrics Summary */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                                        Completed Revenue
+                                    </span>
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                        <LuCreditCard className="w-5 h-5" />
+                                    </div>
+                                </div>
+                                <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Total Revenue (Completed)</p>
+                                <p className="text-2xl font-display font-bold text-charcoal mt-1 truncate">
+                                    LKR {Number(paymentsData?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                            </div>
+
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full border border-violet-100">
+                                        Transactions
+                                    </span>
+                                    <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
+                                        <LuDollarSign className="w-5 h-5" />
+                                    </div>
+                                </div>
+                                <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Total Orders Processed</p>
+                                <p className="text-2xl font-display font-bold text-charcoal mt-1">
+                                    {(paymentsData?.totalCount || 0).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Payments Table Card */}
+                        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-xl font-display font-bold text-charcoal">Payment History (Read-Only)</h3>
+                                    <p className="text-xs text-gray-500 mt-1">Secure record of all job posting payments processed through the PayHere gateway.</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <select
+                                        value={paymentsStatusFilter}
+                                        onChange={(e) => { setPaymentsStatusFilter(e.target.value); setPaymentsPage(1); }}
+                                        className="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-orange"
+                                    >
+                                        <option value="">All Statuses</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Failed">Failed</option>
+                                    </select>
+                                    <div className="flex items-center border border-gray-200 rounded-lg px-2.5 py-1.5 bg-gray-50">
+                                        <LuSearch className="w-4 h-4 text-gray-400 mr-2" />
+                                        <input
+                                            type="text"
+                                            placeholder="Order, company, job..."
+                                            className="bg-transparent outline-none text-xs w-36 sm:w-44 text-charcoal"
+                                            value={searchPayment}
+                                            onChange={(e) => { setSearchPayment(e.target.value); setPaymentsPage(1); }}
+                                        />
+                                    </div>
+                                    <input
+                                        type="date"
+                                        value={paymentsDateFrom}
+                                        onChange={(e) => { setPaymentsDateFrom(e.target.value); setPaymentsPage(1); }}
+                                        className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-orange"
+                                        title="Date From"
+                                    />
+                                    <input
+                                        type="date"
+                                        value={paymentsDateTo}
+                                        onChange={(e) => { setPaymentsDateTo(e.target.value); setPaymentsPage(1); }}
+                                        className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-orange"
+                                        title="Date To"
+                                    />
+                                    <button
+                                        onClick={() => refetchPayments()}
+                                        className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+                                        title="Refresh Payments"
+                                    >
+                                        <LuRefreshCw className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Mobile Card View (375px responsive) */}
+                            <div className="block lg:hidden divide-y divide-gray-100">
+                                {(!paymentsData?.data || paymentsData.data.length === 0) ? (
+                                    <div className="p-8 text-center text-gray-400 text-sm">No payment records match your filters.</div>
+                                ) : (
+                                    paymentsData.data.map((p: any) => (
+                                        <div key={p.id} className="p-4 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-mono text-xs font-bold text-charcoal">#{p.orderId}</span>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                                    p.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                                    p.status === 'Failed' ? 'bg-red-100 text-red-800' :
+                                                    'bg-amber-100 text-amber-800'
+                                                }`}>
+                                                    {p.status}
+                                                </span>
+                                            </div>
+                                            <div className="text-sm font-bold text-charcoal">
+                                                {p.currency} {Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            </div>
+                                            <div className="text-xs text-gray-600">
+                                                <div><strong>Company:</strong> {p.company}</div>
+                                                <div><strong>Job:</strong> {p.jobTitle}</div>
+                                            </div>
+                                            <div className="text-xs text-gray-400 pt-1 border-t border-gray-50 flex items-center justify-between">
+                                                <span>Initiated: {new Date(p.createdAt).toLocaleDateString()}</span>
+                                                {p.completedAt && <span>Completed: {new Date(p.completedAt).toLocaleDateString()}</span>}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <div className="hidden lg:block overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50/60">
+                                        <tr>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Order ID</th>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Company</th>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Job Title</th>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-100">
+                                        {(!paymentsData?.data || paymentsData.data.length === 0) ? (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-400">
+                                                    No payment records found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            paymentsData.data.map((p: any) => (
+                                                <tr key={p.id} className="hover:bg-gray-50/80 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-xs font-mono font-bold text-charcoal">
+                                                        #{p.orderId}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                        {p.company}
+                                                    </td>
+                                                    <td className="px-6 py-4 max-w-xs text-xs text-charcoal truncate" title={p.jobTitle}>
+                                                        {p.jobTitle}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-charcoal">
+                                                        {p.currency} {Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                                            p.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                                            p.status === 'Failed' ? 'bg-red-100 text-red-800' :
+                                                            'bg-amber-100 text-amber-800'
+                                                        }`}>
+                                                            {p.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                                                        {new Date(p.createdAt).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            <div className="px-6 py-3.5 bg-white flex items-center justify-between border-t border-gray-100 text-xs text-gray-500">
+                                <span>Total Payments: <strong>{paymentsData?.totalCount ?? 0}</strong></span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={paymentsPage <= 1}
+                                        onClick={() => setPaymentsPage(p => p - 1)}
+                                        className="p-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40"
+                                    >
+                                        <LuChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <span className="font-semibold">Page {paymentsPage}</span>
+                                    <button
+                                        disabled={paymentsPage * 20 >= (paymentsData?.totalCount ?? 0)}
+                                        onClick={() => setPaymentsPage(p => p + 1)}
+                                        className="p-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40"
+                                    >
+                                        <LuChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3003,6 +4109,410 @@ export default function AdminDashboard() {
                                             <span>Confirm Demote</span>
                                         </>
                                     )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Report Status Modal */}
+                {reportStatusModal && (
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                <h3 className="font-bold text-charcoal">Update Report Status (#{reportStatusModal.id})</h3>
+                                <button onClick={() => setReportStatusModal(null)} className="text-gray-400 hover:text-gray-600">
+                                    <LuX className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Status</label>
+                                <select
+                                    value={reportNewStatus}
+                                    onChange={(e) => setReportNewStatus(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                >
+                                    <option value="Pending">Pending</option>
+                                    <option value="Reviewed">Reviewed</option>
+                                    <option value="Resolved">Resolved</option>
+                                    <option value="Dismissed">Dismissed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                                    Admin Note <span className="text-gray-400 normal-case">(Max 500 chars)</span>
+                                </label>
+                                <textarea
+                                    value={reportAdminNote}
+                                    onChange={(e) => setReportAdminNote(e.target.value.slice(0, 500))}
+                                    placeholder="Enter administrative notes for resolution or internal tracking..."
+                                    rows={3}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                />
+                                <div className="text-right text-[11px] text-gray-400">{reportAdminNote.length} / 500</div>
+                            </div>
+                            {reportNewStatus === 'Resolved' && (
+                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 flex items-start gap-2">
+                                    <LuInfo className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span>Setting status to <strong>Resolved</strong> will automatically dispatch a notification to the reporter.</span>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    onClick={() => setReportStatusModal(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveReportStatus}
+                                    disabled={reportActionLoading === reportStatusModal.id}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-lg shadow-sm disabled:opacity-50"
+                                >
+                                    {reportActionLoading === reportStatusModal.id ? 'Saving...' : 'Save Status'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Report Direct Action Modal */}
+                {reportDirectActionModal && (
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                <h3 className="font-bold text-charcoal">
+                                    Direct Action on Report #{reportDirectActionModal.id}
+                                </h3>
+                                <button onClick={() => setReportDirectActionModal(null)} className="text-gray-400 hover:text-gray-600">
+                                    <LuX className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {reportDirectActionModal.type === 'Job' && (
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+                                    <strong>Action: Close Job Posting</strong>
+                                    <p className="mt-1">This will immediately set the job status to Closed (ClosedByAdmin=true) and notify the employer.</p>
+                                </div>
+                            )}
+
+                            {reportDirectActionModal.type === 'Review' && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Select Action</label>
+                                    <select
+                                        value={reportDirectAction}
+                                        onChange={(e) => setReportDirectAction(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    >
+                                        <option value="HideReview">Hide Review</option>
+                                        <option value="DeleteReview">Delete Review Permanently</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                                    Reason <span className="text-red-500">*</span> <span className="text-gray-400 normal-case">(Will be sent in notification)</span>
+                                </label>
+                                <textarea
+                                    value={reportDirectReason}
+                                    onChange={(e) => setReportDirectReason(e.target.value.slice(0, 500))}
+                                    placeholder="Enter the reason for this action..."
+                                    rows={3}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                />
+                                <div className="text-right text-[11px] text-gray-400">{reportDirectReason.length} / 500</div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    onClick={() => setReportDirectActionModal(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleExecuteReportAction}
+                                    disabled={reportActionLoading === reportDirectActionModal.id || !reportDirectReason.trim()}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50"
+                                >
+                                    {reportActionLoading === reportDirectActionModal.id ? 'Processing...' : 'Execute Action'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Review Moderate Modal */}
+                {reviewModerateModal && (
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                <h3 className="font-bold text-charcoal">
+                                    {reviewModerateModal.action} Review (#{reviewModerateModal.id})
+                                </h3>
+                                <button onClick={() => setReviewModerateModal(null)} className="text-gray-400 hover:text-gray-600">
+                                    <LuX className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-600">
+                                Headline: <strong>&quot;{reviewModerateModal.headline}&quot;</strong>
+                            </p>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                                    Reason <span className="text-red-500">*</span> <span className="text-gray-400 normal-case">(Required for audit log & seeker notification)</span>
+                                </label>
+                                <textarea
+                                    value={reviewModerateReason}
+                                    onChange={(e) => setReviewModerateReason(e.target.value)}
+                                    placeholder="Enter detailed reason for moderating this review..."
+                                    rows={3}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                />
+                            </div>
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    onClick={() => setReviewModerateModal(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleModerateReview}
+                                    disabled={reviewModerateLoading || !reviewModerateReason.trim()}
+                                    className={`px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-sm disabled:opacity-50 ${
+                                        reviewModerateModal.action === 'Delete' ? 'bg-rose-600 hover:bg-rose-700' :
+                                        reviewModerateModal.action === 'Hide' ? 'bg-amber-600 hover:bg-amber-700' :
+                                        'bg-green-600 hover:bg-green-700'
+                                    }`}
+                                >
+                                    {reviewModerateLoading ? 'Processing...' : `Confirm ${reviewModerateModal.action}`}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Category Edit/Create Modal */}
+                {catEditModal && (
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                <h3 className="font-bold text-charcoal">
+                                    {catEditModal.id ? `Edit Category: ${catEditModal.name}` : 'Create New Category'}
+                                </h3>
+                                <button onClick={() => setCatEditModal(null)} className="text-gray-400 hover:text-gray-600">
+                                    <LuX className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {catError && (
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+                                    {catError}
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                                    Name <span className="text-red-500">*</span> <span className="text-gray-400 normal-case">(Max 100 chars, unique)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={catEditModal.name}
+                                    onChange={(e) => setCatEditModal({ ...catEditModal, name: e.target.value.slice(0, 100) })}
+                                    placeholder="e.g. Information Technology"
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                />
+                                <div className="text-right text-[11px] text-gray-400">{catEditModal.name.length} / 100</div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                                    Description <span className="text-gray-400 normal-case">(Optional, max 500 chars)</span>
+                                </label>
+                                <textarea
+                                    value={catEditModal.description}
+                                    onChange={(e) => setCatEditModal({ ...catEditModal, description: e.target.value.slice(0, 500) })}
+                                    placeholder="Brief summary of jobs included under this category..."
+                                    rows={3}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                />
+                            </div>
+
+                            {catEditModal.id && (
+                                <label className="flex items-center gap-2 cursor-pointer pt-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={catEditModal.isActive}
+                                        onChange={(e) => setCatEditModal({ ...catEditModal, isActive: e.target.checked })}
+                                        className="w-4 h-4 text-orange focus:ring-orange rounded"
+                                    />
+                                    <span className="text-xs font-semibold text-gray-700">Is Active (Visible for new postings)</span>
+                                </label>
+                            )}
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    onClick={() => setCatEditModal(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveCategory}
+                                    disabled={catLoading || !catEditModal.name.trim()}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-lg shadow-sm disabled:opacity-50"
+                                >
+                                    {catLoading ? 'Saving...' : 'Save Category'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Category Delete Confirm Modal */}
+                {catDeleteConfirm && (
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+                            <div className="flex items-center gap-3 text-rose-600">
+                                <LuTriangleAlert className="w-6 h-6 shrink-0" />
+                                <h3 className="font-bold text-charcoal">Delete Category</h3>
+                            </div>
+                            <p className="text-xs text-gray-600">
+                                Are you sure you want to delete <strong>&quot;{catDeleteConfirm.name}&quot;</strong>? If jobs are currently assigned to this category, the deletion will be blocked and you must disable it instead.
+                            </p>
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    onClick={() => setCatDeleteConfirm(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDeleteCategory}
+                                    disabled={catLoading}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50"
+                                >
+                                    {catLoading ? 'Deleting...' : 'Confirm Delete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Location Edit/Create Modal */}
+                {locEditModal && (
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                <h3 className="font-bold text-charcoal">
+                                    {locEditModal.id ? `Edit Location: ${locEditModal.name}` : 'Create New Location'}
+                                </h3>
+                                <button onClick={() => setLocEditModal(null)} className="text-gray-400 hover:text-gray-600">
+                                    <LuX className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {locError && (
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+                                    {locError}
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                                    City / Location Name <span className="text-red-500">*</span> <span className="text-gray-400 normal-case">(Max 100 chars, unique)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={locEditModal.name}
+                                    onChange={(e) => setLocEditModal({ ...locEditModal, name: e.target.value.slice(0, 100) })}
+                                    placeholder="e.g. Colombo"
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                                    State / Province / District <span className="text-gray-400 normal-case">(Max 100 chars)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={locEditModal.stateOrProvince}
+                                    onChange={(e) => setLocEditModal({ ...locEditModal, stateOrProvince: e.target.value.slice(0, 100) })}
+                                    placeholder="e.g. Western Province"
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                                    Country <span className="text-gray-400 normal-case">(Max 100 chars)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={locEditModal.country}
+                                    onChange={(e) => setLocEditModal({ ...locEditModal, country: e.target.value.slice(0, 100) })}
+                                    placeholder="e.g. Sri Lanka"
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                />
+                            </div>
+
+                            {locEditModal.id && (
+                                <label className="flex items-center gap-2 cursor-pointer pt-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={locEditModal.isActive}
+                                        onChange={(e) => setLocEditModal({ ...locEditModal, isActive: e.target.checked })}
+                                        className="w-4 h-4 text-orange focus:ring-orange rounded"
+                                    />
+                                    <span className="text-xs font-semibold text-gray-700">Is Active</span>
+                                </label>
+                            )}
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    onClick={() => setLocEditModal(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveLocation}
+                                    disabled={locLoading || !locEditModal.name.trim()}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-lg shadow-sm disabled:opacity-50"
+                                >
+                                    {locLoading ? 'Saving...' : 'Save Location'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Location Delete Confirm Modal */}
+                {locDeleteConfirm && (
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+                            <div className="flex items-center gap-3 text-rose-600">
+                                <LuTriangleAlert className="w-6 h-6 shrink-0" />
+                                <h3 className="font-bold text-charcoal">Delete Location</h3>
+                            </div>
+                            <p className="text-xs text-gray-600">
+                                Are you sure you want to delete <strong>&quot;{locDeleteConfirm.name}&quot;</strong>?
+                            </p>
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <button
+                                    onClick={() => setLocDeleteConfirm(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDeleteLocation}
+                                    disabled={locLoading}
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50"
+                                >
+                                    {locLoading ? 'Deleting...' : 'Confirm Delete'}
                                 </button>
                             </div>
                         </div>

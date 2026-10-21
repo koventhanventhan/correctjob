@@ -148,6 +148,14 @@ function JobsContent() {
         }
     });
 
+    const { data: locations } = useQuery({
+        queryKey: ['locations'],
+        queryFn: async () => {
+            const res = await api.get('/locations');
+            return res.data;
+        }
+    });
+
     const openSaveAlertModal = () => {
         if (!user) {
             router.push('/login?redirect=/jobs');
@@ -248,14 +256,22 @@ function JobsContent() {
                                 />
                             </div>
                             <div className="relative sm:col-span-1 lg:col-span-3">
-                                <LuMapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                                <input 
-                                    type="text" 
+                                <LuMapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+                                <select 
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
-                                    placeholder="City, state, or location..."
                                     className="pl-10 pr-4 py-2.5 w-full bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none text-charcoal text-sm"
-                                />
+                                >
+                                    <option value="">All Locations</option>
+                                    {location && !locations?.some((l: any) => l.name.toLowerCase() === location.toLowerCase()) && (
+                                        <option value={location}>{location} (Current Filter)</option>
+                                    )}
+                                    {locations?.map((loc: any) => (
+                                        <option key={loc.id} value={loc.name}>
+                                            {loc.name}{loc.stateOrProvince ? `, ${loc.stateOrProvince}` : ''}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="sm:col-span-1 lg:col-span-3">
                                 <select 

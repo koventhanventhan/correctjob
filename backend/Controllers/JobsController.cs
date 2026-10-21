@@ -829,6 +829,12 @@ namespace HireConnect.API.Controllers
             var (isQuestionsValid, questionsError) = ValidateScreeningQuestions(model.ScreeningQuestions);
             if (!isQuestionsValid) return BadRequest(new { message = questionsError });
 
+            var category = await _context.Categories.FindAsync(model.CategoryId);
+            if (category == null || !category.IsActive)
+            {
+                return BadRequest(new { message = "Selected category is not active or does not exist." });
+            }
+
             var job = new Job
             {
                 CompanyId = company.Id,
@@ -905,6 +911,15 @@ namespace HireConnect.API.Controllers
             // Whitelist QuestionType (Text, YesNo, Number), max 10 questions, lengths <= 300
             var (isQuestionsValid, questionsError) = ValidateScreeningQuestions(model.ScreeningQuestions);
             if (!isQuestionsValid) return BadRequest(new { message = questionsError });
+
+            if (job.CategoryId != model.CategoryId)
+            {
+                var newCat = await _context.Categories.FindAsync(model.CategoryId);
+                if (newCat == null || !newCat.IsActive)
+                {
+                    return BadRequest(new { message = "Selected category is not active or does not exist." });
+                }
+            }
 
             if (job.Status == "Published")
             {

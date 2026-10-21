@@ -1,5 +1,6 @@
 using HireConnect.API.Data;
 using HireConnect.API.Models;
+using HireConnect.API.DTOs.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -1069,6 +1070,667 @@ namespace HireConnect.API.Controllers
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
             await _auditLogService.LogAsync(currentAdminId, "SECURITY_TEST", "SecurityTest", "1", request.Text, ip);
             return Ok(new { message = "Logged successfully." });
+        }
+
+        // =============================================
+        // REPORTS MODERATION
+        // =============================================
+
+        [HttpGet("reports")]
+        public async Task<IActionResult> GetReports(
+            [FromQuery] string? status,
+            [FromQuery] string? type,
+            [FromQuery] string? search,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            pageSize = Math.Clamp(pageSize, 1, 50);
+            page = Math.Max(1, page);
+
+            var query = _context.Reports
+                .Include(r => r.User)
+                .Include(r => r.Job)
+                .Include(r => r.Review)
+                .AsQueryable();
+
+            var validStatuses = new[] { "Pending", "Reviewed", "Resolved", "Dismissed" };
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                var matchedStatus = validStatuses.FirstOrDefault(s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase));
+                if (matchedStatus != null)
+                {
+                    query = query.Where(r => r.Status == matchedStatus);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(type))
+            {
+                if (string.Equals(type, "Job", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(r => r.JobId != null);
+                }
+                else if (string.Equals(type, "Review", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(r => r.ReviewId != null);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var trimmed = search.Trim();
+                query = query.Where(r =>
+                    r.Reason.Contains(trimmed) ||
+                    (r.Description != null && r.Description.Contains(trimmed)) ||
+                    r.User.FullName.Contains(trimmed) ||
+                    (r.Job != null && r.Job.Title.Contains(trimmed)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var reports = await query
+                .OrderByDescending(r => r.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(r => new AdminReportListDto
+                {
+                    Id = r.Id,
+                    ReporterName = r.User.FullName,
+                    ReportType = r.JobId != null ? "Job" : "Review",
+                    TargetSummary = r.JobId != null
+                        ? (r.Job != null ? r.Job.Title : "Deleted Job")
+                        : (r.Review != null ? (r.Review.Headline.Length > 80 ? r.Review.Headline.Substring(0, 80) + "..." : r.Review.Headline) : "Deleted Review"),
+                    TargetId = r.JobId ?? r.ReviewId,
+                    Reason = r.Reason,
+                    Description = r.Description,
+                    Status = r.Status,
+                    AdminNote = r.AdminNote,
+                    CreatedAt = r.CreatedAt,
+                    ResolvedAt = r.ResolvedAt
+                })
+                .ToListAsync();
+
+            return Ok(new { data = reports, totalCount, page, pageSize });
+        }
+
+        [HttpPatch("reports/{id}/status")]
+        public async Task<IActionResult> UpdateReportStatus(int id, [FromBody] UpdateReportStatusDto dto)
+        {
+            var report = await _context.Reports.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
+            if (report == null) return NotFound(new { message = "Report not found." });
+
+            var validStatuses = new[] { "Pending", "Reviewed", "Resolved", "Dismissed" };
+            var matchedStatus = validStatuses.FirstOrDefault(s => string.Equals(s, dto.Status, StringComparison.OrdinalIgnoreCase));
+            if (matchedStatus == null)
+            {
+                return BadRequest(new { message = $"Invalid status '{dto.Status}'. Valid values: {string.Join(", ", validStatuses)}" });
+            }
+
+            if (!string.IsNullOrEmpty(dto.AdminNote) && dto.AdminNote.Length > 500)
+            {
+                return BadRequest(new { message = "Admin note cannot exceed 500 characters." });
+            }
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            report.Status = matchedStatus;
+            report.AdminNote = dto.AdminNote?.Trim();
+
+            if (matchedStatus == "Resolved" || matchedStatus == "Dismissed")
+            {
+                report.ResolvedAt = DateTime.UtcNow;
+                report.ResolvedByAdminId = currentAdminId;
+            }
+
+            // Notify reporter when report is Resolved
+            if (matchedStatus == "Resolved")
+            {
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = report.UserId,
+                    Title = "Report Resolved",
+                    Message = $"Your report (#{report.Id}) has been reviewed and resolved by an administrator." +
+                              (!string.IsNullOrWhiteSpace(dto.AdminNote) ? $" Note: {dto.AdminNote.Trim()}" : ""),
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await _auditLogService.LogAsync(
+                currentAdminId,
+                "UPDATE_REPORT_STATUS",
+                "Report",
+                id.ToString(),
+                $"Report #{id} status changed to '{matchedStatus}'. Note: {dto.AdminNote?.Trim() ?? "None"}",
+                ip
+            );
+
+            return Ok(new { message = $"Report status updated to '{matchedStatus}'.", report.Id, report.Status });
+        }
+
+        [HttpPost("reports/{id}/action")]
+        public async Task<IActionResult> ReportDirectAction(int id, [FromBody] AdminReportActionDto dto)
+        {
+            var report = await _context.Reports
+                .Include(r => r.Job).ThenInclude(j => j!.Company)
+                .Include(r => r.Review).ThenInclude(rv => rv!.Company)
+                .FirstOrDefaultAsync(r => r.Id == id);
+            if (report == null) return NotFound(new { message = "Report not found." });
+
+            var validActions = new[] { "CloseJob", "HideReview", "DeleteReview" };
+            var matchedAction = validActions.FirstOrDefault(a => string.Equals(a, dto.Action, StringComparison.OrdinalIgnoreCase));
+            if (matchedAction == null)
+            {
+                return BadRequest(new { message = $"Invalid action '{dto.Action}'. Valid actions: {string.Join(", ", validActions)}" });
+            }
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            switch (matchedAction)
+            {
+                case "CloseJob":
+                    if (report.Job == null)
+                        return BadRequest(new { message = "This report is not associated with a job." });
+
+                    report.Job.Status = "Closed";
+                    report.Job.ClosedByAdmin = true;
+
+                    // Notify employer
+                    if (report.Job.Company?.EmployerId != null)
+                    {
+                        _context.Notifications.Add(new Notification
+                        {
+                            UserId = report.Job.Company.EmployerId,
+                            Title = "Job Closed by Admin",
+                            Message = $"Your job posting '{report.Job.Title}' has been closed by an administrator due to a report." +
+                                      (!string.IsNullOrWhiteSpace(dto.Reason) ? $" Reason: {dto.Reason.Trim()}" : ""),
+                            CreatedAt = DateTime.UtcNow,
+                            IsRead = false
+                        });
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await _auditLogService.LogAsync(currentAdminId, "CLOSE_JOB_FROM_REPORT", "Job", report.JobId.ToString(), $"Job '{report.Job.Title}' closed from report #{id}. Reason: {dto.Reason?.Trim() ?? "None"}", ip);
+                    break;
+
+                case "HideReview":
+                    if (report.Review == null)
+                        return BadRequest(new { message = "This report is not associated with a review." });
+
+                    report.Review.IsHidden = true;
+
+                    // Notify review author
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = report.Review.SeekerId,
+                        Title = "Review Hidden",
+                        Message = $"Your review '{report.Review.Headline}' has been hidden by an administrator." +
+                                  (!string.IsNullOrWhiteSpace(dto.Reason) ? $" Reason: {dto.Reason.Trim()}" : ""),
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    });
+
+                    await _context.SaveChangesAsync();
+                    await _auditLogService.LogAsync(currentAdminId, "HIDE_REVIEW_FROM_REPORT", "Review", report.ReviewId.ToString(), $"Review '{report.Review.Headline}' hidden from report #{id}. Reason: {dto.Reason?.Trim() ?? "None"}", ip);
+                    break;
+
+                case "DeleteReview":
+                    if (report.Review == null)
+                        return BadRequest(new { message = "This report is not associated with a review." });
+
+                    var reviewHeadline = report.Review.Headline;
+                    var reviewSeekerId = report.Review.SeekerId;
+                    var reviewId = report.ReviewId;
+
+                    // Notify review author before deletion
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = reviewSeekerId,
+                        Title = "Review Deleted",
+                        Message = $"Your review '{reviewHeadline}' has been deleted by an administrator." +
+                                  (!string.IsNullOrWhiteSpace(dto.Reason) ? $" Reason: {dto.Reason.Trim()}" : ""),
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    });
+
+                    // Nullify report's review FK before deleting the review
+                    report.ReviewId = null;
+                    _context.CompanyReviews.Remove(report.Review);
+
+                    await _context.SaveChangesAsync();
+                    await _auditLogService.LogAsync(currentAdminId, "DELETE_REVIEW_FROM_REPORT", "Review", reviewId.ToString(), $"Review '{reviewHeadline}' deleted from report #{id}. Reason: {dto.Reason?.Trim() ?? "None"}", ip);
+                    break;
+            }
+
+            return Ok(new { message = $"Action '{matchedAction}' completed successfully on report #{id}." });
+        }
+
+        // =============================================
+        // REVIEWS MODERATION (Enhanced)
+        // =============================================
+
+        [HttpPatch("reviews/{id}/moderate")]
+        public async Task<IActionResult> ModerateReview(int id, [FromBody] AdminReviewModerationDto dto)
+        {
+            var validActions = new[] { "Hide", "Unhide", "Delete" };
+            var matchedAction = validActions.FirstOrDefault(a => string.Equals(a, dto.Action, StringComparison.OrdinalIgnoreCase));
+            if (matchedAction == null)
+            {
+                return BadRequest(new { message = $"Invalid action '{dto.Action}'. Valid actions: {string.Join(", ", validActions)}" });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Reason))
+            {
+                return BadRequest(new { message = "Reason is required for review moderation." });
+            }
+
+            var review = await _context.CompanyReviews.Include(r => r.Company).FirstOrDefaultAsync(r => r.Id == id);
+            if (review == null) return NotFound(new { message = "Review not found." });
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            switch (matchedAction)
+            {
+                case "Hide":
+                    review.IsHidden = true;
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = review.SeekerId,
+                        Title = "Review Hidden",
+                        Message = $"Your review for '{review.Company?.CompanyName ?? "a company"}' has been hidden. Reason: {dto.Reason.Trim()}",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    });
+                    await _context.SaveChangesAsync();
+                    await _auditLogService.LogAsync(currentAdminId, "HIDE_REVIEW", "Review", id.ToString(), $"Review #{id} hidden. Reason: {dto.Reason.Trim()}", ip);
+                    return Ok(new { message = "Review hidden successfully.", review.Id, review.IsHidden });
+
+                case "Unhide":
+                    review.IsHidden = false;
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = review.SeekerId,
+                        Title = "Review Restored",
+                        Message = $"Your review for '{review.Company?.CompanyName ?? "a company"}' has been restored. Reason: {dto.Reason.Trim()}",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    });
+                    await _context.SaveChangesAsync();
+                    await _auditLogService.LogAsync(currentAdminId, "UNHIDE_REVIEW", "Review", id.ToString(), $"Review #{id} unhidden. Reason: {dto.Reason.Trim()}", ip);
+                    return Ok(new { message = "Review restored successfully.", review.Id, review.IsHidden });
+
+                case "Delete":
+                    var headline = review.Headline;
+                    var seekerId = review.SeekerId;
+                    var companyName = review.Company?.CompanyName ?? "a company";
+
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserId = seekerId,
+                        Title = "Review Deleted",
+                        Message = $"Your review for '{companyName}' has been permanently deleted. Reason: {dto.Reason.Trim()}",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    });
+
+                    // Nullify any reports referencing this review
+                    var relatedReports = await _context.Reports.Where(r => r.ReviewId == id).ToListAsync();
+                    foreach (var r in relatedReports) r.ReviewId = null;
+
+                    _context.CompanyReviews.Remove(review);
+                    await _context.SaveChangesAsync();
+                    await _auditLogService.LogAsync(currentAdminId, "DELETE_REVIEW", "Review", id.ToString(), $"Review '{headline}' for '{companyName}' deleted. Reason: {dto.Reason.Trim()}", ip);
+                    return Ok(new { message = "Review deleted successfully." });
+
+                default:
+                    return BadRequest(new { message = "Unknown action." });
+            }
+        }
+
+        // =============================================
+        // CATEGORIES MANAGEMENT
+        // =============================================
+
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetAdminCategories()
+        {
+            var categories = await _context.Categories
+                .OrderBy(c => c.Name)
+                .Select(c => new AdminCategoryListDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    IsActive = c.IsActive,
+                    JobCount = c.Jobs.Count
+                })
+                .ToListAsync();
+
+            return Ok(new { data = categories });
+        }
+
+        [HttpPost("categories")]
+        public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Trim().Length > 100)
+            {
+                return BadRequest(new { message = "Category name is required and must not exceed 100 characters." });
+            }
+
+            // Case-insensitive unique check
+            var exists = await _context.Categories.AnyAsync(c => c.Name.ToLower() == dto.Name.Trim().ToLower());
+            if (exists)
+            {
+                return Conflict(new { message = $"A category with the name '{dto.Name.Trim()}' already exists." });
+            }
+
+            var category = new Category
+            {
+                Name = dto.Name.Trim(),
+                Description = dto.Description?.Trim(),
+                IsActive = true
+            };
+
+            _context.Categories.Add(category);
+            await _context.SaveChangesAsync();
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _auditLogService.LogAsync(currentAdminId, "CREATE_CATEGORY", "Category", category.Id.ToString(), $"Category '{category.Name}' created.", ip);
+
+            return Ok(new
+            {
+                message = "Category created successfully.",
+                category = new AdminCategoryListDto
+                {
+                    Id = category.Id,
+                    Name = category.Name,
+                    Description = category.Description,
+                    IsActive = category.IsActive,
+                    JobCount = 0
+                }
+            });
+        }
+
+        [HttpPut("categories/{id}")]
+        public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return NotFound(new { message = "Category not found." });
+
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Trim().Length > 100)
+            {
+                return BadRequest(new { message = "Category name is required and must not exceed 100 characters." });
+            }
+
+            // Case-insensitive unique check (exclude self)
+            var duplicate = await _context.Categories.AnyAsync(c => c.Id != id && c.Name.ToLower() == dto.Name.Trim().ToLower());
+            if (duplicate)
+            {
+                return Conflict(new { message = $"A category with the name '{dto.Name.Trim()}' already exists." });
+            }
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var oldName = category.Name;
+            var oldIsActive = category.IsActive;
+
+            category.Name = dto.Name.Trim();
+            category.Description = dto.Description?.Trim();
+            category.IsActive = dto.IsActive;
+
+            await _context.SaveChangesAsync();
+            await _auditLogService.LogAsync(currentAdminId, "UPDATE_CATEGORY", "Category", id.ToString(), $"Category updated: '{oldName}' -> '{category.Name}', IsActive: {oldIsActive} -> {category.IsActive}", ip);
+
+            return Ok(new
+            {
+                message = "Category updated successfully.",
+                category = new AdminCategoryListDto
+                {
+                    Id = category.Id,
+                    Name = category.Name,
+                    Description = category.Description,
+                    IsActive = category.IsActive,
+                    JobCount = await _context.Jobs.CountAsync(j => j.CategoryId == id)
+                }
+            });
+        }
+
+        [HttpDelete("categories/{id}")]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return NotFound(new { message = "Category not found." });
+
+            var jobCount = await _context.Jobs.CountAsync(j => j.CategoryId == id);
+            if (jobCount > 0)
+            {
+                return BadRequest(new { message = $"Cannot delete category '{category.Name}' because it is used by {jobCount} job(s). Disable it instead." });
+            }
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+            await _auditLogService.LogAsync(currentAdminId, "DELETE_CATEGORY", "Category", id.ToString(), $"Category '{category.Name}' deleted.", ip);
+
+            return Ok(new { message = "Category deleted successfully." });
+        }
+
+        // =============================================
+        // LOCATIONS MANAGEMENT
+        // =============================================
+
+        [HttpGet("locations")]
+        public async Task<IActionResult> GetAdminLocations()
+        {
+            var locations = await _context.Locations
+                .OrderBy(l => l.Name)
+                .Select(l => new AdminLocationListDto
+                {
+                    Id = l.Id,
+                    Name = l.Name,
+                    StateOrProvince = l.StateOrProvince,
+                    Country = l.Country,
+                    IsActive = l.IsActive,
+                    CreatedAt = l.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(new { data = locations });
+        }
+
+        [HttpPost("locations")]
+        public async Task<IActionResult> CreateLocation([FromBody] CreateLocationDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Trim().Length > 100)
+            {
+                return BadRequest(new { message = "Location name is required and must not exceed 100 characters." });
+            }
+
+            // Case-insensitive unique check
+            var exists = await _context.Locations.AnyAsync(l => l.Name.ToLower() == dto.Name.Trim().ToLower());
+            if (exists)
+            {
+                return Conflict(new { message = $"A location with the name '{dto.Name.Trim()}' already exists." });
+            }
+
+            var location = new Location
+            {
+                Name = dto.Name.Trim(),
+                StateOrProvince = dto.StateOrProvince?.Trim(),
+                Country = dto.Country?.Trim() ?? "Sri Lanka",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Locations.Add(location);
+            await _context.SaveChangesAsync();
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _auditLogService.LogAsync(currentAdminId, "CREATE_LOCATION", "Location", location.Id.ToString(), $"Location '{location.Name}' ({location.StateOrProvince}, {location.Country}) created.", ip);
+
+            return Ok(new
+            {
+                message = "Location created successfully.",
+                location = new AdminLocationListDto
+                {
+                    Id = location.Id,
+                    Name = location.Name,
+                    StateOrProvince = location.StateOrProvince,
+                    Country = location.Country,
+                    IsActive = location.IsActive,
+                    CreatedAt = location.CreatedAt
+                }
+            });
+        }
+
+        [HttpPut("locations/{id}")]
+        public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var location = await _context.Locations.FindAsync(id);
+            if (location == null) return NotFound(new { message = "Location not found." });
+
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Trim().Length > 100)
+            {
+                return BadRequest(new { message = "Location name is required and must not exceed 100 characters." });
+            }
+
+            // Case-insensitive unique check (exclude self)
+            var duplicate = await _context.Locations.AnyAsync(l => l.Id != id && l.Name.ToLower() == dto.Name.Trim().ToLower());
+            if (duplicate)
+            {
+                return Conflict(new { message = $"A location with the name '{dto.Name.Trim()}' already exists." });
+            }
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var oldName = location.Name;
+
+            location.Name = dto.Name.Trim();
+            location.StateOrProvince = dto.StateOrProvince?.Trim();
+            location.Country = dto.Country?.Trim() ?? "Sri Lanka";
+            location.IsActive = dto.IsActive;
+
+            await _context.SaveChangesAsync();
+            await _auditLogService.LogAsync(currentAdminId, "UPDATE_LOCATION", "Location", id.ToString(), $"Location updated: '{oldName}' -> '{location.Name}', IsActive: {location.IsActive}", ip);
+
+            return Ok(new
+            {
+                message = "Location updated successfully.",
+                location = new AdminLocationListDto
+                {
+                    Id = location.Id,
+                    Name = location.Name,
+                    StateOrProvince = location.StateOrProvince,
+                    Country = location.Country,
+                    IsActive = location.IsActive,
+                    CreatedAt = location.CreatedAt
+                }
+            });
+        }
+
+        [HttpDelete("locations/{id}")]
+        public async Task<IActionResult> DeleteLocation(int id)
+        {
+            var location = await _context.Locations.FindAsync(id);
+            if (location == null) return NotFound(new { message = "Location not found." });
+
+            var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "admin";
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            _context.Locations.Remove(location);
+            await _context.SaveChangesAsync();
+            await _auditLogService.LogAsync(currentAdminId, "DELETE_LOCATION", "Location", id.ToString(), $"Location '{location.Name}' deleted.", ip);
+
+            return Ok(new { message = "Location deleted successfully." });
+        }
+
+        // =============================================
+        // PAYMENTS (Read-Only)
+        // =============================================
+
+        [HttpGet("payments")]
+        public async Task<IActionResult> GetPayments(
+            [FromQuery] string? status,
+            [FromQuery] string? search,
+            [FromQuery] DateTime? dateFrom,
+            [FromQuery] DateTime? dateTo,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            pageSize = Math.Clamp(pageSize, 1, 50);
+            page = Math.Max(1, page);
+
+            var query = _context.Payments
+                .Include(p => p.Job).ThenInclude(j => j.Company)
+                .AsQueryable();
+
+            var validStatuses = new[] { "Pending", "Completed", "Failed" };
+            if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                var matchedStatus = validStatuses.FirstOrDefault(s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase));
+                if (matchedStatus != null)
+                {
+                    query = query.Where(p => p.Status == matchedStatus);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var trimmed = search.Trim();
+                query = query.Where(p =>
+                    p.OrderId.Contains(trimmed) ||
+                    p.Job.Company.CompanyName.Contains(trimmed) ||
+                    p.Job.Title.Contains(trimmed));
+            }
+
+            if (dateFrom.HasValue)
+            {
+                query = query.Where(p => p.CreatedAt >= dateFrom.Value);
+            }
+            if (dateTo.HasValue)
+            {
+                query = query.Where(p => p.CreatedAt <= dateTo.Value.AddDays(1));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            // Calculate total revenue (completed only) for all matching records (not just current page)
+            var totalRevenue = await query.Where(p => p.Status == "Completed").SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+            var payments = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new AdminPaymentListDto
+                {
+                    Id = p.Id,
+                    OrderId = p.OrderId,
+                    Company = p.Job.Company.CompanyName,
+                    JobTitle = p.Job.Title,
+                    Amount = p.Amount,
+                    Currency = p.Currency,
+                    Status = p.Status,
+                    CreatedAt = p.CreatedAt,
+                    CompletedAt = p.CompletedAt
+                })
+                .ToListAsync();
+
+            return Ok(new { data = payments, totalCount, totalRevenue, page, pageSize });
         }
     }
 

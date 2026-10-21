@@ -52,6 +52,7 @@ export default function PostJobPage() {
 
     // Preview Modal State
     const [showPreview, setShowPreview] = useState(false);
+    const [locations, setLocations] = useState<any[]>([]);
 
     useEffect(() => {
         if (!user || user.role !== 'Employer') {
@@ -60,7 +61,19 @@ export default function PostJobPage() {
         }
         checkCompany();
         fetchCategories();
+        fetchLocations();
     }, [user, router]);
+
+    const fetchLocations = async () => {
+        try {
+            const res = await api.get('/Locations');
+            if (Array.isArray(res.data)) {
+                setLocations(res.data);
+            }
+        } catch {
+            // fallback empty
+        }
+    };
 
     const checkCompany = async () => {
         try {
@@ -335,14 +348,22 @@ export default function PostJobPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-charcoal mb-1">Location</label>
-                        <input
-                            type="text"
+                        <select
                             name="location"
-                            placeholder="e.g. Colombo, Western Province"
                             value={formData.location}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange/50"
-                        />
+                            className="w-full border border-gray-300 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
+                        >
+                            <option value="">Select a Location</option>
+                            {formData.location && !locations.some(l => l.name.toLowerCase() === formData.location.toLowerCase()) && (
+                                <option value={formData.location}>{formData.location} (Custom)</option>
+                            )}
+                            {locations.map(loc => (
+                                <option key={loc.id} value={loc.name}>
+                                    {loc.name}{loc.stateOrProvince ? `, ${loc.stateOrProvince}` : ''}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-charcoal mb-1">Work Type</label>
