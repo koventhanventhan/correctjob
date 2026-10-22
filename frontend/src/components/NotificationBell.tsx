@@ -199,9 +199,9 @@ export default function NotificationBell() {
 
             {/* Popover Dropdown */}
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-gray-100 ring-1 ring-black/5 divide-y divide-gray-100 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-md border border-gray-200 divide-y divide-gray-100 z-50">
                     {/* Header */}
-                    <div className="p-3.5 flex items-center justify-between bg-gray-50/60 rounded-t-2xl">
+                    <div className="p-3.5 flex items-center justify-between bg-gray-50/80 rounded-t-lg">
                         <div className="flex items-center gap-2">
                             <h3 className="font-bold text-sm text-charcoal">Notifications</h3>
                             {unreadCount > 0 && (

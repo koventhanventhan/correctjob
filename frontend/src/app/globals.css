@@ -3,25 +3,45 @@
 :root {
   --background: #FAF6F2;
   --foreground: #2B2620;
+  --color-orange: #F4791F;
+  --color-orange-hover: #DC6612;
+  --color-peach: #F5DDC8;
+  --color-warmwhite: #FAF6F2;
+  --color-charcoal: #2B2620;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-manrope);
-  --font-display: var(--font-outfit);
+  --font-sans: var(--font-manrope), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-outfit), var(--font-manrope), system-ui, sans-serif;
   --color-orange: #F4791F;
+  --color-orange-hover: #DC6612;
   --color-peach: #F5DDC8;
   --color-warmwhite: #FAF6F2;
   --color-charcoal: #2B2620;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--color-charcoal);
+  letter-spacing: -0.015em;
 }
 
 input, textarea, select {
   color: var(--color-charcoal);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Accessible focus visible ring */
+:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 2px;
 }

@@ -123,7 +123,7 @@ export default function ProfileMenu({ className = '', profileHref, onItemClick }
                         className="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm"
                     />
                 ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange to-amber-500 text-white font-semibold flex items-center justify-center text-sm shadow-sm">
+                    <div className="w-9 h-9 rounded-full bg-orange text-white font-semibold flex items-center justify-center text-sm shadow-xs">
                         {initials}
                     </div>
                 )}
@@ -134,10 +134,10 @@ export default function ProfileMenu({ className = '', profileHref, onItemClick }
                 <div
                     role="menu"
                     aria-orientation="vertical"
-                    className="absolute right-0 mt-2 w-64 rounded-xl bg-white shadow-xl ring-1 ring-black/5 divide-y divide-gray-100 z-50 animate-in fade-in zoom-in-95 duration-100"
+                    className="absolute right-0 mt-2 w-64 rounded-lg bg-white shadow-md border border-gray-200 divide-y divide-gray-100 z-50"
                 >
                     {/* User Header */}
-                    <div className="px-4 py-3 flex items-center gap-3 bg-gradient-to-b from-gray-50/80 to-white rounded-t-xl">
+                    <div className="px-4 py-3 flex items-center gap-3 bg-gray-50 rounded-t-lg">
                         {avatarUrl && !imageError ? (
                             <img
                                 src={avatarUrl}
@@ -145,7 +145,7 @@ export default function ProfileMenu({ className = '', profileHref, onItemClick }
                                 className="w-11 h-11 rounded-full object-cover border border-gray-200 shadow-xs flex-shrink-0"
                             />
                         ) : (
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-orange to-amber-500 text-white font-bold flex items-center justify-center text-base shadow-xs flex-shrink-0">
+                            <div className="w-11 h-11 rounded-full bg-orange text-white font-bold flex items-center justify-center text-base shadow-xs flex-shrink-0">
                                 {initials}
                             </div>
                         )}
