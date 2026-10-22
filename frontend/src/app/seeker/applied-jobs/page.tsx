@@ -107,7 +107,7 @@ const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
             <div className="relative flex items-center justify-between w-full px-1">
                 <div className="absolute left-2 right-2 top-1/2 -translate-y-1/2 h-1 bg-gray-200 rounded-full" />
                 <div 
-                    className="absolute left-2 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-orange to-amber-500 rounded-full transition-all duration-500"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 h-1 bg-orange rounded-full transition-all duration-500"
                     style={{ width: `calc(${progressPercent}% - 8px)` }}
                 />
 
@@ -221,10 +221,10 @@ export default function AppliedJobs() {
             case 'viewed':
                 return 'bg-amber-50 text-amber-700 border-amber-200';
             case 'shortlisted':
-                return 'bg-purple-50 text-purple-700 border-purple-200';
+                return 'bg-amber-50 text-amber-700 border-amber-200';
             case 'interview scheduled':
             case 'interview':
-                return 'bg-orange-50 text-orange-700 border-orange-200';
+                return 'bg-blue-50 text-blue-700 border-blue-200';
             case 'selected':
             case 'hired':
                 return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -241,12 +241,12 @@ export default function AppliedJobs() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-charcoal">My Applications</h1>
+                    <h1 className="text-2xl font-display font-bold text-charcoal">My Applications</h1>
                     <p className="text-sm text-gray-600 mt-1">Track your progress, interview invitations, and status timelines.</p>
                 </div>
                 <Link
                     href="/jobs"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange text-white text-sm font-medium rounded-lg hover:bg-orange/90 transition shadow-sm w-fit"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange text-white text-sm font-medium rounded-md hover:bg-orange/90 transition shadow-sm w-fit"
                 >
                     <LuBriefcase className="w-4 h-4" />
                     Browse More Jobs
@@ -255,20 +255,20 @@ export default function AppliedJobs() {
 
             <div className="space-y-4">
                 {isLoading ? (
-                    <div className="bg-white rounded-xl p-12 text-center text-gray-500 border border-gray-200">
+                    <div className="bg-white rounded-lg p-12 text-center text-gray-500 border border-gray-200 shadow-sm">
                         <div className="w-8 h-8 border-3 border-orange border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                         Loading your applications...
                     </div>
                 ) : applications.length === 0 ? (
-                    <div className="bg-white rounded-xl p-12 text-center text-gray-500 border border-gray-200">
+                    <div className="bg-white rounded-lg p-12 text-center text-gray-500 border border-gray-200 shadow-sm">
                         <div className="w-14 h-14 bg-orange/10 rounded-full flex items-center justify-center mx-auto mb-4 text-orange">
                             <LuBriefcase className="w-7 h-7" />
                         </div>
-                        <h3 className="text-lg font-semibold text-charcoal mb-1">No applications yet</h3>
+                        <h2 className="text-lg font-display font-semibold text-charcoal mb-1">No applications yet</h2>
                         <p className="text-sm text-gray-500 mb-5">Explore thousands of job opportunities and submit your first application.</p>
                         <Link 
                             href="/jobs" 
-                            className="inline-flex items-center px-4 py-2 bg-orange text-white text-sm font-medium rounded-lg hover:bg-orange/90 transition shadow-sm"
+                            className="inline-flex items-center px-4 py-2 bg-orange text-white text-sm font-medium rounded-md hover:bg-orange/90 transition shadow-sm"
                         >
                             Explore Jobs
                         </Link>
@@ -282,11 +282,11 @@ export default function AppliedJobs() {
                         return (
                             <div 
                                 key={app.id} 
-                                className="bg-white rounded-xl border border-gray-200/90 shadow-sm hover:shadow-md transition-all p-5 sm:p-6"
+                                className="bg-white rounded-lg border border-gray-200 shadow-sm hover:border-orange transition-all p-5 sm:p-6"
                             >
                                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                                     <div className="flex items-start gap-4">
-                                        <div className="h-12 w-12 rounded-xl bg-orange/5 border border-orange/10 flex items-center justify-center shrink-0 overflow-hidden">
+                                        <div className="h-12 w-12 rounded-md bg-orange/5 border border-orange/10 flex items-center justify-center shrink-0 overflow-hidden">
                                             {app.job?.company?.logoUrl ? (
                                                 <img src={app.job.company.logoUrl} alt="" className="h-10 w-10 object-contain" />
                                             ) : (
@@ -294,9 +294,9 @@ export default function AppliedJobs() {
                                             )}
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-bold text-charcoal hover:text-orange transition-colors">
+                                            <h2 className="text-lg font-bold text-charcoal hover:text-orange transition-colors">
                                                 <Link href={`/jobs/${app.jobId}`}>{app.job?.title || 'Job Title'}</Link>
-                                            </h3>
+                                            </h2>
                                             <div className="mt-1 flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
                                                 <span className="flex items-center font-medium">
                                                     <LuBuilding className="w-3.5 h-3.5 mr-1 text-gray-400" /> 
@@ -325,7 +325,7 @@ export default function AppliedJobs() {
                                         <div className="flex items-center gap-2">
                                             <Link 
                                                 href={`/chat/${app.id}`} 
-                                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-charcoal hover:bg-black rounded-lg shadow-sm transition"
+                                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-charcoal hover:bg-black rounded-md shadow-sm transition"
                                                 title="Message employer directly"
                                             >
                                                 <LuMessageCircle className="w-3.5 h-3.5 text-orange" />
@@ -335,7 +335,7 @@ export default function AppliedJobs() {
                                             {canWithdraw && (
                                                 <button
                                                     onClick={() => setWithdrawingApp(app)}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-md transition"
                                                     title="Withdraw application"
                                                 >
                                                     <LuX className="w-3.5 h-3.5" />
@@ -348,37 +348,37 @@ export default function AppliedJobs() {
 
                                 {/* Rich Interview Details Card */}
                                 {(app.status === 'Interview Scheduled' || app.status === 'Interview') && app.interviewDate && (
-                                    <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-purple-50/90 via-indigo-50/50 to-orange/5 border-2 border-purple-200/80 shadow-sm space-y-3">
+                                    <div className="mt-4 p-4 rounded-md bg-blue-50/70 border border-blue-200 shadow-sm space-y-3">
                                         <div className="flex items-center justify-between flex-wrap gap-2">
                                             <div className="flex items-center gap-2.5">
-                                                <span className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-sm">
+                                                <span className="w-8 h-8 rounded-md bg-blue-600 text-white flex items-center justify-center shadow-sm">
                                                     <LuVideo className="w-4 h-4" />
                                                 </span>
                                                 <div>
-                                                    <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider flex items-center gap-1.5">
+                                                    <h3 className="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-1.5">
                                                         <span>Interview Confirmed & Scheduled</span>
-                                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                    </h4>
-                                                    <p className="text-xs text-purple-800/80 font-medium">
+                                                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                    </h3>
+                                                    <p className="text-xs text-blue-800 font-medium">
                                                         Meeting with {app.job?.company?.companyName || 'Hiring Team'}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
                                                 Action Required
                                             </span>
                                         </div>
 
                                         {/* Date & Time Grid */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-purple-100">
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <LuCalendar className="w-4 h-4 text-purple-600 shrink-0" />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white p-3 rounded-md border border-blue-100">
+                                            <div className="flex items-center gap-2 text-charcoal">
+                                                <LuCalendar className="w-4 h-4 text-blue-600 shrink-0" />
                                                 <span>
                                                     <strong>Date:</strong> {new Date(app.interviewDate).toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <LuClock className="w-4 h-4 text-purple-600 shrink-0" />
+                                            <div className="flex items-center gap-2 text-charcoal">
+                                                <LuClock className="w-4 h-4 text-blue-600 shrink-0" />
                                                 <span>
                                                     <strong>Time:</strong> {new Date(app.interviewDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local'})
                                                 </span>
@@ -393,7 +393,7 @@ export default function AppliedJobs() {
                                                         href={app.meetingLink}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition"
+                                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-md shadow-sm hover:shadow transition"
                                                     >
                                                         <LuVideo className="w-3.5 h-3.5" />
                                                         <span>Join Meeting Call</span>
@@ -403,7 +403,7 @@ export default function AppliedJobs() {
 
                                                 <Link
                                                     href={`/chat/${app.id}`}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-charcoal border border-gray-200 text-xs font-semibold rounded-lg transition"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-charcoal border border-gray-200 text-xs font-semibold rounded-md transition"
                                                 >
                                                     <LuMessageCircle className="w-3.5 h-3.5 text-orange" />
                                                     <span>Message Employer</span>
@@ -416,22 +416,22 @@ export default function AppliedJobs() {
                                                     href={getGoogleCalendarUrl(app)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-purple-700 bg-white hover:bg-purple-100 border border-purple-200 rounded-lg transition shadow-xs"
+                                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-md transition shadow-xs"
                                                     title="Add to Google Calendar"
                                                 >
-                                                    <LuCalendar className="w-3.5 h-3.5 text-purple-600" />
+                                                    <LuCalendar className="w-3.5 h-3.5 text-blue-600" />
                                                     <span>Google Cal</span>
-                                                    <LuExternalLink className="w-3 h-3 text-purple-400" />
+                                                    <LuExternalLink className="w-3 h-3 text-blue-400" />
                                                 </a>
 
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDownloadIcs(app.id, app.job?.title)}
                                                     disabled={downloadingIcsId === app.id}
-                                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-purple-700 bg-white hover:bg-purple-100 border border-purple-200 rounded-lg transition shadow-xs disabled:opacity-50"
+                                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-md transition shadow-xs disabled:opacity-50"
                                                     title="Download .ics Calendar file for Outlook, Apple Calendar"
                                                 >
-                                                    <LuDownload className="w-3.5 h-3.5 text-purple-600" />
+                                                    <LuDownload className="w-3.5 h-3.5 text-blue-600" />
                                                     <span>{downloadingIcsId === app.id ? 'Downloading...' : '.ics Invite'}</span>
                                                 </button>
                                             </div>
@@ -499,18 +499,18 @@ export default function AppliedJobs() {
 
             {/* Withdraw Confirmation Modal */}
             {withdrawingApp && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
-                        <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 mb-4">
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="w-12 h-12 bg-rose-50 rounded-md flex items-center justify-center text-rose-600 mb-4">
                             <LuCircleX className="w-6 h-6" />
                         </div>
-                        <h3 className="text-lg font-bold text-charcoal">Withdraw Application?</h3>
+                        <h3 className="text-lg font-display font-bold text-charcoal">Withdraw Application?</h3>
                         <p className="text-sm text-gray-600 mt-2">
                             Are you sure you want to withdraw your application for{' '}
                             <strong>{withdrawingApp.job?.title}</strong> at{' '}
                             <strong>{withdrawingApp.job?.company?.companyName}</strong>?
                         </p>
-                        <p className="text-xs text-rose-600 mt-2 bg-rose-50 p-2.5 rounded-lg">
+                        <p className="text-xs text-rose-600 mt-2 bg-rose-50 p-2.5 rounded-md">
                             This cannot be undone. The employer will be notified that your application has been withdrawn.
                         </p>
 
@@ -519,7 +519,7 @@ export default function AppliedJobs() {
                                 type="button"
                                 onClick={() => setWithdrawingApp(null)}
                                 disabled={withdrawMutation.isPending}
-                                className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
+                                className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-md hover:bg-gray-50 transition"
                             >
                                 Keep Application
                             </button>
@@ -527,7 +527,7 @@ export default function AppliedJobs() {
                                 type="button"
                                 onClick={() => withdrawMutation.mutate(withdrawingApp.id)}
                                 disabled={withdrawMutation.isPending}
-                                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg transition shadow-sm disabled:opacity-50"
+                                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-md transition shadow-sm disabled:opacity-50"
                             >
                                 {withdrawMutation.isPending ? 'Withdrawing...' : 'Yes, Withdraw'}
                             </button>

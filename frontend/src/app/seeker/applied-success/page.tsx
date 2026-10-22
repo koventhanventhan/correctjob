@@ -19,13 +19,13 @@ function AppliedSuccessContent() {
 
     return (
         <div className="min-h-screen bg-warmwhite py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-            <div className="max-w-xl w-full bg-white rounded-3xl shadow-xl border border-gray-100 p-8 sm:p-10 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="max-w-xl w-full bg-white rounded-lg shadow-sm border border-gray-200 p-8 sm:p-10 text-center animate-in fade-in zoom-in-95 duration-200">
                 {/* Big Green Celebration Icon */}
-                <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full mx-auto flex items-center justify-center mb-6 shadow-inner">
-                    <LuCircleCheck className="w-12 h-12" />
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full mx-auto flex items-center justify-center mb-6">
+                    <LuCircleCheck className="w-10 h-10" />
                 </div>
 
-                <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase tracking-wider mb-2">
+                <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-full uppercase tracking-wider mb-2 border border-emerald-200">
                     Application Sent
                 </span>
 
@@ -38,9 +38,9 @@ function AppliedSuccessContent() {
                 </p>
 
                 {/* Job Summary Card */}
-                <div className="bg-peach/60 rounded-2xl p-5 mb-8 border border-peach text-left">
+                <div className="bg-orange/5 rounded-lg p-5 mb-8 border border-orange/15 text-left">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-orange/10 flex items-center justify-center text-orange shrink-0">
+                        <div className="w-10 h-10 rounded-md bg-orange/10 flex items-center justify-center text-orange shrink-0">
                             <LuBriefcase className="w-5 h-5" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ function AppliedSuccessContent() {
                 {/* What Happens Next Steps */}
                 <div className="text-left mb-8 space-y-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">What happens next</h3>
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-md border border-gray-100">
                         <div className="w-6 h-6 rounded-full bg-orange text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                             1
                         </div>
@@ -72,8 +72,8 @@ function AppliedSuccessContent() {
                             <p className="mt-0.5">The hiring team has received your application and answers.</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <div className="w-6 h-6 rounded-full bg-peach text-charcoal flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-md border border-gray-100">
+                        <div className="w-6 h-6 rounded-full bg-orange/20 text-charcoal flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                             2
                         </div>
                         <div className="text-xs text-gray-600">
@@ -87,13 +87,13 @@ function AppliedSuccessContent() {
                 <div className="flex flex-col sm:flex-row gap-3">
                     <Link
                         href="/seeker/applied-jobs"
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-orange text-white rounded-xl text-sm font-semibold hover:bg-orange/90 transition-all shadow-md"
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-orange text-white rounded-md text-sm font-semibold hover:bg-orange/90 transition shadow-sm"
                     >
                         <LuFileText className="w-4 h-4" /> My Applications
                     </Link>
                     <Link
                         href="/jobs"
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 text-charcoal rounded-xl text-sm font-semibold hover:bg-peach transition-colors"
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-gray-300 text-charcoal rounded-md text-sm font-semibold hover:bg-gray-50 transition"
                     >
                         <LuSearch className="w-4 h-4" /> Find More Jobs
                     </Link>

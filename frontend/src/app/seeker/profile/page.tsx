@@ -265,9 +265,9 @@ export default function SeekerProfile() {
     return (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
             {/* Header with Title and Open to Work status */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-charcoal">My Seeker Profile</h1>
+                    <h1 className="text-2xl font-display font-bold text-charcoal">My Seeker Profile</h1>
                     <p className="text-sm text-gray-600 mt-1">
                         Build your comprehensive profile to increase your visibility to top employers.
                     </p>
@@ -319,22 +319,22 @@ export default function SeekerProfile() {
             </div>
 
             {/* Profile Completeness Bar */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-2">
                     <div>
-                        <h2 className="text-base font-bold text-charcoal">Profile Completeness</h2>
+                        <h2 className="text-base font-display font-bold text-charcoal">Profile Completeness</h2>
                         <p className="text-xs text-gray-500">Profiles above 80% receive 4x more employer inquiries.</p>
                     </div>
-                    <span className="text-xl font-extrabold text-orange">{completionPct}%</span>
+                    <span className="text-xl font-display font-bold text-orange">{completionPct}%</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
                     <div 
-                        className="bg-gradient-to-r from-orange to-amber-500 h-full rounded-full transition-all duration-500" 
+                        className="bg-orange h-full rounded-full transition-all duration-500" 
                         style={{ width: `${completionPct}%` }}
                     />
                 </div>
                 {completionPct < 100 && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50/70 p-2.5 rounded-lg mt-3 border border-amber-200/50">
+                    <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50/70 p-2.5 rounded-md mt-3 border border-amber-200/50">
                         <LuCircleAlert className="w-4 h-4 shrink-0 text-amber-600" />
                         <span>Tip: Complete your work history, education, and add your skills to reach 100%.</span>
                     </div>
@@ -342,7 +342,7 @@ export default function SeekerProfile() {
             </div>
 
             {/* Basic Info & Summary Form */}
-            <form onSubmit={handleSaveBasic} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-5">
+            <form onSubmit={handleSaveBasic} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm space-y-5">
                 <h2 className="text-lg font-bold text-charcoal border-b pb-3">Personal & Contact Info</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -431,7 +431,7 @@ export default function SeekerProfile() {
             </form>
 
             {/* Work History Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-orange/10 flex items-center justify-center text-orange">
@@ -481,7 +481,7 @@ export default function SeekerProfile() {
             </div>
 
             {/* Education Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-orange/10 flex items-center justify-center text-orange">
@@ -526,7 +526,7 @@ export default function SeekerProfile() {
             </div>
 
             {/* Skills Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-orange/10 flex items-center justify-center text-orange">
@@ -593,7 +593,7 @@ export default function SeekerProfile() {
             {/* Languages & Licences Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Languages */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+                <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <LuLanguages className="w-5 h-5 text-orange" />
@@ -628,7 +628,7 @@ export default function SeekerProfile() {
                 </div>
 
                 {/* Licences & Certifications */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+                <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <LuAward className="w-5 h-5 text-orange" />
@@ -662,13 +662,13 @@ export default function SeekerProfile() {
             </div>
 
             {/* Quick Link to Multi-Resume Manager */}
-            <div className="bg-gradient-to-r from-orange/10 to-amber-500/10 border border-orange/20 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-orange/5 border border-orange/20 rounded-lg p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white rounded-xl shadow-xs flex items-center justify-center text-orange shrink-0">
+                    <div className="w-12 h-12 bg-white rounded-md shadow-xs flex items-center justify-center text-orange shrink-0">
                         <LuFileText className="w-6 h-6" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-charcoal text-base">Multiple Resumes Management</h3>
+                        <h3 className="font-display font-bold text-charcoal text-base">Multiple Resumes Management</h3>
                         <p className="text-xs text-gray-600 mt-0.5">
                             You currently have {profile?.resumes?.length || (profile?.resumeUrl ? 1 : 0)} resume(s) uploaded.
                         </p>
@@ -676,7 +676,7 @@ export default function SeekerProfile() {
                 </div>
                 <Link
                     href="/seeker/resume"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange text-white text-xs font-semibold rounded-lg hover:bg-orange/90 transition shadow-xs w-fit"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange text-white text-xs font-semibold rounded-md hover:bg-orange/90 transition shadow-sm w-fit"
                 >
                     Manage Resumes →
                 </Link>
@@ -684,8 +684,8 @@ export default function SeekerProfile() {
 
             {/* Add Work History Modal */}
             {isWorkModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95">
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-lg border border-gray-200 animate-in fade-in zoom-in-95">
                         <h3 className="text-lg font-bold text-charcoal mb-4">Add Work Experience</h3>
                         <form onSubmit={handleAddWork} className="space-y-4">
                             <div>
@@ -778,8 +778,8 @@ export default function SeekerProfile() {
 
             {/* Add Education Modal */}
             {isEduModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95">
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-lg border border-gray-200 animate-in fade-in zoom-in-95">
                         <h3 className="text-lg font-bold text-charcoal mb-4">Add Education</h3>
                         <form onSubmit={handleAddEdu} className="space-y-4">
                             <div>
@@ -835,8 +835,8 @@ export default function SeekerProfile() {
 
             {/* Add Language Modal */}
             {isLangModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95">
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg max-w-sm w-full p-6 shadow-lg border border-gray-200 animate-in fade-in zoom-in-95">
                         <h3 className="text-base font-bold text-charcoal mb-4">Add Language</h3>
                         <form onSubmit={handleAddLanguage} className="space-y-4">
                             <div>
@@ -885,8 +885,8 @@ export default function SeekerProfile() {
 
             {/* Add Certification Modal */}
             {isCertModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95">
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg max-w-sm w-full p-6 shadow-lg border border-gray-200 animate-in fade-in zoom-in-95">
                         <h3 className="text-base font-bold text-charcoal mb-4">Add Licence or Certificate</h3>
                         <form onSubmit={handleAddCert} className="space-y-4">
                             <div>

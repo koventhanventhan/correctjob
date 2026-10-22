@@ -88,12 +88,12 @@ export default function NotificationsPage() {
     const pendingInvitesCount = invitations.filter((i) => i.status === 'Pending').length;
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-charcoal">Notifications & Invitations</h1>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                    <h1 className="text-2xl font-display font-bold text-charcoal">Notifications & Invitations</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
                         Stay updated with application status, employer invitations, and job alerts
                     </p>
                 </div>
@@ -102,7 +102,7 @@ export default function NotificationsPage() {
                     <button
                         onClick={() => markAllAsReadMutation.mutate()}
                         disabled={markAllAsReadMutation.isPending}
-                        className="text-xs sm:text-sm font-semibold text-charcoal hover:bg-peach/80 bg-peach px-4 py-2 rounded-xl transition-colors disabled:opacity-50 flex items-center self-start sm:self-auto"
+                        className="text-xs sm:text-sm font-semibold text-charcoal hover:bg-orange/15 bg-orange/10 px-4 py-2 rounded-md transition-colors disabled:opacity-50 flex items-center self-start sm:self-auto"
                     >
                         <LuCheck className="w-4 h-4 mr-1.5" /> Mark all as read
                     </button>
@@ -150,16 +150,16 @@ export default function NotificationsPage() {
 
             {/* Content Tab 1: Regular Notifications */}
             {activeTab === 'notifications' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     {isNotifsLoading ? (
-                        <div className="p-12 text-center text-gray-400">
+                        <div className="p-12 text-center text-gray-500">
                             <div className="w-6 h-6 border-2 border-orange border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                             <p className="text-xs">Loading notifications...</p>
                         </div>
                     ) : notifications.length === 0 ? (
                         <div className="p-12 text-center text-gray-500">
                             <LuBell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="font-semibold text-charcoal">You're all caught up!</p>
+                            <h2 className="font-semibold text-charcoal">You're all caught up!</h2>
                             <p className="text-xs text-gray-500 mt-1">No new notifications at the moment.</p>
                         </div>
                     ) : (
@@ -182,13 +182,13 @@ export default function NotificationsPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
-                                                <h4
+                                                <h3
                                                     className={`text-sm font-semibold truncate ${
                                                         !notification.isRead ? 'text-charcoal' : 'text-gray-700'
                                                     }`}
                                                 >
                                                     {notification.title}
-                                                </h4>
+                                                </h3>
                                                 <span className="text-[11px] text-gray-400 shrink-0">
                                                     {new Date(notification.createdAt).toLocaleDateString([], {
                                                         month: 'short',
@@ -209,7 +209,7 @@ export default function NotificationsPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => setActiveTab('invitations')}
-                                                        className="inline-flex items-center gap-1 text-xs font-semibold text-orange hover:text-orange/80"
+                                                        className="inline-flex items-center gap-1 text-xs font-semibold text-orange hover:underline"
                                                     >
                                                         <span>View Invitations</span>
                                                         <LuExternalLink className="w-3 h-3" />
@@ -238,14 +238,14 @@ export default function NotificationsPage() {
             {activeTab === 'invitations' && (
                 <div className="space-y-4">
                     {isInvitesLoading ? (
-                        <div className="bg-white rounded-2xl p-12 text-center text-gray-400 shadow-sm border border-gray-200/80">
+                        <div className="bg-white rounded-lg p-12 text-center text-gray-500 shadow-sm border border-gray-200">
                             <div className="w-6 h-6 border-2 border-orange border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                             <p className="text-xs">Loading invitations...</p>
                         </div>
                     ) : invitations.length === 0 ? (
-                        <div className="bg-white rounded-2xl p-12 text-center text-gray-500 shadow-sm border border-gray-200/80">
+                        <div className="bg-white rounded-lg p-12 text-center text-gray-500 shadow-sm border border-gray-200">
                             <LuMailOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="font-semibold text-charcoal">No invitations yet</p>
+                            <h2 className="font-semibold text-charcoal">No invitations yet</h2>
                             <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
                                 When verified employers find your profile and invite you to apply for their roles, they will appear here.
                             </p>
@@ -255,7 +255,7 @@ export default function NotificationsPage() {
                             {invitations.map((invitation) => (
                                 <div
                                     key={invitation.id}
-                                    className="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-5 space-y-4 hover:shadow-md transition-all"
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 space-y-4 hover:border-orange transition-all"
                                 >
                                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                                         <div className="flex items-start gap-3">
@@ -263,10 +263,10 @@ export default function NotificationsPage() {
                                                 <img
                                                     src={getFileUrl(invitation.companyLogo)}
                                                     alt={invitation.companyName}
-                                                    className="w-11 h-11 rounded-xl object-contain border border-gray-200 shrink-0"
+                                                    className="w-11 h-11 rounded-md object-contain border border-gray-200 shrink-0"
                                                 />
                                             ) : (
-                                                <div className="w-11 h-11 rounded-xl bg-orange/10 text-orange font-bold flex items-center justify-center shrink-0">
+                                                <div className="w-11 h-11 rounded-md bg-orange/10 text-orange font-bold flex items-center justify-center shrink-0">
                                                     <LuBriefcase className="w-5 h-5" />
                                                 </div>
                                             )}
@@ -323,7 +323,7 @@ export default function NotificationsPage() {
 
                                     {/* Personal Message Note */}
                                     {invitation.message && (
-                                        <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-700 leading-relaxed border border-gray-100">
+                                        <div className="bg-gray-50 rounded-md p-3 text-xs text-gray-700 leading-relaxed border border-gray-100">
                                             <span className="font-semibold text-charcoal">Employer Note: </span>
                                             {invitation.message}
                                         </div>
@@ -353,7 +353,7 @@ export default function NotificationsPage() {
                                                             })
                                                         }
                                                         disabled={respondMutation.isPending}
-                                                        className="px-3.5 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition"
+                                                        className="px-3.5 py-1.5 rounded-md border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition"
                                                     >
                                                         Decline
                                                     </button>
@@ -366,7 +366,7 @@ export default function NotificationsPage() {
                                                             })
                                                         }
                                                         disabled={respondMutation.isPending}
-                                                        className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 text-white px-4 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition"
+                                                        className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 text-white px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition"
                                                     >
                                                         <LuCheck className="w-3.5 h-3.5" />
                                                         Accept Invitation
@@ -377,7 +377,7 @@ export default function NotificationsPage() {
                                             {invitation.status === 'Accepted' && (
                                                 <Link
                                                     href={`/jobs/${invitation.jobId}`}
-                                                    className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 text-white px-4 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition"
+                                                    className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 text-white px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition"
                                                 >
                                                     <span>View Job & Apply</span>
                                                     <LuExternalLink className="w-3.5 h-3.5" />

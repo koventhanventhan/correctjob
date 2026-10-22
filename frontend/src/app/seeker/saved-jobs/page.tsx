@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import api from '@/services/api';
 import Link from 'next/link';
-import { LuBuilding, LuMapPin, LuIndianRupee, LuClock, LuTrash2, LuChevronLeft, LuChevronRight } from 'react-icons/lu';
+import api from '@/services/api';
+import { LuBuilding, LuMapPin, LuClock, LuTrash2, LuChevronLeft, LuChevronRight } from 'react-icons/lu';
+import { formatSalary } from '@/utils/currency';
 
 export default function SavedJobs() {
     const [page, setPage] = useState(1);
@@ -34,19 +35,19 @@ export default function SavedJobs() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-charcoal">Saved Jobs</h1>
-                    <p className="text-gray-600">Jobs you've bookmarked for later.</p>
+                    <h1 className="text-2xl md:text-3xl font-display font-bold text-charcoal">Saved Jobs</h1>
+                    <p className="text-sm text-gray-600 font-sans">Jobs you've bookmarked for later review.</p>
                 </div>
             </div>
 
-            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {isLoading ? (
                     <div className="p-12 text-center text-gray-500">Loading saved jobs...</div>
                 ) : savedJobs.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">
                         You don't have any saved jobs yet.
                         <div className="mt-4">
-                            <Link href="/jobs" className="text-orange font-medium hover:underline">Browse Jobs</Link>
+                            <Link href="/jobs" className="text-orange font-semibold hover:underline">Browse Jobs</Link>
                         </div>
                     </div>
                 ) : (
@@ -56,10 +57,10 @@ export default function SavedJobs() {
                             if (!job) return null;
                             
                             return (
-                                <div key={saved.id} className="p-6 hover:bg-peach transition-colors">
+                                <div key={saved.id} className="p-5 sm:p-6 hover:bg-gray-50 transition-colors">
                                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                         <div className="flex items-start gap-4">
-                                            <div className="h-12 w-12 bg-peach rounded flex items-center justify-center border border-gray-200 shrink-0">
+                                            <div className="h-12 w-12 bg-peach/40 rounded-md flex items-center justify-center border border-gray-200 shrink-0">
                                                 {job.company?.logoUrl ? (
                                                     <img src={job.company.logoUrl} alt="" className="h-10 w-10 object-contain" />
                                                 ) : (
@@ -67,10 +68,10 @@ export default function SavedJobs() {
                                                 )}
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="text-lg font-semibold text-charcoal hover:text-orange truncate">
+                                                <h3 className="text-base sm:text-lg font-bold font-display text-charcoal hover:text-orange truncate">
                                                     <Link href={`/jobs/${job.id}`}>{job.title}</Link>
                                                 </h3>
-                                                <div className="mt-1 flex items-center flex-wrap gap-4 text-sm text-gray-500">
+                                                <div className="mt-1 flex items-center flex-wrap gap-4 text-xs sm:text-sm text-gray-500">
                                                     <span className="flex items-center">
                                                         <LuBuilding className="w-4 h-4 mr-1 text-gray-400" /> {job.company?.companyName}
                                                     </span>
@@ -78,8 +79,8 @@ export default function SavedJobs() {
                                                         <LuMapPin className="w-4 h-4 mr-1 text-gray-400" /> {job.location}
                                                     </span>
                                                     {job.salaryMin && (
-                                                        <span className="flex items-center">
-                                                            <LuIndianRupee className="w-4 h-4 mr-1 text-gray-400" /> {job.salaryMin} - {job.salaryMax}
+                                                        <span className="inline-flex items-center font-semibold text-charcoal">
+                                                            {formatSalary(job.salaryMin, job.salaryMax)}
                                                         </span>
                                                     )}
                                                     <span className="flex items-center">
@@ -88,20 +89,21 @@ export default function SavedJobs() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="flex items-center gap-2 shrink-0">
                                             <Link 
                                                 href={`/jobs/${job.id}`}
-                                                className="px-4 py-2 bg-peach text-charcoal font-medium rounded-md hover:bg-peach transition-colors text-sm"
+                                                className="px-4 py-2 bg-orange hover:bg-orange/90 text-white font-semibold rounded-md shadow-xs transition-colors text-xs sm:text-sm min-h-[38px] flex items-center justify-center"
                                             >
                                                 View & Apply
                                             </Link>
                                             <button 
                                                 onClick={() => unsaveMutation.mutate(job.id)}
                                                 disabled={unsaveMutation.isPending}
-                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md border border-gray-300 transition-colors cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
                                                 title="Unsave Job"
+                                                aria-label="Unsave Job"
                                             >
-                                                <LuTrash2 className="w-5 h-5" />
+                                                <LuTrash2 className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>

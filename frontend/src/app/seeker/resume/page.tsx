@@ -130,16 +130,16 @@ export default function SeekerResume() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-charcoal">Resumes & Documents</h1>
-                    <p className="text-sm text-gray-600">Store multiple resumes tailored to different job roles.</p>
+                    <h1 className="text-2xl font-display font-bold text-charcoal">Resumes & Documents</h1>
+                    <p className="text-sm text-gray-600 mt-1">Store multiple resumes tailored to different job roles.</p>
                 </div>
             </div>
 
             {msg && (
-                <div className={`mb-6 p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${
+                <div className={`mb-6 p-4 rounded-md text-sm font-medium flex items-center gap-2 ${
                     msg.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
                 }`}>
                     {msg.type === 'success' ? <LuCheck className="w-4 h-4 text-emerald-600" /> : <LuCircleAlert className="w-4 h-4 text-rose-600" />}
@@ -148,12 +148,12 @@ export default function SeekerResume() {
             )}
 
             {/* Existing Resumes List */}
-            <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6 mb-8">
-                <h2 className="text-lg font-bold text-charcoal mb-4">Saved Resumes ({resumes.length})</h2>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 className="text-lg font-display font-bold text-charcoal mb-4">Saved Resumes ({resumes.length})</h2>
                 {resumes.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                         <LuFileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                        <p className="text-sm">No resumes uploaded yet.</p>
+                        <p className="text-sm font-medium text-charcoal">No resumes uploaded yet.</p>
                         <p className="text-xs text-gray-400 mt-1">Upload your resume below to start applying faster.</p>
                     </div>
                 ) : (
@@ -161,12 +161,12 @@ export default function SeekerResume() {
                         {resumes.map((item) => (
                             <div 
                                 key={item.id}
-                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all ${
+                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border transition-all ${
                                     item.isDefault ? 'bg-orange/5 border-orange/30 shadow-xs' : 'bg-gray-50/50 border-gray-200 hover:border-gray-300'
                                 } gap-3`}
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                    <div className={`w-10 h-10 rounded-md flex items-center justify-center shrink-0 ${
                                         item.isDefault ? 'bg-orange text-white' : 'bg-gray-200 text-gray-600'
                                     }`}>
                                         <LuFileText className="w-5 h-5" />
@@ -190,7 +190,7 @@ export default function SeekerResume() {
                                     {!item.isDefault && (
                                         <button
                                             onClick={() => handleSetDefault(item.id)}
-                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:text-orange hover:bg-orange/5 rounded-lg transition"
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:text-orange hover:bg-orange/5 rounded-md transition"
                                             title="Set as default resume for quick applications"
                                         >
                                             <LuStar className="w-3.5 h-3.5" />
@@ -200,7 +200,7 @@ export default function SeekerResume() {
 
                                     <button
                                         onClick={() => handleDownload(item)}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-charcoal bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-charcoal bg-gray-100 hover:bg-gray-200 rounded-md transition"
                                         title="Download"
                                     >
                                         <LuDownload className="w-3.5 h-3.5" />
@@ -209,7 +209,7 @@ export default function SeekerResume() {
 
                                     <button
                                         onClick={() => handleDelete(item.id)}
-                                        className="inline-flex items-center gap-1 p-1.5 text-xs font-medium text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                                        className="inline-flex items-center gap-1 p-1.5 text-xs font-medium text-rose-500 hover:bg-rose-50 rounded-md transition"
                                         title="Delete resume"
                                     >
                                         <LuTrash2 className="w-4 h-4" />
@@ -222,8 +222,8 @@ export default function SeekerResume() {
             </div>
 
             {/* Upload New Resume */}
-            <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
-                <h2 className="text-lg font-bold text-charcoal mb-4 flex items-center gap-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-display font-bold text-charcoal mb-4 flex items-center gap-2">
                     <LuPlus className="w-5 h-5 text-orange" />
                     Upload New Resume
                 </h2>
@@ -238,17 +238,17 @@ export default function SeekerResume() {
                             value={resumeTitle}
                             onChange={(e) => setResumeTitle(e.target.value)}
                             placeholder="e.g. Frontend Specialist, Product Manager"
-                            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-orange/20 focus:border-orange outline-hidden"
+                            className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:border-orange focus:ring-1 focus:ring-orange outline-hidden"
                         />
                     </div>
 
-                    <div className="border-2 border-dashed border-gray-200 hover:border-orange/50 rounded-xl p-8 text-center transition-colors bg-gray-50/40">
+                    <div className="border-2 border-dashed border-gray-200 hover:border-orange/50 rounded-lg p-8 text-center transition-colors bg-gray-50/40">
                         <LuUpload className="w-8 h-8 text-orange mx-auto mb-2" />
                         <p className="text-sm font-semibold text-charcoal">
                             {file ? file.name : 'Choose a file to upload'}
                         </p>
                         <p className="text-xs text-gray-500 mt-1 mb-4">Supported formats: PDF, DOC, DOCX (Max 5MB)</p>
-                        <label className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-charcoal text-xs font-semibold rounded-lg hover:bg-gray-50 cursor-pointer shadow-xs transition">
+                        <label className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-charcoal text-xs font-semibold rounded-md hover:bg-gray-50 cursor-pointer shadow-xs transition">
                             <span>Browse File</span>
                             <input
                                 type="file"
@@ -271,13 +271,15 @@ export default function SeekerResume() {
                         </label>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={!file || uploading}
-                        className="w-full bg-orange text-white py-2.5 px-4 rounded-lg font-semibold text-sm hover:bg-orange/90 disabled:opacity-50 transition shadow-sm"
-                    >
-                        {uploading ? 'Uploading resume...' : 'Save & Upload Resume'}
-                    </button>
+                    <div className="flex justify-end pt-2">
+                        <button
+                            type="submit"
+                            disabled={!file || uploading}
+                            className="inline-flex items-center justify-center bg-orange text-white py-2.5 px-5 rounded-md font-semibold text-sm hover:bg-orange/90 disabled:opacity-50 transition shadow-sm"
+                        >
+                            {uploading ? 'Uploading resume...' : 'Save & Upload Resume'}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
