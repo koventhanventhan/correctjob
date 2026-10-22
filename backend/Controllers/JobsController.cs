@@ -236,6 +236,80 @@ namespace HireConnect.API.Controllers
                 }
             }
 
+            var viewsCount = await _context.JobViews.CountAsync(v => v.JobId == job.Id);
+            var applicantsCount = await _context.Applications.CountAsync(a => a.JobId == job.Id);
+
+            var dto = new JobResponseDto
+            {
+                Id = job.Id,
+                CompanyId = job.CompanyId,
+                Title = job.Title,
+                Description = job.Description,
+                Requirements = job.Requirements,
+                Responsibilities = job.Responsibilities,
+                Location = job.Location,
+                IsRemote = job.IsRemote,
+                SalaryMin = job.SalaryMin,
+                SalaryMax = job.SalaryMax,
+                ExperienceMin = job.ExperienceMin,
+                ExperienceMax = job.ExperienceMax,
+                JobType = job.JobType,
+                CategoryId = job.CategoryId,
+                Deadline = job.Deadline,
+                Status = job.Status,
+                CreatedAt = job.CreatedAt,
+                IsPaid = job.IsPaid,
+                ClosedByAdmin = job.ClosedByAdmin,
+                PublishedAt = job.PublishedAt,
+                ViewsCount = viewsCount,
+                ApplicantsCount = applicantsCount,
+                Company = job.Company == null ? null : new JobCompanyDto
+                {
+                    Id = job.Company.Id,
+                    CompanyName = job.Company.CompanyName,
+                    LogoUrl = job.Company.LogoUrl,
+                    Location = job.Company.Location,
+                    Industry = job.Company.Industry,
+                    Website = job.Company.Website,
+                    Description = job.Company.Description,
+                    CompanySize = job.Company.CompanySize,
+                    IsApproved = job.Company.IsApproved
+                },
+                Category = job.Category == null ? null : new JobCategoryDto
+                {
+                    Id = job.Category.Id,
+                    Name = job.Category.Name
+                },
+                Skills = job.JobSkills.Select(js => js.Skill.Name).ToList(),
+                ScreeningQuestions = job.ScreeningQuestions
+                    .OrderBy(q => q.OrderIndex)
+                    .Select(q => new ScreeningQuestionResponseDto
+                    {
+                        Id = q.Id,
+                        QuestionText = q.QuestionText,
+                        QuestionType = q.QuestionType,
+                        IsRequired = q.IsRequired,
+                        IdealAnswer = q.IdealAnswer,
+                        OrderIndex = q.OrderIndex
+                    }).ToList()
+            };
+
+            return Ok(dto);
+        }
+
+        [HttpPost("{id}/view")]
+        public async Task<IActionResult> TrackJobView(int id)
+        {
+            var job = await _context.Jobs
+                .Include(j => j.Company)
+                .FirstOrDefaultAsync(j => j.Id == id);
+
+            if (job == null) return NotFound();
+
+            var isEmployer = User.IsInRole("Employer");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            bool isOwnJob = isEmployer && job.Company != null && job.Company.EmployerId == userId;
+
             // Views count: oru user/IP ku oru job ku oru naalaiku oru thadava mattum count, employer thaan paartha count pannaatha
             if (!isOwnJob)
             {
@@ -309,65 +383,7 @@ namespace HireConnect.API.Controllers
                 }
             }
 
-            var viewsCount = await _context.JobViews.CountAsync(v => v.JobId == job.Id);
-            var applicantsCount = await _context.Applications.CountAsync(a => a.JobId == job.Id);
-
-            var dto = new JobResponseDto
-            {
-                Id = job.Id,
-                CompanyId = job.CompanyId,
-                Title = job.Title,
-                Description = job.Description,
-                Requirements = job.Requirements,
-                Responsibilities = job.Responsibilities,
-                Location = job.Location,
-                IsRemote = job.IsRemote,
-                SalaryMin = job.SalaryMin,
-                SalaryMax = job.SalaryMax,
-                ExperienceMin = job.ExperienceMin,
-                ExperienceMax = job.ExperienceMax,
-                JobType = job.JobType,
-                CategoryId = job.CategoryId,
-                Deadline = job.Deadline,
-                Status = job.Status,
-                CreatedAt = job.CreatedAt,
-                IsPaid = job.IsPaid,
-                ClosedByAdmin = job.ClosedByAdmin,
-                PublishedAt = job.PublishedAt,
-                ViewsCount = viewsCount,
-                ApplicantsCount = applicantsCount,
-                Company = job.Company == null ? null : new JobCompanyDto
-                {
-                    Id = job.Company.Id,
-                    CompanyName = job.Company.CompanyName,
-                    LogoUrl = job.Company.LogoUrl,
-                    Location = job.Company.Location,
-                    Industry = job.Company.Industry,
-                    Website = job.Company.Website,
-                    Description = job.Company.Description,
-                    CompanySize = job.Company.CompanySize,
-                    IsApproved = job.Company.IsApproved
-                },
-                Category = job.Category == null ? null : new JobCategoryDto
-                {
-                    Id = job.Category.Id,
-                    Name = job.Category.Name
-                },
-                Skills = job.JobSkills.Select(js => js.Skill.Name).ToList(),
-                ScreeningQuestions = job.ScreeningQuestions
-                    .OrderBy(q => q.OrderIndex)
-                    .Select(q => new ScreeningQuestionResponseDto
-                    {
-                        Id = q.Id,
-                        QuestionText = q.QuestionText,
-                        QuestionType = q.QuestionType,
-                        IsRequired = q.IsRequired,
-                        IdealAnswer = q.IdealAnswer,
-                        OrderIndex = q.OrderIndex
-                    }).ToList()
-            };
-
-            return Ok(dto);
+            return Ok(new { success = true });
         }
 
         [HttpGet("{id}/similar")]

@@ -59,9 +59,9 @@ export default function LoginPage() {
                 <div className="flex justify-center">
                     <LuBriefcase className="h-12 w-12 text-orange" />
                 </div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-charcoal">
+                <h1 className="mt-6 text-center text-3xl font-extrabold text-charcoal">
                     Sign in to your account
-                </h2>
+                </h1>
                 <p className="mt-2 text-center text-sm text-gray-600">
                     Or{' '}
                     <Link href="/register" className="font-medium text-orange hover:text-orange">

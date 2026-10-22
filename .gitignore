@@ -80,4 +80,6 @@ repomix-output.*
 backend/test_*
 **/test_*
 test_*
+frontend/scripts/seo-check.mjs
+
 

@@ -118,9 +118,9 @@ export default function ChangePasswordPage() {
                         <LuKey className="w-7 h-7" />
                     </div>
                 </div>
-                <h2 className="mt-4 text-center text-2xl font-display font-bold text-charcoal">
+                <h1 className="mt-4 text-center text-2xl font-display font-bold text-charcoal">
                     Password Change Required
-                </h2>
+                </h1>
                 <p className="mt-2 text-center text-xs text-gray-600 max-w-sm mx-auto">
                     To safeguard your account and platform security, you must update your temporary or expired password before continuing.
                 </p>

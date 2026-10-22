@@ -276,6 +276,7 @@ export default function CareerAdvice() {
                 )}
 
                 {/* Articles Grid */}
+                <h2 className="sr-only">Career Advice Articles</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                     {filtered.map((article) => (
                         <div

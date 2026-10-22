@@ -18,7 +18,7 @@ export default function Footer() {
     return (
         <footer className="bg-gray-900 text-white mt-auto">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <nav aria-label="Footer Navigation" className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div className="col-span-1 md:col-span-1">
                         <Link href="/" className="flex items-center gap-2 mb-4">
                             <LuBriefcase className="h-8 w-8 text-orange" />
@@ -29,7 +29,7 @@ export default function Footer() {
                         </p>
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-200 tracking-wider uppercase mb-4">For Job Seekers</h3>
+                        <p className="text-sm font-semibold text-gray-200 tracking-wider uppercase mb-4">For Job Seekers</p>
                         <ul className="space-y-2 text-sm text-gray-400">
                             <li><Link href="/jobs" className="hover:text-white transition-colors">Browse Jobs</Link></li>
                             <li><Link href="/companies" className="hover:text-white transition-colors">Browse Companies</Link></li>
@@ -39,7 +39,7 @@ export default function Footer() {
                         </ul>
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-200 tracking-wider uppercase mb-4">For Employers</h3>
+                        <p className="text-sm font-semibold text-gray-200 tracking-wider uppercase mb-4">For Employers</p>
                         <ul className="space-y-2 text-sm text-gray-400">
                             <li><Link href="/register?role=employer" className="hover:text-white transition-colors">Post a Job</Link></li>
                             <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
@@ -47,7 +47,7 @@ export default function Footer() {
                         </ul>
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-200 tracking-wider uppercase mb-4">Company</h3>
+                        <p className="text-sm font-semibold text-gray-200 tracking-wider uppercase mb-4">Company</p>
                         <ul className="space-y-2 text-sm text-gray-400">
                             <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
                             <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
@@ -55,7 +55,7 @@ export default function Footer() {
                             <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
                         </ul>
                     </div>
-                </div>
+                </nav>
                 <div className="mt-8 border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
                     <p className="text-gray-400 text-sm">
                         &copy; {new Date().getFullYear()} {siteName}. All rights reserved.

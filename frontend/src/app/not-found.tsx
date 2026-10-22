@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LuSearchX, LuBriefcase, LuHouse } from "react-icons/lu";
+
+export const metadata: Metadata = {
+  title: "Page Not Found | HireConnect",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function NotFound() {
   return (

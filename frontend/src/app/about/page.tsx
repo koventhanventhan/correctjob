@@ -7,10 +7,10 @@ export default function AboutPage() {
         <div className="bg-warmwhite">
             <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
                 <div className="text-center">
-                    <h2 className="text-base font-semibold text-orange tracking-wide uppercase">About Us</h2>
-                    <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-charcoal sm:text-4xl">
-                        Empowering careers, connecting talent.
-                    </p>
+                    <span className="text-base font-semibold text-orange tracking-wide uppercase">About Us</span>
+                    <h1 className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-charcoal sm:text-4xl">
+                        About HireConnect: Empowering Careers & Talent
+                    </h1>
                     <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
                         HireConnect is the premier destination for job seekers to discover great opportunities and for employers to find the perfect fit.
                     </p>
@@ -19,11 +19,11 @@ export default function AboutPage() {
                 <div className="mt-16">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                         <div>
-                            <h3 className="text-2xl font-bold text-charcoal mb-4">Our Mission</h3>
+                            <h2 className="text-2xl font-bold text-charcoal mb-4">Our Mission</h2>
                             <p className="text-lg text-gray-600 mb-6">
                                 We believe that finding the right job shouldn't be a struggle. Our mission is to bridge the gap between talented individuals and forward-thinking companies through a seamless, transparent, and efficient platform.
                             </p>
-                            <h3 className="text-2xl font-bold text-charcoal mb-4">Why Choose HireConnect?</h3>
+                            <h2 className="text-2xl font-bold text-charcoal mb-4">Why Choose HireConnect?</h2>
                             <ul className="space-y-4 text-gray-600">
                                 <li className="flex items-start">
                                     <span className="h-6 w-6 flex items-center justify-center rounded-full bg-peach text-charcoal mr-3 shrink-0">✓</span>

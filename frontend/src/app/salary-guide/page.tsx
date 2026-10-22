@@ -225,6 +225,7 @@ export default function SalaryGuide() {
 
                 {/* Salary Benchmarks Grid */}
                 <div className="space-y-4 mb-12">
+                    <h2 className="sr-only">Market Salary Benchmarks</h2>
                     {filtered.length === 0 ? (
                         <div className="bg-white rounded-2xl p-12 text-center text-gray-500 border border-gray-200">
                             <LuDollarSign className="w-12 h-12 text-gray-300 mx-auto mb-2" />

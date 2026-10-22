@@ -18,6 +18,7 @@ export default function GlobalError({
 
   return (
     <div className="min-h-[75vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16">
+      <meta name="robots" content="noindex, nofollow" />
       <div className="max-w-md w-full text-center">
         <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xs border border-red-100">
           <LuTriangleAlert className="w-8 h-8" aria-hidden="true" />

@@ -56,13 +56,13 @@ export default function CompaniesPage() {
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="h-16 w-16 bg-peach rounded flex items-center justify-center border border-gray-200 shrink-0">
                                             {company.logoUrl ? (
-                                                <img src={getFileUrl(company.logoUrl)} alt={company.companyName} className="h-12 w-12 object-contain" />
+                                                <img src={getFileUrl(company.logoUrl)} alt={`${company.companyName} logo`} className="h-12 w-12 object-contain" width={48} height={48} />
                                             ) : (
                                                 <LuBuilding className="h-8 w-8 text-gray-400" />
                                             )}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg font-display font-bold text-charcoal group-hover:text-orange transition-colors line-clamp-1">{company.companyName}</h3>
+                                            <h2 className="text-lg font-display font-bold text-charcoal group-hover:text-orange transition-colors line-clamp-1">{company.companyName}</h2>
                                             <p className="text-sm text-gray-500 truncate">{company.industry}</p>
                                         </div>
                                     </div>

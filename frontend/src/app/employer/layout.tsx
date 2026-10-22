@@ -1,27 +1,18 @@
-'use client';
-import { useAuthStore } from '@/store/authStore';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import type { Metadata } from 'next';
+import EmployerAuthGuard from '@/components/employer/EmployerAuthGuard';
 
-export default function EmployerLayout({ children }: { children: React.ReactNode }) {
-    const { user, isInitializing } = useAuthStore();
-    const router = useRouter();
+export const metadata: Metadata = {
+  title: 'Employer Portal | HireConnect',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
-    useEffect(() => {
-        if (!isInitializing && (!user || user.role !== 'Employer')) {
-            router.push('/login');
-        }
-    }, [user, isInitializing, router]);
-
-    if (isInitializing) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-warmwhite">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange"></div>
-            </div>
-        );
-    }
-
-    if (!user || user.role !== 'Employer') return null;
-
-    return <>{children}</>;
+export default function EmployerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <EmployerAuthGuard>{children}</EmployerAuthGuard>;
 }
