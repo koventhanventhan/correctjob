@@ -113,15 +113,15 @@ export default function ManageJobsPage() {
     };
 
     const handleReopenClick = (job: any) => {
-        const isExpired = job.deadline && new Date(job.deadline) <= new Date();
+        const isExpired = job.status === 'Expired' || job.isExpired || (job.deadline && new Date(job.deadline) <= new Date());
         if (isExpired) {
-            // Prompt for a new deadline in modal
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 14);
-            setNewDeadlineDate(tomorrow.toISOString().split('T')[0]);
+            // Prompt for a new future deadline in modal
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + 14);
+            setNewDeadlineDate(futureDate.toISOString().split('T')[0]);
             setReopenModalJob(job);
         } else {
-            // Directly confirm reopen
+            // Directly confirm reopen for closed job with valid deadline
             if (window.confirm(`Reopen "${job.title}" for applications?`)) {
                 executeReopen(job.id, null);
             }
@@ -131,7 +131,12 @@ export default function ManageJobsPage() {
     const executeReopen = async (jobId: number, deadline: string | null) => {
         setReopeningId(jobId);
         try {
-            const payload = deadline ? { deadline: new Date(deadline).toISOString() } : {};
+            let payload: { deadline?: string } = {};
+            if (deadline) {
+                // Format deadline with end of day UTC so selecting today or future is strictly ahead
+                const dateObj = new Date(deadline.includes('T') ? deadline : `${deadline}T23:59:59Z`);
+                payload = { deadline: dateObj.toISOString() };
+            }
             const res = await api.post(`/Jobs/${jobId}/reopen`, payload);
             setMessage(res.data?.message || "Job reopened successfully.");
             setTimeout(() => setMessage(null), 4000);
@@ -154,9 +159,7 @@ export default function ManageJobsPage() {
         { key: 'Expired', label: 'Expired', count: statusCounts.expired }
     ];
 
-    const minDateTomorrow = new Date();
-    minDateTomorrow.setDate(minDateTomorrow.getDate() + 1);
-    const minDateStr = minDateTomorrow.toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -245,7 +248,7 @@ export default function ManageJobsPage() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {jobs.map((job) => {
-                                    const isExpired = job.deadline && new Date(job.deadline) <= new Date();
+                                    const isJobExpired = job.status === 'Expired' || job.isExpired || (job.deadline && new Date(job.deadline) <= new Date());
                                     return (
                                         <tr key={job.id} className="hover:bg-peach/40 transition-colors">
                                             {/* Title & Badges */}
@@ -254,7 +257,7 @@ export default function ManageJobsPage() {
                                                     <span>{job.title}</span>
                                                     {job.isRemote && (
                                                         <span className="text-[10px] font-bold px-2 py-0.5 bg-green-50 text-green-700 rounded-full border border-green-200">
-                                                            Remote
+                                                             Remote
                                                         </span>
                                                     )}
                                                     {job.jobType && (
@@ -272,12 +275,12 @@ export default function ManageJobsPage() {
                                             {/* Status Badge */}
                                             <td className="p-4">
                                                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium inline-block ${
-                                                    job.status === 'Published' && isExpired ? 'bg-red-50 text-red-700 border border-red-200' :
+                                                    job.status === 'Expired' || isJobExpired ? 'bg-red-50 text-red-700 border border-red-200' :
                                                     job.status === 'Published' ? 'bg-green-100 text-green-800' : 
                                                     job.status === 'Closed' ? 'bg-gray-100 text-gray-700' :
                                                     job.status === 'Draft' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-800'
                                                 }`}>
-                                                    {job.status === 'Published' && isExpired ? 'Expired' : job.status}
+                                                    {job.status === 'Expired' || isJobExpired ? 'Expired' : job.status}
                                                 </span>
                                             </td>
 
@@ -301,7 +304,7 @@ export default function ManageJobsPage() {
                                             {/* Deadline */}
                                             <td className="p-4 text-xs text-gray-500">
                                                 {job.deadline ? (
-                                                    <span className={isExpired ? 'text-red-600 font-medium' : ''}>
+                                                    <span className={isJobExpired ? 'text-red-600 font-medium' : ''}>
                                                         {new Date(job.deadline).toLocaleDateString()}
                                                     </span>
                                                 ) : (
@@ -318,12 +321,12 @@ export default function ManageJobsPage() {
                                                     Applicants
                                                 </Link>
                                                 
-                                                {job.status === 'Closed' ? (
+                                                {job.status === 'Closed' || job.status === 'Expired' || isJobExpired ? (
                                                     <button
                                                         type="button"
                                                         onClick={() => handleReopenClick(job)}
                                                         disabled={reopeningId === job.id}
-                                                        className="text-green-700 hover:text-green-900 font-semibold px-2 py-1 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
+                                                        className="text-green-700 hover:text-green-900 font-semibold px-2 py-1 rounded hover:bg-green-50 transition-colors disabled:opacity-50 cursor-pointer"
                                                     >
                                                         {reopeningId === job.id ? 'Reopening...' : 'Reopen'}
                                                     </button>
@@ -332,7 +335,7 @@ export default function ManageJobsPage() {
                                                         type="button"
                                                         onClick={() => handleCloseJob(job.id, job.title)}
                                                         disabled={closingId === job.id}
-                                                        className="text-amber-600 hover:text-amber-800 font-semibold px-2 py-1 rounded hover:bg-amber-50 transition-colors disabled:opacity-50"
+                                                        className="text-amber-600 hover:text-amber-800 font-semibold px-2 py-1 rounded hover:bg-amber-50 transition-colors disabled:opacity-50 cursor-pointer"
                                                     >
                                                         {closingId === job.id ? 'Closing...' : 'Close'}
                                                     </button>
@@ -372,13 +375,13 @@ export default function ManageJobsPage() {
                             </button>
                         </div>
                         <p className="text-sm text-gray-600 mb-4">
-                            The previous deadline for <strong>"{reopenModalJob.title}"</strong> has expired. Please choose a new future deadline to reopen this job for candidates:
+                            The deadline for <strong>"{reopenModalJob.title}"</strong> has expired. Please choose a new future deadline to reopen this job for candidates:
                         </p>
                         <div className="mb-6">
                             <label className="block text-xs font-semibold text-charcoal mb-1">New Application Deadline *</label>
                             <input
                                 type="date"
-                                min={minDateStr}
+                                min={todayStr}
                                 value={newDeadlineDate}
                                 onChange={(e) => setNewDeadlineDate(e.target.value)}
                                 className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"

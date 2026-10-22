@@ -781,11 +781,16 @@ namespace HireConnect.API.Controllers
                 query = query.Where(j => j.Title.Contains(s));
             }
 
+            var now = DateTime.UtcNow;
             if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
             {
                 if (status.Equals("Expired", StringComparison.OrdinalIgnoreCase))
                 {
-                    query = query.Where(j => j.Deadline.HasValue && j.Deadline.Value < DateTime.UtcNow && j.Status == "Published");
+                    query = query.Where(j => j.Status == "Expired" || (j.Status == "Published" && j.Deadline.HasValue && j.Deadline.Value < now));
+                }
+                else if (status.Equals("Published", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(j => j.Status == "Published" && (!j.Deadline.HasValue || j.Deadline.Value >= now));
                 }
                 else
                 {
@@ -805,11 +810,11 @@ namespace HireConnect.API.Controllers
             var counts = new
             {
                 all = allMyJobs.Count,
-                published = allMyJobs.Count(j => j.Status == "Published" && (!j.Deadline.HasValue || j.Deadline.Value >= DateTime.UtcNow)),
+                published = allMyJobs.Count(j => j.Status == "Published" && (!j.Deadline.HasValue || j.Deadline.Value >= now)),
                 draft = allMyJobs.Count(j => j.Status == "Draft"),
                 pendingApproval = allMyJobs.Count(j => j.Status == "PendingApproval"),
                 closed = allMyJobs.Count(j => j.Status == "Closed"),
-                expired = allMyJobs.Count(j => j.Deadline.HasValue && j.Deadline.Value < DateTime.UtcNow && j.Status == "Published")
+                expired = allMyJobs.Count(j => j.Status == "Expired" || (j.Status == "Published" && j.Deadline.HasValue && j.Deadline.Value < now))
             };
 
             var jobs = await query
@@ -838,6 +843,7 @@ namespace HireConnect.API.Controllers
                     IsPaid = j.IsPaid,
                     ClosedByAdmin = j.ClosedByAdmin,
                     PublishedAt = j.PublishedAt,
+                    IsExpired = j.Status == "Expired" || (j.Deadline.HasValue && j.Deadline.Value < now),
                     ViewsCount = j.Views.Count,
                     ApplicantsCount = j.Applications.Count,
                     Company = j.Company == null ? null : new JobCompanyDto
@@ -1115,10 +1121,10 @@ namespace HireConnect.API.Controllers
             // Ownership check: employers can only reopen their own jobs
             if (!isAdmin && job.Company.EmployerId != userId) return Forbid();
 
-            // Closed jobs only
-            if (job.Status != "Closed")
+            // Closed or Expired jobs only
+            if (job.Status != "Closed" && job.Status != "Expired")
             {
-                return BadRequest(new { message = $"Only closed jobs can be reopened. This job is currently '{job.Status}'." });
+                return BadRequest(new { message = $"Only closed or expired jobs can be reopened. This job is currently '{job.Status}'." });
             }
 
             if (!isAdmin)
@@ -1145,9 +1151,9 @@ namespace HireConnect.API.Controllers
                 }
             }
 
-            // Expired deadline check: if deadline is expired, require a new future deadline
-            bool isExpired = job.Deadline.HasValue && job.Deadline.Value <= DateTime.UtcNow;
-            if (isExpired)
+            // Expired deadline check: if status is Expired or deadline is expired, require a new future deadline
+            bool isExpiredJob = job.Status == "Expired" || (job.Deadline.HasValue && job.Deadline.Value <= DateTime.UtcNow);
+            if (isExpiredJob)
             {
                 if (model == null || !model.Deadline.HasValue || model.Deadline.Value <= DateTime.UtcNow)
                 {
