@@ -708,13 +708,13 @@ namespace HireConnect.API.Controllers
 
             var totalViews = viewsByJob.Values.Sum();
             var totalApps = appsByJob.Values.Sum();
-            var overallConversion = totalViews > 0 ? Math.Round((double)totalApps / totalViews * 100, 1) : 0;
+            var overallConversion = totalViews > 0 ? Math.Min(100.0, Math.Round((double)totalApps / totalViews * 100, 1)) : 0;
 
             var jobStats = jobs.Select(j =>
             {
                 var vCount = viewsByJob.GetValueOrDefault(j.Id, 0);
                 var aCount = appsByJob.GetValueOrDefault(j.Id, 0);
-                var conv = vCount > 0 ? Math.Round((double)aCount / vCount * 100, 1) : 0;
+                var conv = vCount > 0 ? Math.Min(100.0, Math.Round((double)aCount / vCount * 100, 1)) : 0;
                 return new JobAnalyticsItemDto
                 {
                     JobId = j.Id,

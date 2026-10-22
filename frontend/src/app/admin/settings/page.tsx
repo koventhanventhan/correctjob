@@ -51,8 +51,10 @@ export default function AdminSettings() {
     const [showNewPw, setShowNewPw] = useState(false);
     const [showConfirmPw, setShowConfirmPw] = useState(false);
     const [passwordSaving, setPasswordSaving] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
+        setImageError(false);
         if (user) {
             setFullName(user.fullName || '');
             if (user.profileImage) {
@@ -91,6 +93,7 @@ export default function AdminSettings() {
 
         setSelectedFile(file);
         setPreviewUrl(URL.createObjectURL(file));
+        setImageError(false);
     };
 
     // Upload profile photo
@@ -268,10 +271,11 @@ export default function AdminSettings() {
                     {/* User Mini Card */}
                     <div className="bg-warmwhite rounded-lg border border-gray-200 p-4 text-center shadow-sm">
                         <div className="relative inline-block mb-3">
-                            {previewUrl ? (
+                            {previewUrl && !imageError ? (
                                 <img
                                     src={previewUrl}
                                     alt="Admin Preview"
+                                    onError={() => setImageError(true)}
                                     className="w-16 h-16 rounded-full object-cover border-2 border-orange/20 mx-auto shadow-sm"
                                 />
                             ) : (
@@ -332,10 +336,11 @@ export default function AdminSettings() {
                             <form onSubmit={handlePhotoUpload} className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                                 {/* Avatar Preview */}
                                 <div className="relative group shrink-0">
-                                    {previewUrl ? (
+                                    {previewUrl && !imageError ? (
                                         <img
                                             src={previewUrl}
                                             alt="Profile Preview"
+                                            onError={() => setImageError(true)}
                                             className="w-24 h-24 rounded-full object-cover border-2 border-orange/20 shadow-sm"
                                         />
                                     ) : (

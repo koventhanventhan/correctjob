@@ -13,7 +13,8 @@ import {
     LuShieldCheck,
     LuBriefcase,
     LuUserCheck,
-    LuBell
+    LuBell,
+    LuSettings
 } from 'react-icons/lu';
 
 interface ProfileMenuProps {
@@ -142,6 +143,7 @@ export default function ProfileMenu({ className = '', profileHref, onItemClick }
                             <img
                                 src={avatarUrl}
                                 alt={user.fullName}
+                                onError={() => setImageError(true)}
                                 className="w-11 h-11 rounded-full object-cover border border-gray-200 shadow-xs flex-shrink-0"
                             />
                         ) : (
@@ -201,6 +203,20 @@ export default function ProfileMenu({ className = '', profileHref, onItemClick }
                             <LuUser className="w-4 h-4 text-gray-400 group-hover:text-orange" />
                             <span>My Profile</span>
                         </Link>
+                        {user.role !== 'Admin' && (
+                            <Link
+                                href={user.role === 'Employer' ? '/employer/settings' : '/seeker/settings'}
+                                role="menuitem"
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    if (onItemClick) onItemClick();
+                                }}
+                                className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange/5 hover:text-orange transition-colors"
+                            >
+                                <LuSettings className="w-4 h-4 text-gray-400 group-hover:text-orange" />
+                                <span>Account Settings</span>
+                            </Link>
+                        )}
                         <Link
                             href={user.role === 'Employer' ? '/employer/notifications' : user.role === 'Admin' ? '/admin/dashboard' : '/seeker/notifications'}
                             role="menuitem"

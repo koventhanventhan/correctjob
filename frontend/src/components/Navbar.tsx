@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useAuthStore } from '../store/authStore';
 import { LuBriefcase, LuMenu, LuX } from 'react-icons/lu';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/services/api';
 
 import ProfileMenu from './ProfileMenu';
@@ -26,6 +26,11 @@ export default function Navbar() {
     const { user, logout } = useAuthStore();
     const router = useRouter();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [mobileAvatarError, setMobileAvatarError] = useState(false);
+
+    useEffect(() => {
+        setMobileAvatarError(false);
+    }, [user?.profileImage]);
 
     const handleLogout = async () => {
         try {
@@ -175,10 +180,11 @@ export default function Navbar() {
                             <>
                                 <div className="flex items-center px-4 mb-3">
                                     <div className="flex-shrink-0">
-                                        {user.profileImage ? (
+                                        {user.profileImage && !mobileAvatarError ? (
                                             <img
                                                 src={getFileUrl(user.profileImage)}
                                                 alt={user.fullName}
+                                                onError={() => setMobileAvatarError(true)}
                                                 className="h-10 w-10 rounded-full object-cover border border-gray-200"
                                             />
                                         ) : (

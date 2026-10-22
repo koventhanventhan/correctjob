@@ -3,9 +3,9 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import { 
-    LuUsers, LuUser, LuBuilding, LuBriefcase, LuSearch, 
+    LuUsers, LuBuilding, LuBriefcase, LuSearch, 
     LuChevronLeft, LuChevronRight, LuMessageSquare, LuStar, LuBadgeCheck, 
-    LuUserCheck, LuShieldCheck, LuLock, LuSave, LuPen,
+    LuUserCheck, LuShieldCheck, LuSave,
     LuLayoutDashboard, LuTrendingUp, LuDollarSign, LuEye, LuClock, 
     LuCircleCheck, LuCircleAlert, LuArrowRight, LuRefreshCw,
     LuUserPlus, LuUserX, LuShieldAlert, LuInfo, LuEyeOff,
@@ -14,9 +14,7 @@ import {
 } from 'react-icons/lu';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { LuSettings } from 'react-icons/lu';
-import { getFileUrl } from '@/utils/imageUrl';
 
 interface TrendPoint {
     date: string;
@@ -66,16 +64,7 @@ interface DashboardStats {
 export default function AdminDashboard() {
     const { user, isInitializing } = useAuthStore();
     const router = useRouter();
-    const { setUser } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'users' | 'jobseekers' | 'companies' | 'reviews' | 'verifications' | 'employer-verifications' | 'reports' | 'categories' | 'locations' | 'payments' | 'settings' | 'audit-logs' | 'profile'>('overview');
-
-    // Profile editing state
-    const [profileData, setProfileData] = useState({ fullName: '', email: '' });
-    const [profileMsg, setProfileMsg] = useState('');
-    const [profileSaving, setProfileSaving] = useState(false);
-    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    const [passwordMsg, setPasswordMsg] = useState('');
-    const [passwordSaving, setPasswordSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'users' | 'jobseekers' | 'companies' | 'reviews' | 'verifications' | 'employer-verifications' | 'reports' | 'categories' | 'locations' | 'payments' | 'settings' | 'audit-logs'>('overview');
 
     // Trend chart interactive toggles & hover
     const [trendSeries, setTrendSeries] = useState({
@@ -84,63 +73,6 @@ export default function AdminDashboard() {
         applications: true
     });
     const [hoveredTrendIdx, setHoveredTrendIdx] = useState<number | null>(null);
-
-    // Sync profile data when user changes
-    useEffect(() => {
-        if (user) {
-            setProfileData({ fullName: user.fullName, email: user.email });
-        }
-    }, [user]);
-
-    const handleProfileSave = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setProfileSaving(true);
-        setProfileMsg('');
-        try {
-            const res = await api.put('/auth/profile', profileData);
-            setUser(res.data.user);
-            setProfileMsg('Profile updated successfully.');
-        } catch (error: any) {
-            setProfileMsg(error.response?.data?.message || 'Failed to update profile.');
-        } finally {
-            setProfileSaving(false);
-        }
-    };
-
-    const handlePasswordChange = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setPasswordSaving(true);
-        setPasswordMsg('');
-
-        if (passwordData.newPassword !== passwordData.confirmPassword) {
-            setPasswordMsg('New password and confirm password do not match.');
-            setPasswordSaving(false);
-            return;
-        }
-
-        if (passwordData.newPassword.length < 6) {
-            setPasswordMsg('New password must be at least 6 characters long.');
-            setPasswordSaving(false);
-            return;
-        }
-
-        try {
-            await api.post('/auth/change-password', {
-                currentPassword: passwordData.currentPassword,
-                newPassword: passwordData.newPassword
-            });
-            setPasswordMsg('Password changed successfully.');
-            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        } catch (error: any) {
-            setPasswordMsg(
-                error.response?.data?.message ||
-                error.response?.data?.[0]?.description ||
-                'Failed to change password.'
-            );
-        } finally {
-            setPasswordSaving(false);
-        }
-    };
     
     // Pagination & Search States
     const [jobsPage, setJobsPage] = useState(1);
@@ -1032,40 +964,6 @@ export default function AdminDashboard() {
         <div className="min-h-screen bg-warmwhite flex">
             {/* Sidebar */}
             <div className="w-64 bg-white shadow-sm hidden md:block flex-shrink-0 border-r border-gray-100">
-                {/* Admin Profile Card */}
-                <div className="p-5 border-b border-gray-100">
-                    <div className="flex items-center gap-3 mb-3">
-                        {user?.profileImage ? (
-                            <img
-                                src={getFileUrl(user.profileImage)}
-                                alt={user.fullName}
-                                className="w-11 h-11 rounded-full object-cover border border-gray-200 shadow-md flex-shrink-0"
-                            />
-                        ) : (
-                            <div className="w-11 h-11 rounded-full bg-orange flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0">
-                                {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
-                            </div>
-                        )}
-                        <div className="min-w-0">
-                            <p className="text-sm font-semibold text-charcoal truncate">{user?.fullName}</p>
-                            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange/10 text-orange border border-orange/20">
-                            <LuShieldCheck className="w-3 h-3" />
-                            {user?.role}
-                        </span>
-                        <button
-                            onClick={() => setActiveTab('profile')}
-                            className="inline-flex items-center gap-1 text-xs text-orange hover:text-orange/80 font-medium transition-colors"
-                        >
-                            <LuPen className="w-3 h-3" />
-                            Edit Profile
-                        </button>
-                    </div>
-                </div>
-
                 <div className="p-6 pb-2">
                     <h2 className="text-xl font-display font-bold text-charcoal">Admin Panel</h2>
                 </div>
@@ -1196,7 +1094,7 @@ export default function AdminDashboard() {
                         className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'settings' ? 'bg-orange text-white shadow-sm' : 'text-gray-700 hover:bg-peach'}`}
                     >
                         <LuSettings className="mr-3 h-5 w-5 flex-shrink-0" />
-                        <span>System Settings</span>
+                        <span>Platform Settings</span>
                     </button>
 
                     <button 
@@ -1206,24 +1104,6 @@ export default function AdminDashboard() {
                         <LuClock className="mr-3 h-5 w-5 flex-shrink-0" />
                         <span>Audit Logs</span>
                     </button>
-
-                    <div className="border-t border-gray-100 my-2 mx-1"></div>
-
-                    <button 
-                        onClick={() => setActiveTab('profile')} 
-                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'profile' ? 'bg-orange text-white shadow-sm' : 'text-gray-700 hover:bg-peach'}`}
-                    >
-                        <LuShieldCheck className="mr-3 h-5 w-5 flex-shrink-0" />
-                        <span>Profile & Security</span>
-                    </button>
-
-                    <Link 
-                        href="/admin/settings" 
-                        className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-peach transition-all"
-                    >
-                        <LuUser className="mr-3 h-5 w-5 flex-shrink-0" />
-                        <span>Account Settings</span>
-                    </Link>
                 </nav>
             </div>
 
@@ -1252,9 +1132,8 @@ export default function AdminDashboard() {
                         <option value="categories">Manage Categories</option>
                         <option value="locations">Manage Locations</option>
                         <option value="payments">Platform Payments</option>
-                        <option value="settings">System Settings</option>
+                        <option value="settings">Platform Settings</option>
                         <option value="audit-logs">Audit Logs</option>
-                        <option value="profile">Profile & Security</option>
                     </select>
                 </div>
 
@@ -1280,13 +1159,6 @@ export default function AdminDashboard() {
                                     <LuRefreshCw className={`w-4 h-4 text-orange ${isStatsFetching ? 'animate-spin' : ''}`} />
                                     <span>{isStatsFetching ? 'Refreshing...' : 'Refresh Live Data'}</span>
                                 </button>
-                                <Link
-                                    href="/admin/settings"
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 transition-colors shadow-sm"
-                                >
-                                    <LuSettings className="w-4 h-4 text-orange" />
-                                    <span>System Settings</span>
-                                </Link>
                             </div>
                         </div>
 
@@ -1339,7 +1211,7 @@ export default function AdminDashboard() {
                                         <LuTrendingUp className="w-6 h-6" />
                                     </div>
                                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                                        {dashboardStats?.applications.conversionRate ?? 0}% Rate
+                                        {(dashboardStats?.applications.views ?? 0) > 0 ? `${Math.min(100, dashboardStats?.applications.conversionRate ?? 0)}% Rate` : (dashboardStats?.applications.total ?? 0) > 0 ? 'N/A' : '0% Rate'}
                                     </span>
                                 </div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Applications Submitted</p>
@@ -1956,6 +1828,9 @@ export default function AdminDashboard() {
                                     <option value="PendingApproval">Pending Approval</option>
                                     <option value="Approved">Approved</option>
                                     <option value="Published">Published</option>
+                                    <option value="Closed">Closed</option>
+                                    <option value="Expired">Expired</option>
+                                    <option value="Rejected">Rejected</option>
                                 </select>
                                 <div className="flex items-center border rounded px-2 bg-warmwhite">
                                     <LuSearch className="w-4 h-4 text-gray-400" />
@@ -3743,7 +3618,7 @@ export default function AdminDashboard() {
                             <div>
                                 <h2 className="text-xl font-display font-bold text-charcoal flex items-center gap-2">
                                     <LuSettings className="w-5 h-5 text-orange" />
-                                    System & Platform Settings
+                                    Platform Settings
                                 </h2>
                                 <p className="text-xs text-gray-500 mt-1">
                                     Configure global platform configurations, job posting rates, contact details, and maintenance mode.
@@ -3770,7 +3645,7 @@ export default function AdminDashboard() {
                             )}
 
                             {isSettingsLoading ? (
-                                <div className="py-12 text-center text-xs text-gray-400">Loading system settings...</div>
+                                <div className="py-12 text-center text-xs text-gray-400">Loading platform settings...</div>
                             ) : (
                                 <form onSubmit={(e) => { e.preventDefault(); handleSaveSettings(); }} className="space-y-6">
                                     {/* Site Name */}
@@ -4149,135 +4024,6 @@ export default function AdminDashboard() {
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'profile' && (
-                    <div className="max-w-2xl">
-                        <h2 className="text-2xl font-display font-bold text-charcoal mb-6">Profile & Security</h2>
-
-                        {/* Edit Profile Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                            <div className="flex items-center gap-4 mb-6">
-                                {user?.profileImage ? (
-                                    <img
-                                        src={getFileUrl(user.profileImage)}
-                                        alt={user.fullName}
-                                        className="w-16 h-16 rounded-full object-cover border-2 border-orange/20 shadow-sm flex-shrink-0"
-                                    />
-                                ) : (
-                                    <div className="w-16 h-16 rounded-full bg-orange flex items-center justify-center text-white font-bold text-2xl shadow-sm flex-shrink-0">
-                                        {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
-                                    </div>
-                                )}
-                                <div>
-                                    <h3 className="text-lg font-semibold text-charcoal">{user?.fullName}</h3>
-                                    <p className="text-sm text-gray-500">{user?.email}</p>
-                                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-orange/10 text-orange border border-orange/20">
-                                        <LuShieldCheck className="w-3 h-3" />
-                                        {user?.role}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <h4 className="text-base font-semibold text-charcoal mb-4 border-b border-gray-100 pb-2">Edit Profile</h4>
-                            <form onSubmit={handleProfileSave} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={profileData.fullName}
-                                        onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={profileData.email}
-                                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
-                                    />
-                                </div>
-
-                                {profileMsg && (
-                                    <p className={`text-sm font-medium ${profileMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
-                                        {profileMsg}
-                                    </p>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={profileSaving}
-                                    className="flex items-center justify-center bg-orange text-white px-5 py-2.5 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50 transition-all shadow-sm text-sm"
-                                >
-                                    <LuSave className="w-4 h-4 mr-2" />
-                                    {profileSaving ? 'Saving...' : 'Save Changes'}
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* Change Password Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h4 className="text-base font-semibold text-charcoal mb-4 border-b border-gray-100 pb-2 flex items-center">
-                                <LuLock className="w-4 h-4 mr-2 text-gray-500" />
-                                Change Password
-                            </h4>
-                            <form onSubmit={handlePasswordChange} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={passwordData.currentPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={passwordData.newPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        placeholder="Re-enter new password"
-                                        value={passwordData.confirmPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
-                                    />
-                                    {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
-                                        <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
-                                    )}
-                                </div>
-
-                                {passwordMsg && (
-                                    <p className={`text-sm font-medium ${passwordMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
-                                        {passwordMsg}
-                                    </p>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={passwordSaving}
-                                    className="flex items-center justify-center bg-charcoal text-white px-5 py-2.5 rounded-md font-medium hover:bg-charcoal/90 disabled:opacity-50 transition-all shadow-sm text-sm"
-                                >
-                                    <LuLock className="w-4 h-4 mr-2" />
-                                    {passwordSaving ? 'Updating...' : 'Update Password'}
-                                </button>
-                            </form>
                         </div>
                     </div>
                 )}

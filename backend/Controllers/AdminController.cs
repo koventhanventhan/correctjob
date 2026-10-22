@@ -1246,14 +1246,14 @@ namespace HireConnect.API.Controllers
 
             var totalApplications = await _context.Applications.CountAsync();
             var totalViews = await _context.JobViews.CountAsync();
-            var conversionRate = totalViews > 0 ? Math.Round(((double)totalApplications / totalViews) * 100, 2) : 0.0;
+            var conversionRate = totalViews > 0 ? Math.Min(100.0, Math.Round(((double)totalApplications / totalViews) * 100, 2)) : 0.0;
 
             var completedPayments = _context.Payments.Where(p => p.Status == "Completed");
             var totalRevenue = await completedPayments.SumAsync(p => (decimal?)p.Amount) ?? 0m;
             var completedPaymentsCount = await completedPayments.CountAsync();
             var pendingPaymentsCount = await _context.Payments.CountAsync(p => p.Status == "Pending");
 
-            var pendingJobs = draftJobs + pendingApprovalJobs;
+            var pendingJobs = pendingApprovalJobs;
             var pendingCompanies = await _context.Companies.CountAsync(c => !c.IsApproved);
             var pendingSeekerVerifications = await _context.SeekerProfiles.CountAsync(s => s.VerificationStatus == "Pending");
             var pendingEmployerVerifications = await _context.Companies.CountAsync(c => c.VerificationStatus == "Pending");

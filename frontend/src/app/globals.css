@@ -45,3 +45,9 @@ input, textarea, select {
   outline: 2px solid var(--color-orange);
   outline-offset: 2px;
 }
+
+/* Hide Next.js Dev Tools UI */
+#devtools-indicator, #next-logo { display: none !important; }
+
+/* Hide Next.js Dev Tools button */
+#next-logo { display: none !important; }

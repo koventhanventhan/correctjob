@@ -56,8 +56,10 @@ export default function EmployerSettings() {
     const [showCurrentPw, setShowCurrentPw] = useState(false);
     const [showNewPw, setShowNewPw] = useState(false);
     const [showConfirmPw, setShowConfirmPw] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
+        setImageError(false);
         if (user) {
             setFullName(user.fullName || '');
             if (user.profileImage) {
@@ -89,6 +91,7 @@ export default function EmployerSettings() {
 
         setSelectedFile(file);
         setPreviewUrl(URL.createObjectURL(file));
+        setImageError(false);
     };
 
     const handlePhotoUpload = async (e: React.FormEvent) => {
@@ -315,8 +318,8 @@ export default function EmployerSettings() {
 
                                     <form onSubmit={handlePhotoUpload} className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                                         <div className="relative group shrink-0">
-                                            {previewUrl ? (
-                                                <img src={previewUrl} alt="Profile Preview" className="w-24 h-24 rounded-full object-cover border-2 border-gray-200" />
+                                            {previewUrl && !imageError ? (
+                                                <img src={previewUrl} alt="Profile Preview" onError={() => setImageError(true)} className="w-24 h-24 rounded-full object-cover border-2 border-gray-200" />
                                             ) : (
                                                 <div className="w-24 h-24 rounded-full bg-orange text-white font-bold text-2xl flex items-center justify-center">
                                                     {initials}

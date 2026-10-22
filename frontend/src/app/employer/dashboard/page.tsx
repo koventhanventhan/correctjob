@@ -9,7 +9,6 @@ import AnalyticsTrendChart from '@/components/AnalyticsTrendChart';
 import {
     LuBriefcase,
     LuFileText,
-    LuSettings,
     LuEye,
     LuTrendingUp,
     LuPercent,
@@ -94,13 +93,6 @@ export default function EmployerDashboard() {
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <Link
-                            href="/employer/settings"
-                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-md shadow-sm transition"
-                        >
-                            <LuSettings className="w-4 h-4 text-gray-500" />
-                            Settings
-                        </Link>
-                        <Link
                             href="/employer/post-job"
                             className="inline-flex items-center justify-center gap-1.5 px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-orange hover:bg-orange/90 rounded-md shadow-sm transition"
                         >
@@ -170,7 +162,7 @@ export default function EmployerDashboard() {
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Conversion Rate</p>
                                 <p className="text-2xl font-display font-bold text-charcoal mt-1.5">
-                                    {overallConversion}%
+                                    {totalViews > 0 ? `${Math.min(100, overallConversion)}%` : totalApplications > 0 ? 'N/A' : '0%'}
                                 </p>
                                 <p className="text-xs text-gray-500 font-medium mt-1">
                                     Applications per view
@@ -308,7 +300,7 @@ export default function EmployerDashboard() {
                                                                 : 'bg-gray-100 text-gray-500'
                                                         }`}
                                                     >
-                                                        {convRate}%
+                                                        {item.viewsCount > 0 ? `${Math.min(100, convRate)}%` : item.applicationsCount > 0 ? 'N/A' : '0%'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">
