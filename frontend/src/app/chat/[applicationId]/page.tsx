@@ -116,22 +116,22 @@ export default function ChatPage() {
     return (
         <div className="max-w-4xl mx-auto p-0 sm:p-4 md:p-8 h-[calc(100dvh-64px)] sm:h-[calc(100vh-100px)] flex flex-col">
             {/* Header */}
-            <div className="bg-warmwhite p-4 sm:rounded-t-xl shadow-sm border-b flex items-center justify-between">
+            <div className="bg-white p-4 sm:rounded-t-lg shadow-xs border border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => router.back()} className="text-gray-500 hover:text-charcoal">
-                        <LuArrowLeft className="w-6 h-6" />
+                    <button onClick={() => router.back()} className="text-gray-500 hover:text-charcoal cursor-pointer">
+                        <LuArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-lg font-semibold text-charcoal">Chat</h1>
-                        <p className="text-sm text-gray-500">Application #{applicationId}</p>
+                        <h1 className="text-base font-semibold text-charcoal">Chat</h1>
+                        <p className="text-xs text-gray-500">Application #{applicationId}</p>
                     </div>
                 </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto bg-warmwhite p-4 shadow-sm border-x flex flex-col gap-3">
+            <div className="flex-1 overflow-y-auto bg-warmwhite p-4 border-x border-gray-200 flex flex-col gap-3">
                 {messages.length === 0 ? (
-                    <div className="flex-1 flex items-center justify-center text-gray-400">
+                    <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
                         No messages yet. Send a message to start the conversation!
                     </div>
                 ) : (
@@ -140,7 +140,7 @@ export default function ChatPage() {
                         return (
                             <div key={msg.id} className={`flex flex-col max-w-[85%] sm:max-w-[70%] ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
                                 {!isMine && <span className="text-xs text-gray-500 mb-1 ml-1">{msg.senderName}</span>}
-                                <div className={`px-4 py-2 rounded-2xl break-words w-full ${isMine ? 'bg-orange text-white rounded-br-sm' : 'bg-warmwhite text-charcoal border rounded-bl-sm'}`}>
+                                <div className={`px-4 py-2.5 rounded-lg text-sm break-words w-full shadow-xs ${isMine ? 'bg-orange text-white rounded-br-none' : 'bg-white text-charcoal border border-gray-200 rounded-bl-none'}`}>
                                     {msg.content}
                                 </div>
                                 <span className="text-[10px] text-gray-400 mt-1 mx-1">
@@ -154,21 +154,21 @@ export default function ChatPage() {
             </div>
 
             {/* Input Area */}
-            <div className="bg-warmwhite p-4 rounded-b-xl shadow-sm border-t border-x">
+            <div className="bg-white p-4 sm:rounded-b-lg shadow-xs border border-gray-200">
                 <form onSubmit={sendMessage} className="flex gap-2">
                     <input
                         type="text"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Type a message..."
-                        className="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange"
+                        className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-sm text-charcoal focus:outline-none focus:ring-1 focus:ring-orange focus:border-orange"
                     />
                     <button
                         type="submit"
                         disabled={!newMessage.trim() || !hubConnection}
-                        className="bg-orange text-white p-2 rounded-full hover:bg-orange/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-10 h-10"
+                        className="bg-orange text-white p-2 rounded-md hover:bg-orange/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-10 h-10 shrink-0 cursor-pointer shadow-xs transition-colors"
                     >
-                        <LuSend className="w-5 h-5" />
+                        <LuSend className="w-4 h-4" />
                     </button>
                 </form>
             </div>

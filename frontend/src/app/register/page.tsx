@@ -68,7 +68,7 @@ function RegisterContent() {
             </div>
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-warmwhite py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-200">
+                <div className="bg-white py-8 px-6 shadow-sm rounded-lg sm:px-8 border border-gray-200">
                     <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-sm">

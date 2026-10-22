@@ -6,7 +6,6 @@ import { useAuthStore } from '@/store/authStore';
 import { 
     LuMapPin, 
     LuBriefcase, 
-    LuIndianRupee, 
     LuClock, 
     LuBuilding, 
     LuBookmark, 
@@ -20,6 +19,7 @@ import {
 import { useState } from 'react';
 import Link from 'next/link';
 import { getFileUrl } from '@/utils/fileUrl';
+import { formatSalary } from '@/utils/currency';
 
 export default function JobDetailsPage() {
     const params = useParams();
@@ -219,10 +219,10 @@ export default function JobDetailsPage() {
                 )}
 
                 {/* Header Card */}
-                <div className="bg-warmwhite p-6 md:p-8 rounded-2xl shadow-sm border border-gray-200 mb-6">
+                <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 mb-6">
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                         <div className="flex items-start gap-4">
-                            <div className="h-16 w-16 bg-peach rounded-xl flex items-center justify-center flex-shrink-0 border border-gray-200 shadow-inner">
+                            <div className="h-16 w-16 bg-peach/40 rounded-md flex items-center justify-center flex-shrink-0 border border-gray-200">
                                 {job.company?.logoUrl ? (
                                     <img src={getFileUrl(job.company.logoUrl)} alt={job.company.companyName} className="h-12 w-12 object-contain" />
                                 ) : (
@@ -244,9 +244,8 @@ export default function JobDetailsPage() {
                                     <span className="flex items-center gap-1.5"><LuMapPin className="h-4 w-4 text-gray-400" /> {job.location || 'Remote'}</span>
                                     <span className="flex items-center gap-1.5"><LuBriefcase className="h-4 w-4 text-gray-400" /> {job.jobType}</span>
                                     {job.salaryMin && (
-                                        <span className="flex items-center gap-1.5 font-semibold text-charcoal">
-                                            <LuIndianRupee className="h-4 w-4 text-gray-400" />
-                                            {job.salaryMin.toLocaleString()} - {job.salaryMax ? job.salaryMax.toLocaleString() : 'Negotiable'}
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md font-semibold text-charcoal bg-gray-100 text-xs sm:text-sm">
+                                            {formatSalary(job.salaryMin, job.salaryMax)}
                                         </span>
                                     )}
                                     <span className="flex items-center gap-1.5"><LuClock className="h-4 w-4 text-gray-400" /> Posted {new Date(job.createdAt).toLocaleDateString()}</span>
@@ -262,10 +261,10 @@ export default function JobDetailsPage() {
                                     toggleSaveMutation.mutate();
                                 }}
                                 disabled={toggleSaveMutation.isPending}
-                                className={`flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl shadow-sm text-sm font-semibold focus:outline-none transition-all ${
+                                className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-md shadow-xs text-sm font-semibold focus:outline-none transition-colors cursor-pointer min-h-[40px] ${
                                     isSaved 
                                     ? 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100' 
-                                    : 'border-gray-300 text-gray-700 bg-warmwhite hover:bg-peach'
+                                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
                                 }`}
                             >
                                 <LuBookmark className={`h-4 w-4 ${isSaved ? 'fill-current text-amber-600' : ''}`} /> 
@@ -274,7 +273,7 @@ export default function JobDetailsPage() {
 
                             <button 
                                 onClick={handleShare}
-                                className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm text-sm font-semibold text-gray-700 bg-warmwhite hover:bg-peach focus:outline-none transition-all"
+                                className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-xs text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors cursor-pointer min-h-[40px]"
                             >
                                 {copied ? <LuCheck className="h-4 w-4 text-emerald-600" /> : <LuShare2 className="h-4 w-4" />}
                                 {copied ? 'Link Copied!' : 'Share'}
@@ -282,7 +281,7 @@ export default function JobDetailsPage() {
 
                             {isSeeker ? (
                                 isApplied ? (
-                                    <div className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold shadow-sm text-sm">
+                                    <div className="flex items-center gap-2 px-5 py-2 bg-emerald-600 text-white rounded-md font-semibold shadow-xs text-sm min-h-[40px]">
                                         <LuCheck className="w-4 h-4" />
                                         Applied
                                     </div>
@@ -292,14 +291,14 @@ export default function JobDetailsPage() {
                                             setApplyError('');
                                             setIsApplyModalOpen(true);
                                         }}
-                                        className="bg-orange text-white px-8 py-2.5 rounded-xl font-semibold hover:bg-orange/90 transition-all shadow-md active:scale-95"
+                                        className="bg-orange text-white px-7 py-2 rounded-md font-semibold hover:bg-orange/90 transition-colors shadow-xs cursor-pointer min-h-[40px]"
                                     >
                                         Apply Now
                                     </button>
                                 )
                             ) : (
                                 !user && (
-                                    <Link href="/login" className="bg-orange text-white px-8 py-2.5 rounded-xl font-semibold hover:bg-orange/90 text-center flex items-center justify-center shadow-md">
+                                    <Link href="/login" className="bg-orange text-white px-7 py-2 rounded-md font-semibold hover:bg-orange/90 text-center flex items-center justify-center shadow-xs min-h-[40px]">
                                         Sign in to Apply
                                     </Link>
                                 )
@@ -481,8 +480,7 @@ export default function JobDetailsPage() {
                                             )}
                                             {simJob.salaryMin && (
                                                 <span className="flex items-center gap-1 font-semibold text-charcoal">
-                                                    <LuIndianRupee className="w-3.5 h-3.5 text-gray-400" />
-                                                    {simJob.salaryMin.toLocaleString()} - {simJob.salaryMax ? simJob.salaryMax.toLocaleString() : 'Negotiable'}
+                                                    {formatSalary(simJob.salaryMin, simJob.salaryMax)}
                                                 </span>
                                             )}
                                         </div>
@@ -505,8 +503,8 @@ export default function JobDetailsPage() {
 
             {/* Step 5: Advanced Apply Modal (Screening Questions + Multiple Resumes) */}
             {isApplyModalOpen && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 sm:p-8 relative border border-gray-100 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6 sm:p-8 relative border border-gray-200 max-h-[90vh] overflow-y-auto">
                         <button
                             type="button"
                             onClick={() => setIsApplyModalOpen(false)}
@@ -695,14 +693,14 @@ export default function JobDetailsPage() {
                                 <button
                                     type="button"
                                     onClick={() => setIsApplyModalOpen(false)}
-                                    className="w-full sm:w-auto px-5 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 text-center"
+                                    className="w-full sm:w-auto px-5 py-2.5 border border-gray-300 rounded-md text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 text-center cursor-pointer min-h-[40px]"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={applyMutation.isPending}
-                                    className="w-full sm:w-auto px-6 py-2.5 bg-orange text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-orange/90 disabled:opacity-50 transition-all shadow-md text-center active:scale-95"
+                                    className="w-full sm:w-auto px-6 py-2.5 bg-orange text-white rounded-md text-xs sm:text-sm font-bold hover:bg-orange/90 disabled:opacity-50 transition-colors shadow-xs text-center cursor-pointer min-h-[40px]"
                                 >
                                     {applyMutation.isPending ? 'Submitting Application...' : 'Submit Application'}
                                 </button>
@@ -711,6 +709,53 @@ export default function JobDetailsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Sticky Mobile Apply Bar (Seek-style) */}
+            <div className="fixed bottom-0 left-0 right-0 p-3 bg-white border-t border-gray-200 sm:hidden z-30 flex items-center justify-between gap-3 shadow-lg">
+                <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-charcoal truncate">{job.title}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{job.company?.companyName}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                    <button
+                        onClick={() => {
+                            if (!isSeeker) return alert("Please sign in as a Job Seeker to save jobs.");
+                            toggleSaveMutation.mutate();
+                        }}
+                        disabled={toggleSaveMutation.isPending}
+                        className={`p-2 border rounded-md text-sm transition-colors cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center ${
+                            isSaved ? 'bg-amber-50 border-amber-300 text-amber-800' : 'border-gray-300 text-gray-700 bg-white'
+                        }`}
+                        aria-label="Save job"
+                    >
+                        <LuBookmark className={`h-4 w-4 ${isSaved ? 'fill-current text-amber-600' : ''}`} />
+                    </button>
+                    {isSeeker ? (
+                        isApplied ? (
+                            <div className="px-4 py-2 bg-emerald-600 text-white rounded-md font-semibold text-xs flex items-center gap-1 min-h-[38px]">
+                                <LuCheck className="w-3.5 h-3.5" /> Applied
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    setApplyError('');
+                                    setIsApplyModalOpen(true);
+                                }}
+                                className="px-4 py-2 bg-orange hover:bg-orange/90 text-white rounded-md font-bold text-xs shadow-xs cursor-pointer min-h-[38px]"
+                            >
+                                Apply Now
+                            </button>
+                        )
+                    ) : (
+                        <Link
+                            href={`/login?redirect=/jobs/${id}`}
+                            className="px-4 py-2 bg-orange hover:bg-orange/90 text-white rounded-md font-bold text-xs shadow-xs min-h-[38px] flex items-center justify-center"
+                        >
+                            Sign in to Apply
+                        </Link>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

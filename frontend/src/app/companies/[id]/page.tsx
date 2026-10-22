@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { LuBuilding, LuMapPin, LuGlobe, LuBriefcase, LuIndianRupee, LuClock, LuStar, LuMessageSquare, LuSparkles } from 'react-icons/lu';
+import { LuBuilding, LuMapPin, LuGlobe, LuBriefcase, LuClock, LuStar, LuMessageSquare, LuSparkles } from 'react-icons/lu';
 import { FaLinkedin, FaTwitter, FaFacebook } from 'react-icons/fa';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { getFileUrl } from '@/utils/fileUrl';
+import { formatSalary } from '@/utils/currency';
 
 export default function CompanyDetailsPage() {
     const params = useParams();
@@ -81,8 +82,8 @@ export default function CompanyDetailsPage() {
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 {/* Header */}
-                <div className="bg-warmwhite p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 mb-6 relative overflow-hidden">
-                    <div className="h-36 sm:h-44 absolute top-0 left-0 right-0 overflow-hidden bg-gradient-to-r from-orange to-amber-500">
+                <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 mb-6 relative overflow-hidden">
+                    <div className="h-36 sm:h-44 absolute top-0 left-0 right-0 overflow-hidden bg-orange">
                         {company.bannerUrl && (
                             <img 
                                 src={getFileUrl(company.bannerUrl)} 
@@ -90,7 +91,7 @@ export default function CompanyDetailsPage() {
                                 className="w-full h-full object-cover" 
                             />
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                        <div className="absolute inset-0 bg-black/20"></div>
                     </div>
                     <div className="relative mt-20 sm:mt-24 flex flex-col md:flex-row md:items-end gap-6">
                         <div className="h-28 w-28 sm:h-32 sm:w-32 bg-warmwhite rounded-xl p-2 shadow border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
@@ -318,7 +319,7 @@ export default function CompanyDetailsPage() {
                                                 <span className="flex items-center gap-1"><LuMapPin className="h-4 w-4" /> {job.location}</span>
                                                 <span className="flex items-center gap-1"><LuBriefcase className="h-4 w-4" /> {job.jobType}</span>
                                                 {job.salaryMin && (
-                                                    <span className="flex items-center gap-1"><LuIndianRupee className="h-4 w-4" /> {job.salaryMin} - {job.salaryMax}</span>
+                                                    <span className="font-medium text-charcoal">{formatSalary(job.salaryMin, job.salaryMax)}</span>
                                                 )}
                                                 <span className="flex items-center gap-1"><LuClock className="h-4 w-4" /> {new Date(job.createdAt).toLocaleDateString()}</span>
                                             </div>

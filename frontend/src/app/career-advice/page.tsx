@@ -199,9 +199,9 @@ export default function CareerAdvice() {
     });
 
     return (
-        <div className="min-h-screen bg-gray-50/50 pb-16">
+        <div className="min-h-screen bg-warmwhite pb-16">
             {/* Hero Section */}
-            <div className="bg-gradient-to-b from-orange/10 via-amber-500/5 to-transparent border-b border-orange/10 pt-12 pb-16 px-4 sm:px-6 lg:px-8">
+            <div className="bg-white border-b border-gray-200 pt-12 pb-16 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto text-center space-y-4">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange/15 text-orange border border-orange/20">
                         <LuBookOpen className="w-3.5 h-3.5" />
@@ -223,7 +223,7 @@ export default function CareerAdvice() {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Search advice (e.g. ATS, Interview, STAR, Salary)..."
-                                className="w-full bg-white rounded-2xl pl-12 pr-4 py-3.5 text-sm border border-gray-200 shadow-sm focus:ring-2 focus:ring-orange/30 focus:border-orange outline-hidden"
+                                className="w-full bg-white rounded-md pl-12 pr-4 py-3 text-sm border border-gray-300 shadow-xs focus:ring-1 focus:ring-orange focus:border-orange outline-hidden"
                             />
                         </div>
                     </div>
@@ -232,12 +232,12 @@ export default function CareerAdvice() {
 
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
                 {/* Category Pills */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-3 shadow-sm flex flex-wrap items-center gap-1.5 mb-8">
+                <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-xs flex flex-wrap items-center gap-1.5 mb-8">
                     {CATEGORIES.map((cat) => (
                         <button
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer min-h-[36px] ${
                                 selectedCategory === cat
                                     ? 'bg-orange text-white shadow-xs'
                                     : 'text-gray-600 hover:bg-gray-100'
@@ -252,7 +252,7 @@ export default function CareerAdvice() {
                 {selectedCategory === 'All' && !searchTerm && (
                     <div 
                         onClick={() => setActiveArticle(ARTICLES[0])}
-                        className="bg-gradient-to-br from-charcoal via-gray-900 to-black text-white rounded-3xl p-6 sm:p-8 mb-8 shadow-xl cursor-pointer hover:ring-2 hover:ring-orange/50 transition-all group"
+                        className="bg-charcoal text-white rounded-lg p-6 sm:p-8 mb-8 shadow-sm border border-gray-800 cursor-pointer hover:border-gray-700 transition-all group"
                     >
                         <div className="flex items-center gap-2 text-orange text-xs font-bold uppercase tracking-wider mb-2">
                             <LuFileText className="w-4 h-4" />
@@ -337,8 +337,8 @@ export default function CareerAdvice() {
 
             {/* Full Article Reader Modal */}
             {activeArticle && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 flex flex-col animate-in fade-in zoom-in-95">
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-lg border border-gray-200 flex flex-col">
                         {/* Modal Header */}
                         <div className="p-6 border-b border-gray-100 flex items-start justify-between gap-4 bg-gray-50/50">
                             <div>

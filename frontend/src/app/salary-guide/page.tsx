@@ -146,13 +146,9 @@ export default function SalaryGuide() {
     const formatCurrency = (amount: number) => {
         let value = amount;
         if (period === 'monthly') value = Math.round(amount / 12);
-        if (period === 'hourly') value = Math.round(amount / 1920); // ~40h/wk * 48 wks
+        if (period === 'hourly') value = Math.round(amount / 1920);
 
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            maximumFractionDigits: 0
-        }).format(value);
+        return `LKR ${Math.round(value).toLocaleString('en-LK')}`;
     };
 
     // Calculate user comparison
@@ -160,9 +156,9 @@ export default function SalaryGuide() {
     const comparisonRatio = userSalary ? (Number(userSalary) / targetBenchmark.medianYearly) * 100 : 100;
 
     return (
-        <div className="min-h-screen bg-gray-50/50 pb-16">
+        <div className="min-h-screen bg-warmwhite pb-16">
             {/* Hero Section */}
-            <div className="bg-gradient-to-b from-orange/10 via-amber-500/5 to-transparent border-b border-orange/10 pt-12 pb-16 px-4 sm:px-6 lg:px-8">
+            <div className="bg-white border-b border-gray-200 pt-12 pb-16 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto text-center space-y-4">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange/15 text-orange border border-orange/20">
                         <LuSparkles className="w-3.5 h-3.5" />
@@ -276,7 +272,7 @@ export default function SalaryGuide() {
                                     </div>
                                     <div className="w-full h-3 bg-gray-100 rounded-full relative overflow-hidden">
                                         <div 
-                                            className="h-full bg-gradient-to-r from-amber-400 to-orange rounded-full"
+                                            className="h-full bg-orange rounded-full"
                                             style={{ width: '100%' }}
                                         />
                                     </div>
@@ -310,7 +306,7 @@ export default function SalaryGuide() {
                 </div>
 
                 {/* Salary Comparison Calculator */}
-                <div className="bg-gradient-to-br from-charcoal to-gray-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl">
+                <div className="bg-charcoal rounded-lg p-6 sm:p-8 text-white shadow-sm border border-gray-800">
                     <div className="flex items-center gap-2 text-orange mb-2">
                         <LuCalculator className="w-5 h-5" />
                         <h2 className="text-sm font-bold uppercase tracking-wider">Interactive Comparison Tool</h2>
@@ -326,7 +322,7 @@ export default function SalaryGuide() {
                             <select
                                 value={calcRole}
                                 onChange={(e) => setCalcRole(e.target.value)}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-orange focus:border-orange outline-hidden"
+                                className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-sm text-white focus:ring-1 focus:ring-orange focus:border-orange outline-hidden"
                             >
                                 {BENCHMARKS.map((b) => (
                                     <option key={b.role} value={b.role} className="bg-gray-800">
@@ -336,19 +332,19 @@ export default function SalaryGuide() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Your Annual Salary (USD)</label>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Your Annual Salary (LKR)</label>
                             <input
                                 type="number"
                                 value={userSalary}
                                 onChange={(e) => setUserSalary(e.target.value === '' ? '' : Number(e.target.value))}
-                                placeholder="e.g. 110000"
-                                className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-orange focus:border-orange outline-hidden"
+                                placeholder="e.g. 1500000"
+                                className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-sm text-white focus:ring-1 focus:ring-orange focus:border-orange outline-hidden"
                             />
                         </div>
                     </div>
 
                     {userSalary && (
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="bg-white/5 border border-white/10 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <p className="text-xs text-gray-400">Result for {calcRole}:</p>
                                 <p className="text-lg font-bold mt-0.5">
@@ -361,7 +357,7 @@ export default function SalaryGuide() {
                                             {Math.round(100 - comparisonRatio)}% below median
                                         </span>
                                     )}
-                                    {' '} (${targetBenchmark.medianYearly.toLocaleString()} median)
+                                    {' '} (LKR {targetBenchmark.medianYearly.toLocaleString()} median)
                                 </p>
                                 <p className="text-xs text-gray-400 mt-1">
                                     {comparisonRatio < 90

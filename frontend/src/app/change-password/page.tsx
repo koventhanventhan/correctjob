@@ -114,7 +114,7 @@ export default function ChangePasswordPage() {
         <div className="min-h-screen bg-warmwhite flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="flex justify-center">
-                    <div className="w-14 h-14 rounded-2xl bg-orange/10 border border-orange/20 flex items-center justify-center text-orange shadow-sm">
+                    <div className="w-14 h-14 rounded-lg bg-orange/10 border border-orange/20 flex items-center justify-center text-orange shadow-xs">
                         <LuKey className="w-7 h-7" />
                     </div>
                 </div>
@@ -127,7 +127,7 @@ export default function ChangePasswordPage() {
             </div>
 
             <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-6 shadow-sm border border-gray-200 rounded-2xl sm:px-10">
+                <div className="bg-white py-8 px-6 shadow-sm border border-gray-200 rounded-lg sm:px-10">
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-5 text-xs text-amber-800 flex items-start gap-2.5">
                         <LuShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
                         <div>
@@ -261,7 +261,7 @@ export default function ChangePasswordPage() {
                         <button
                             type="submit"
                             disabled={isLoading || !isStrong || !passwordsMatch || !currentPassword}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-orange to-amber-500 hover:from-orange/90 hover:to-amber-500/90 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-orange hover:bg-orange/90 text-white text-sm font-semibold rounded-md shadow-xs transition-colors disabled:opacity-50 cursor-pointer min-h-[40px]"
                         >
                             {isLoading ? (
                                 <>

@@ -13,11 +13,13 @@ import {
     LuGlobe,
     LuClock,
     LuArrowUpDown,
-    LuX
+    LuX,
+    LuBookmark
 } from 'react-icons/lu';
 import { useState, useCallback, Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { formatSalary } from '@/utils/currency';
 
 function JobsContent() {
     const router = useRouter();
@@ -378,7 +380,7 @@ function JobsContent() {
 
                             {/* Min Salary Input */}
                             <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-md px-2 py-1.5">
-                                <span className="text-gray-500 font-medium">Min ₹:</span>
+                                <span className="text-gray-500 font-medium">Min (LKR):</span>
                                 <input 
                                     type="number" 
                                     min="0"
@@ -392,7 +394,7 @@ function JobsContent() {
 
                             {/* Max Salary Input */}
                             <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-md px-2 py-1.5">
-                                <span className="text-gray-500 font-medium">Max ₹:</span>
+                                <span className="text-gray-500 font-medium">Max (LKR):</span>
                                 <input 
                                     type="number" 
                                     min="0"
@@ -478,12 +480,12 @@ function JobsContent() {
                             data?.data?.map((job: any) => (
                                 <div 
                                     key={job.id} 
-                                    className="p-5 sm:p-6 bg-white border border-gray-200/80 rounded-xl hover:border-orange/60 hover:shadow-md transition-all group"
+                                    className="p-5 sm:p-6 bg-white border border-gray-200 rounded-lg hover:border-orange hover:shadow-sm transition-all group"
                                 >
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-peach text-charcoal">
+                                                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-peach/60 text-charcoal">
                                                     {job.category?.name || 'General'}
                                                 </span>
                                                 {job.jobType && (
@@ -524,18 +526,28 @@ function JobsContent() {
 
                                         <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                                             {job.salaryMin ? (
-                                                <span className="inline-flex items-center px-3 py-1 rounded-md text-xs sm:text-sm font-bold bg-green-50 text-green-700 border border-green-200">
-                                                    ₹{job.salaryMin.toLocaleString()} {job.salaryMax ? `- ₹${job.salaryMax.toLocaleString()}` : '+'}
+                                                <span className="inline-flex items-center px-3 py-1 rounded-md text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    {formatSalary(job.salaryMin, job.salaryMax)}
                                                 </span>
                                             ) : (
                                                 <span className="text-xs text-gray-400 italic">Competitive</span>
                                             )}
-                                            <Link 
-                                                href={`/jobs/${job.id}`} 
-                                                className="inline-flex items-center justify-center bg-orange text-white px-5 py-2 rounded-md font-semibold text-xs sm:text-sm hover:bg-orange/90 transition-colors shadow-sm"
-                                            >
-                                                View & Apply
-                                            </Link>
+                                            <div className="flex items-center gap-2">
+                                                <Link 
+                                                    href={`/jobs/${job.id}`} 
+                                                    className="inline-flex items-center justify-center bg-orange text-white px-4 py-2 rounded-md font-semibold text-xs sm:text-sm hover:bg-orange/90 transition-colors shadow-xs"
+                                                >
+                                                    View & Apply
+                                                </Link>
+                                                <Link
+                                                    href={`/jobs/${job.id}`}
+                                                    className="p-2 border border-gray-300 rounded-md text-gray-500 hover:text-orange hover:border-orange hover:bg-peach/20 transition-colors"
+                                                    title="Save Job"
+                                                    aria-label="Save Job"
+                                                >
+                                                    <LuBookmark className="w-4 h-4" />
+                                                </Link>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -573,8 +585,8 @@ function JobsContent() {
 
                 {/* Save Search & Alert Modal (Seek.com Feature) */}
                 {isAlertModalOpen && (
-                    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative border border-gray-200">
                             <button
                                 type="button"
                                 onClick={() => setIsAlertModalOpen(false)}

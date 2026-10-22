@@ -39,7 +39,7 @@ export default function AboutPage() {
                                 </li>
                             </ul>
                         </div>
-                        <div className="bg-warmwhite p-6 sm:p-8 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="bg-white p-6 sm:p-8 rounded-lg border border-gray-200 shadow-sm">
                             <h3 className="text-xl font-bold text-charcoal mb-6">Get in Touch</h3>
                             <div className="space-y-6">
                                 <div className="flex items-center">
