@@ -1042,7 +1042,7 @@ export default function AdminDashboard() {
                                 className="w-11 h-11 rounded-full object-cover border border-gray-200 shadow-md flex-shrink-0"
                             />
                         ) : (
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-orange to-amber-500 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
+                            <div className="w-11 h-11 rounded-full bg-orange flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0">
                                 {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
                             </div>
                         )}
@@ -1052,7 +1052,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-orange/10 to-amber-100 text-orange border border-orange/20">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange/10 text-orange border border-orange/20">
                             <LuShieldCheck className="w-3 h-3" />
                             {user?.role}
                         </span>
@@ -1262,13 +1262,10 @@ export default function AdminDashboard() {
                 {activeTab === 'overview' && (
                     <div className="space-y-8 max-w-7xl">
                         {/* Header Banner */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="flex h-2.5 w-2.5 relative">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                    </span>
+                                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
                                     <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Live System Active</span>
                                 </div>
                                 <h1 className="text-2xl sm:text-3xl font-display font-bold text-charcoal">Platform Overview & Analytics</h1>
@@ -1278,14 +1275,14 @@ export default function AdminDashboard() {
                                 <button
                                     onClick={() => refetchStats()}
                                     disabled={isStatsFetching}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-peach/60 hover:bg-peach text-charcoal transition-all disabled:opacity-50 border border-orange/10 shadow-sm"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-peach/60 hover:bg-peach text-charcoal transition-colors disabled:opacity-50 border border-orange/10 shadow-sm"
                                 >
                                     <LuRefreshCw className={`w-4 h-4 text-orange ${isStatsFetching ? 'animate-spin' : ''}`} />
                                     <span>{isStatsFetching ? 'Refreshing...' : 'Refresh Live Data'}</span>
                                 </button>
                                 <Link
                                     href="/admin/settings"
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 transition-all shadow-sm"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 transition-colors shadow-sm"
                                 >
                                     <LuSettings className="w-4 h-4 text-orange" />
                                     <span>System Settings</span>
@@ -1293,13 +1290,12 @@ export default function AdminDashboard() {
                             </div>
                         </div>
 
-                        {/* Top 4 Seek.com Style KPI Cards */}
+                        {/* Top 4 KPI Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                             {/* Card 1: Users */}
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-orange/10 via-amber-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow relative overflow-hidden group">
                                 <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 rounded-xl bg-orange/10 flex items-center justify-center text-orange group-hover:scale-110 transition-transform">
+                                    <div className="w-12 h-12 rounded-lg bg-orange/10 flex items-center justify-center text-orange group-hover:scale-105 transition-transform">
                                         <LuUsers className="w-6 h-6" />
                                     </div>
                                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
@@ -1317,10 +1313,9 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Card 2: Jobs */}
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 via-indigo-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow relative overflow-hidden group">
                                 <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                    <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-105 transition-transform">
                                         <LuBriefcase className="w-6 h-6" />
                                     </div>
                                     <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
@@ -1338,10 +1333,9 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Card 3: Applications & Conversion */}
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/10 via-teal-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow relative overflow-hidden group">
                                 <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                                    <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
                                         <LuTrendingUp className="w-6 h-6" />
                                     </div>
                                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
@@ -1362,13 +1356,12 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Card 4: Platform Revenue */}
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-violet-500/10 via-purple-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow relative overflow-hidden group">
                                 <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-110 transition-transform">
+                                    <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
                                         <LuDollarSign className="w-6 h-6" />
                                     </div>
-                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full border border-violet-100">
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
                                         {dashboardStats?.revenue.completedCount ?? 0} Orders
                                     </span>
                                 </div>
@@ -1378,13 +1371,13 @@ export default function AdminDashboard() {
                                 </p>
                                 <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
                                     <span>{dashboardStats?.revenue.pendingCount ?? 0} Pending Sessions</span>
-                                    <span className="font-semibold text-violet-700">PayHere Gateway</span>
+                                    <span className="font-semibold text-emerald-700">PayHere Gateway</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Action Queues Section */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 pb-4 border-b border-gray-100">
                                 <div>
                                     <h2 className="text-lg font-display font-bold text-charcoal flex items-center gap-2">
@@ -1414,7 +1407,7 @@ export default function AdminDashboard() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                                 {/* Queue Item 1: Pending Jobs */}
-                                <div className="p-4 rounded-xl border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
+                                <div className="p-4 rounded-lg border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-xs font-semibold text-gray-500">Pending Jobs</span>
@@ -1438,7 +1431,7 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {/* Queue Item 2: Seeker ID Verifications */}
-                                <div className="p-4 rounded-xl border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
+                                <div className="p-4 rounded-lg border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-xs font-semibold text-gray-500">Seeker ID Verification</span>
@@ -1461,7 +1454,7 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {/* Queue Item 3: Employer ID Verifications */}
-                                <div className="p-4 rounded-xl border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
+                                <div className="p-4 rounded-lg border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-xs font-semibold text-gray-500">Employer ID Verification</span>
@@ -1484,11 +1477,11 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {/* Queue Item 4: Pending Companies */}
-                                <div className="p-4 rounded-xl border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
+                                <div className="p-4 rounded-lg border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-xs font-semibold text-gray-500">Company Approvals</span>
-                                            <span className="w-7 h-7 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-xs">
+                                            <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
                                                 {dashboardStats?.queues.pendingCompanies ?? 0}
                                             </span>
                                         </div>
@@ -1507,7 +1500,7 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {/* Queue Item 5: Pending User Reports */}
-                                <div className="p-4 rounded-xl border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
+                                <div className="p-4 rounded-lg border border-gray-100 bg-warmwhite/40 hover:bg-peach/30 transition-colors flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-xs font-semibold text-gray-500">Flagged Reports</span>
@@ -1526,7 +1519,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Interactive 30-Day SVG Trend Chart */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 relative">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -1545,7 +1538,7 @@ export default function AdminDashboard() {
                                     <button
                                         type="button"
                                         onClick={() => setTrendSeries(prev => ({ ...prev, signups: !prev.signups }))}
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${
                                             trendSeries.signups 
                                                 ? 'bg-orange/10 text-orange border-orange/30 shadow-xs' 
                                                 : 'bg-gray-50 text-gray-400 border-gray-200 line-through'
@@ -1558,7 +1551,7 @@ export default function AdminDashboard() {
                                     <button
                                         type="button"
                                         onClick={() => setTrendSeries(prev => ({ ...prev, jobs: !prev.jobs }))}
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${
                                             trendSeries.jobs 
                                                 ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-xs' 
                                                 : 'bg-gray-50 text-gray-400 border-gray-200 line-through'
@@ -1571,7 +1564,7 @@ export default function AdminDashboard() {
                                     <button
                                         type="button"
                                         onClick={() => setTrendSeries(prev => ({ ...prev, applications: !prev.applications }))}
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${
                                             trendSeries.applications 
                                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-xs' 
                                                 : 'bg-gray-50 text-gray-400 border-gray-200 line-through'
@@ -1584,11 +1577,11 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Chart Container */}
-                            <div className="relative w-full overflow-hidden bg-slate-50/50 rounded-xl p-2 border border-slate-100">
+                            <div className="relative w-full overflow-hidden bg-slate-50/50 rounded-lg p-2 border border-slate-100">
                                 {/* Floating Tooltip */}
                                 {hoveredTrendIdx !== null && trends[hoveredTrendIdx] && (
                                     <div 
-                                        className="absolute pointer-events-none bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-xl p-3 text-xs z-20 transition-all duration-75"
+                                        className="absolute pointer-events-none bg-white border border-gray-200 rounded-lg shadow-md p-3 text-xs z-20 transition-all duration-75"
                                         style={{
                                             left: `${Math.min(84, Math.max(16, (getX(hoveredTrendIdx) / svgWidth) * 100))}%`,
                                             top: '16px',
@@ -1793,7 +1786,7 @@ export default function AdminDashboard() {
                         {/* Breakdown Widgets: User Demographics & Job Pipeline Health */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Breakdown 1: User Community */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
                                         <h3 className="text-base font-display font-bold text-charcoal">User Community Breakdown</h3>
@@ -1818,11 +1811,11 @@ export default function AdminDashboard() {
                                             <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden flex">
                                                 <div style={{ width: `${seekersPct}%` }} className="bg-orange h-full transition-all" title={`Seekers: ${seekersPct}%`}></div>
                                                 <div style={{ width: `${employersPct}%` }} className="bg-blue-600 h-full transition-all" title={`Employers: ${employersPct}%`}></div>
-                                                <div style={{ width: `${adminsPct}%` }} className="bg-purple-600 h-full transition-all" title={`Admins: ${adminsPct}%`}></div>
+                                                <div style={{ width: `${adminsPct}%` }} className="bg-charcoal h-full transition-all" title={`Admins: ${adminsPct}%`}></div>
                                             </div>
 
                                             <div className="grid grid-cols-3 gap-3 pt-2">
-                                                <div className="p-3 rounded-xl bg-orange/5 border border-orange/15">
+                                                <div className="p-3 rounded-lg bg-orange/5 border border-orange/15">
                                                     <div className="flex items-center gap-1.5 text-xs font-semibold text-orange mb-1">
                                                         <span className="w-2 h-2 rounded-full bg-orange"></span>
                                                         <span>Job Seekers</span>
@@ -1831,7 +1824,7 @@ export default function AdminDashboard() {
                                                     <span className="text-[11px] text-gray-500">{seekersPct}% of user base</span>
                                                 </div>
 
-                                                <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100">
+                                                <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-100">
                                                     <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 mb-1">
                                                         <span className="w-2 h-2 rounded-full bg-blue-600"></span>
                                                         <span>Employers</span>
@@ -1840,9 +1833,9 @@ export default function AdminDashboard() {
                                                     <span className="text-[11px] text-gray-500">{employersPct}% of user base</span>
                                                 </div>
 
-                                                <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-100">
-                                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-700 mb-1">
-                                                        <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+                                                <div className="p-3 rounded-lg bg-charcoal/5 border border-charcoal/20">
+                                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-charcoal mb-1">
+                                                        <span className="w-2 h-2 rounded-full bg-charcoal"></span>
                                                         <span>Admins</span>
                                                     </div>
                                                     <p className="text-lg font-bold text-charcoal">{dashboardStats?.users.admins ?? 0}</p>
@@ -1866,7 +1859,7 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Breakdown 2: Job Postings Health */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
                                         <h3 className="text-base font-display font-bold text-charcoal">Job Postings Pipeline</h3>
@@ -2077,7 +2070,7 @@ export default function AdminDashboard() {
                                 <button
                                     onClick={() => handleDownloadCsv('users')}
                                     disabled={exportingType === 'users'}
-                                    className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-white hover:bg-gray-50 text-charcoal border border-gray-200 font-semibold rounded-xl shadow-sm transition-all text-sm flex-shrink-0 disabled:opacity-50"
+                                    className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-white hover:bg-gray-50 text-charcoal border border-gray-200 font-semibold rounded-md shadow-sm transition-colors text-sm flex-shrink-0 disabled:opacity-50"
                                 >
                                     <LuDownload className="w-4 h-4 text-orange" />
                                     <span>{exportingType === 'users' ? 'Exporting...' : 'Export Users CSV'}</span>
@@ -2088,7 +2081,7 @@ export default function AdminDashboard() {
                                         setCreateAdminError('');
                                         setCreateAdminSuccess('');
                                     }}
-                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange to-amber-500 hover:from-orange/90 hover:to-amber-500/90 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all text-sm flex-shrink-0"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange hover:bg-orange/90 text-white font-semibold rounded-md shadow-sm transition-colors text-sm flex-shrink-0"
                                 >
                                     <LuUserPlus className="w-4 h-4" />
                                     <span>Create Admin</span>
@@ -2097,7 +2090,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Search and Filters Strip */}
-                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-3">
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm space-y-3">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                                 {/* Search */}
                                 <div className="lg:col-span-2 relative">
@@ -2261,7 +2254,7 @@ export default function AdminDashboard() {
                                                             <div className="flex items-center gap-3">
                                                                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0 ${
                                                                     u.role === 'Admin'
-                                                                        ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                                                        ? 'bg-charcoal text-white border border-charcoal'
                                                                         : u.role === 'Employer'
                                                                         ? 'bg-blue-100 text-blue-700 border border-blue-200'
                                                                         : 'bg-amber-100 text-amber-800 border border-amber-200'
@@ -2288,15 +2281,15 @@ export default function AdminDashboard() {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             {u.role === 'Admin' ? (
-                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                                                                    <LuShieldCheck className="w-3.5 h-3.5" /> Admin
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-charcoal text-white">
+                                                                    <LuShieldCheck className="w-3.5 h-3.5 text-orange" /> Admin
                                                                 </span>
                                                             ) : u.role === 'Employer' ? (
-                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                                                                     <LuBuilding className="w-3.5 h-3.5" /> Employer
                                                                 </span>
                                                             ) : (
-                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                                                     <LuUserCheck className="w-3.5 h-3.5" /> Job Seeker
                                                                 </span>
                                                             )}
@@ -2426,12 +2419,12 @@ export default function AdminDashboard() {
                                     const isSelf = u.id === user?.id;
                                     const initials = u.fullName ? u.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
                                     return (
-                                        <div key={u.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-3">
+                                        <div key={u.id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm space-y-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex items-center gap-2.5">
                                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0 ${
                                                         u.role === 'Admin'
-                                                            ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                                            ? 'bg-charcoal text-white border border-charcoal'
                                                             : u.role === 'Employer'
                                                             ? 'bg-blue-100 text-blue-700 border border-blue-200'
                                                             : 'bg-amber-100 text-amber-800 border border-amber-200'
@@ -2452,8 +2445,8 @@ export default function AdminDashboard() {
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
                                                     {u.role === 'Admin' ? (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                                                            Admin
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-charcoal text-white">
+                                                            <LuShieldCheck className="w-3 h-3 text-orange" /> Admin
                                                         </span>
                                                     ) : u.role === 'Employer' ? (
                                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
@@ -3021,7 +3014,7 @@ export default function AdminDashboard() {
                                     <div key={r.id} className="p-4 space-y-3">
                                         <div className="flex items-center justify-between">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                                                r.reportType === 'Job' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                r.reportType === 'Job' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                                             }`}>
                                                 {r.reportType} Report #{r.id}
                                             </span>
@@ -3136,7 +3129,7 @@ export default function AdminDashboard() {
                                             <tr key={r.id} className="hover:bg-gray-50/80 transition-colors">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                                                        r.reportType === 'Job' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                        r.reportType === 'Job' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                                                     }`}>
                                                         {r.reportType} #{r.id}
                                                     </span>
@@ -3547,12 +3540,12 @@ export default function AdminDashboard() {
                     <div className="space-y-6">
                         {/* Revenue Metrics Summary */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative overflow-hidden">
                                 <div className="flex items-center justify-between mb-3">
                                     <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
                                         Completed Revenue
                                     </span>
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                    <div className="w-10 h-10 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600">
                                         <LuCreditCard className="w-5 h-5" />
                                     </div>
                                 </div>
@@ -3562,12 +3555,12 @@ export default function AdminDashboard() {
                                 </p>
                             </div>
 
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative overflow-hidden">
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full border border-violet-100">
+                                    <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
                                         Transactions
                                     </span>
-                                    <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
+                                    <div className="w-10 h-10 rounded-md bg-blue-50 flex items-center justify-center text-blue-600">
                                         <LuDollarSign className="w-5 h-5" />
                                     </div>
                                 </div>
@@ -3579,7 +3572,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Payments Table Card */}
-                        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
                                     <h3 className="text-xl font-display font-bold text-charcoal">Payment History (Read-Only)</h3>
@@ -3589,7 +3582,7 @@ export default function AdminDashboard() {
                                     <select
                                         value={paymentsStatusFilter}
                                         onChange={(e) => { setPaymentsStatusFilter(e.target.value); setPaymentsPage(1); }}
-                                        className="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-orange"
+                                        className="border border-gray-200 rounded-md px-3 py-2 text-xs bg-white focus:outline-none focus:border-orange"
                                     >
                                         <option value="">All Statuses</option>
                                         <option value="Completed">Completed</option>
@@ -3746,7 +3739,7 @@ export default function AdminDashboard() {
                 {activeTab === 'settings' && (
                     <div className="space-y-6 max-w-4xl">
                         {/* Header */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
                                 <h2 className="text-xl font-display font-bold text-charcoal flex items-center gap-2">
                                     <LuSettings className="w-5 h-5 text-orange" />
@@ -3759,7 +3752,7 @@ export default function AdminDashboard() {
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => refetchSettings()}
-                                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50"
+                                    className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-50"
                                     title="Reload settings"
                                 >
                                     <LuRefreshCw className="w-4 h-4" />
@@ -3768,9 +3761,9 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Settings Form Card */}
-                        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+                        <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm border border-gray-200 space-y-6">
                             {settingsMsg && (
-                                <div className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2.5 ${settingsMsg.isError ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                                <div className={`p-4 rounded-md text-xs font-semibold flex items-center gap-2.5 ${settingsMsg.isError ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
                                     {settingsMsg.isError ? <LuTriangleAlert className="w-4 h-4 shrink-0" /> : <LuCircleCheck className="w-4 h-4 shrink-0" />}
                                     <span>{settingsMsg.text}</span>
                                 </div>
@@ -3883,7 +3876,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Quick Platform Data Export Card */}
-                        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                        <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm border border-gray-200 space-y-4">
                             <div>
                                 <h3 className="text-base font-bold text-charcoal flex items-center gap-2">
                                     <LuDownload className="w-4 h-4 text-orange" />
@@ -3898,7 +3891,7 @@ export default function AdminDashboard() {
                                     type="button"
                                     onClick={() => handleDownloadCsv('users')}
                                     disabled={exportingType === 'users'}
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-charcoal bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-charcoal bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-all shadow-sm disabled:opacity-50"
                                 >
                                     <LuDownload className="w-3.5 h-3.5 text-orange" />
                                     {exportingType === 'users' ? 'Generating Users CSV...' : 'Download Users CSV'}
@@ -3907,7 +3900,7 @@ export default function AdminDashboard() {
                                     type="button"
                                     onClick={() => handleDownloadCsv('jobs')}
                                     disabled={exportingType === 'jobs'}
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-charcoal bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-charcoal bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-all shadow-sm disabled:opacity-50"
                                 >
                                     <LuDownload className="w-3.5 h-3.5 text-orange" />
                                     {exportingType === 'jobs' ? 'Generating Jobs CSV...' : 'Download Jobs CSV'}
@@ -3921,7 +3914,7 @@ export default function AdminDashboard() {
                 {activeTab === 'audit-logs' && (
                     <div className="space-y-6 max-w-7xl">
                         {/* Header Banner */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
                                 <h2 className="text-xl font-display font-bold text-charcoal flex items-center gap-2">
                                     <LuClock className="w-5 h-5 text-orange" />
@@ -3935,7 +3928,7 @@ export default function AdminDashboard() {
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => refetchAuditLogs()}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-all"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-all"
                                 >
                                     <LuRefreshCw className="w-3.5 h-3.5" />
                                     Refresh
@@ -3944,7 +3937,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Search and Filters */}
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                                 {/* Search */}
                                 <div className="relative sm:col-span-2">
@@ -3954,7 +3947,7 @@ export default function AdminDashboard() {
                                         placeholder="Search details or action..."
                                         value={auditSearch}
                                         onChange={(e) => { setAuditSearch(e.target.value); setAuditPage(1); }}
-                                        className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange focus:bg-white"
+                                        className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-orange focus:bg-white"
                                     />
                                 </div>
 
@@ -4052,7 +4045,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Audit Logs Content (Desktop Table + Mobile Cards) */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                             {/* Mobile Card View (375px responsive) */}
                             <div className="md:hidden divide-y divide-gray-100 p-4 space-y-3">
                                 {isAuditLoading ? (
@@ -4061,7 +4054,7 @@ export default function AdminDashboard() {
                                     <div className="py-8 text-center text-xs text-gray-400">No audit log records found matching your filters.</div>
                                 ) : (
                                     auditLogsData?.data?.map((log: any) => (
-                                        <div key={log.id} className="p-3 bg-gray-50/60 rounded-xl space-y-2 border border-gray-100 text-xs">
+                                        <div key={log.id} className="p-3 bg-warmwhite/60 rounded-lg space-y-2 border border-gray-200 text-xs">
                                             <div className="flex items-start justify-between gap-2">
                                                 <span className="font-bold text-charcoal">{log.adminName}</span>
                                                 <span className="text-[10px] text-gray-400 shrink-0">{new Date(log.createdAt).toLocaleString()}</span>
@@ -4165,23 +4158,23 @@ export default function AdminDashboard() {
                         <h2 className="text-2xl font-display font-bold text-charcoal mb-6">Profile & Security</h2>
 
                         {/* Edit Profile Section */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                             <div className="flex items-center gap-4 mb-6">
                                 {user?.profileImage ? (
                                     <img
                                         src={getFileUrl(user.profileImage)}
                                         alt={user.fullName}
-                                        className="w-16 h-16 rounded-full object-cover border-2 border-orange/20 shadow-lg flex-shrink-0"
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-orange/20 shadow-sm flex-shrink-0"
                                     />
                                 ) : (
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange to-amber-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg flex-shrink-0">
+                                    <div className="w-16 h-16 rounded-full bg-orange flex items-center justify-center text-white font-bold text-2xl shadow-sm flex-shrink-0">
                                         {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
                                     </div>
                                 )}
                                 <div>
                                     <h3 className="text-lg font-semibold text-charcoal">{user?.fullName}</h3>
                                     <p className="text-sm text-gray-500">{user?.email}</p>
-                                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-orange/10 to-amber-100 text-orange border border-orange/20">
+                                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-orange/10 text-orange border border-orange/20">
                                         <LuShieldCheck className="w-3 h-3" />
                                         {user?.role}
                                     </span>
@@ -4197,7 +4190,7 @@ export default function AdminDashboard() {
                                         required
                                         value={profileData.fullName}
                                         onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
                                     />
                                 </div>
                                 <div>
@@ -4207,7 +4200,7 @@ export default function AdminDashboard() {
                                         required
                                         value={profileData.email}
                                         onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
                                     />
                                 </div>
 
@@ -4220,7 +4213,7 @@ export default function AdminDashboard() {
                                 <button
                                     type="submit"
                                     disabled={profileSaving}
-                                    className="flex items-center justify-center bg-orange text-white px-5 py-2.5 rounded-lg font-medium hover:bg-orange/90 disabled:opacity-50 transition-all shadow-sm"
+                                    className="flex items-center justify-center bg-orange text-white px-5 py-2.5 rounded-md font-medium hover:bg-orange/90 disabled:opacity-50 transition-all shadow-sm text-sm"
                                 >
                                     <LuSave className="w-4 h-4 mr-2" />
                                     {profileSaving ? 'Saving...' : 'Save Changes'}
@@ -4229,7 +4222,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Change Password Section */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <h4 className="text-base font-semibold text-charcoal mb-4 border-b border-gray-100 pb-2 flex items-center">
                                 <LuLock className="w-4 h-4 mr-2 text-gray-500" />
                                 Change Password
@@ -4242,7 +4235,7 @@ export default function AdminDashboard() {
                                         required
                                         value={passwordData.currentPassword}
                                         onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
                                     />
                                 </div>
                                 <div>
@@ -4252,7 +4245,7 @@ export default function AdminDashboard() {
                                         required
                                         value={passwordData.newPassword}
                                         onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
                                     />
                                 </div>
                                 <div>
@@ -4263,7 +4256,7 @@ export default function AdminDashboard() {
                                         placeholder="Re-enter new password"
                                         value={passwordData.confirmPassword}
                                         onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none"
+                                        className="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-orange/30 focus:border-orange transition-all outline-none text-sm"
                                     />
                                     {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
                                         <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
@@ -4279,7 +4272,7 @@ export default function AdminDashboard() {
                                 <button
                                     type="submit"
                                     disabled={passwordSaving}
-                                    className="flex items-center justify-center bg-charcoal text-white px-5 py-2.5 rounded-lg font-medium hover:bg-charcoal/90 disabled:opacity-50 transition-all shadow-sm"
+                                    className="flex items-center justify-center bg-charcoal text-white px-5 py-2.5 rounded-md font-medium hover:bg-charcoal/90 disabled:opacity-50 transition-all shadow-sm text-sm"
                                 >
                                     <LuLock className="w-4 h-4 mr-2" />
                                     {passwordSaving ? 'Updating...' : 'Update Password'}
@@ -4291,8 +4284,8 @@ export default function AdminDashboard() {
 
                 {/* Block User Modal */}
                 {blockModalUser && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 flex-shrink-0">
                                     <LuShieldAlert className="w-5 h-5" />
@@ -4303,7 +4296,7 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            <div className="p-3 bg-gray-50 rounded-xl mb-4 text-xs space-y-1">
+                            <div className="p-3 bg-warmwhite/60 rounded-md mb-4 text-xs space-y-1 border border-gray-200">
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Target User:</span>
                                     <span className="font-semibold text-charcoal">{blockModalUser.fullName}</span>
@@ -4320,7 +4313,7 @@ export default function AdminDashboard() {
                                 )}
                             </div>
 
-                            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl mb-4 text-xs text-rose-700 flex items-start gap-2">
+                            <div className="p-3 bg-rose-50 border border-rose-200 rounded-md mb-4 text-xs text-rose-700 flex items-start gap-2">
                                 <LuInfo className="w-4 h-4 flex-shrink-0 mt-0.5" />
                                 <span>Blocking this user will immediately revoke all active refresh tokens and log them out across all devices.</span>
                             </div>
@@ -4341,7 +4334,7 @@ export default function AdminDashboard() {
                                     placeholder="Specify the violation or reason for suspension (e.g. Terms violation, spam posting)..."
                                     value={blockReason}
                                     onChange={(e) => setBlockReason(e.target.value)}
-                                    className="w-full text-xs p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-500 outline-none resize-none transition-all"
+                                    className="w-full text-xs p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-rose-200 focus:border-rose-500 outline-none resize-none transition-all"
                                 />
                                 {blockError && (
                                     <p className="text-xs text-rose-600 font-medium">{blockError}</p>
@@ -4353,7 +4346,7 @@ export default function AdminDashboard() {
                                     type="button"
                                     disabled={blockLoading}
                                     onClick={() => { setBlockModalUser(null); setBlockReason(''); setBlockError(''); }}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -4361,7 +4354,7 @@ export default function AdminDashboard() {
                                     type="button"
                                     disabled={blockLoading || !blockReason.trim() || blockReason.length > 500}
                                     onClick={handleConfirmBlock}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-md shadow-sm transition-colors flex items-center gap-1.5"
                                 >
                                     {blockLoading ? (
                                         <>
@@ -4382,8 +4375,8 @@ export default function AdminDashboard() {
 
                 {/* Unblock User Modal */}
                 {unblockModalUser && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
                                     <LuCircleCheck className="w-5 h-5" />
@@ -4394,7 +4387,7 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            <div className="p-3 bg-gray-50 rounded-xl mb-4 text-xs space-y-1">
+                            <div className="p-3 bg-warmwhite/60 rounded-md mb-4 text-xs space-y-1 border border-gray-200">
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Target User:</span>
                                     <span className="font-semibold text-charcoal">{unblockModalUser.fullName}</span>
@@ -4415,7 +4408,7 @@ export default function AdminDashboard() {
                                     placeholder="Optional audit note (e.g. Appeal approved, verification completed)..."
                                     value={unblockReason}
                                     onChange={(e) => setUnblockReason(e.target.value)}
-                                    className="w-full text-xs p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none resize-none transition-all"
+                                    className="w-full text-xs p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none resize-none transition-all"
                                 />
                                 {unblockError && (
                                     <p className="text-xs text-rose-600 font-medium">{unblockError}</p>
@@ -4427,7 +4420,7 @@ export default function AdminDashboard() {
                                     type="button"
                                     disabled={unblockLoading}
                                     onClick={() => { setUnblockModalUser(null); setUnblockReason(''); setUnblockError(''); }}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -4435,7 +4428,7 @@ export default function AdminDashboard() {
                                     type="button"
                                     disabled={unblockLoading}
                                     onClick={handleConfirmUnblock}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-md shadow-sm transition-colors flex items-center gap-1.5"
                                 >
                                     {unblockLoading ? (
                                         <>
@@ -4456,8 +4449,8 @@ export default function AdminDashboard() {
 
                 {/* Create Admin Modal */}
                 {isCreateAdminOpen && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 rounded-full bg-orange/10 flex items-center justify-center text-orange flex-shrink-0">
                                     <LuUserPlus className="w-5 h-5" />
@@ -4479,7 +4472,7 @@ export default function AdminDashboard() {
                                         placeholder="e.g. John Doe"
                                         value={createAdminData.fullName}
                                         onChange={(e) => setCreateAdminData({ ...createAdminData, fullName: e.target.value })}
-                                        className="w-full text-xs p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                        className="w-full text-xs p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
                                     />
                                 </div>
 
@@ -4493,7 +4486,7 @@ export default function AdminDashboard() {
                                         placeholder="admin@hireconnect.com"
                                         value={createAdminData.email}
                                         onChange={(e) => setCreateAdminData({ ...createAdminData, email: e.target.value })}
-                                        className="w-full text-xs p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                        className="w-full text-xs p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
                                     />
                                 </div>
 
@@ -4508,7 +4501,7 @@ export default function AdminDashboard() {
                                             placeholder="Strong admin password"
                                             value={createAdminData.password}
                                             onChange={(e) => setCreateAdminData({ ...createAdminData, password: e.target.value })}
-                                            className="w-full text-xs p-2.5 pr-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
+                                            className="w-full text-xs p-2.5 pr-9 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange/30 focus:border-orange outline-none transition-all"
                                         />
                                         <button
                                             type="button"
@@ -4520,7 +4513,7 @@ export default function AdminDashboard() {
                                     </div>
 
                                     {/* Password Checklist */}
-                                    <div className="mt-2.5 p-3 bg-gray-50 rounded-xl space-y-1.5 text-[11px]">
+                                    <div className="mt-2.5 p-3 bg-warmwhite/60 rounded-md space-y-1.5 text-[11px] border border-gray-200">
                                         <span className="font-semibold text-charcoal block mb-1">Password Requirements:</span>
                                         {(() => {
                                             const pwd = createAdminData.password;
@@ -4572,13 +4565,13 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {createAdminError && (
-                                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+                                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-700">
                                         {createAdminError}
                                     </div>
                                 )}
 
                                 {createAdminSuccess && (
-                                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700">
+                                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md text-xs text-emerald-700">
                                         {createAdminSuccess}
                                     </div>
                                 )}
@@ -4592,7 +4585,7 @@ export default function AdminDashboard() {
                                             setCreateAdminError('');
                                             setCreateAdminSuccess('');
                                         }}
-                                        className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                        className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                                     >
                                         Cancel
                                     </button>
@@ -4600,7 +4593,7 @@ export default function AdminDashboard() {
                                         type="submit"
                                         disabled={
                                             createAdminLoading ||
-                                            !createAdminData.fullName.trim() ||
+                                             !createAdminData.fullName.trim() ||
                                             !createAdminData.email.trim() ||
                                             createAdminData.password.length < 12 ||
                                             !/[A-Z]/.test(createAdminData.password) ||
@@ -4608,7 +4601,7 @@ export default function AdminDashboard() {
                                             !/[0-9]/.test(createAdminData.password) ||
                                             !/[^a-zA-Z0-9]/.test(createAdminData.password)
                                         }
-                                        className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 disabled:opacity-50 rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                                        className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 disabled:opacity-50 rounded-md shadow-sm transition-colors flex items-center gap-1.5"
                                     >
                                         {createAdminLoading ? (
                                             <>
@@ -4630,8 +4623,8 @@ export default function AdminDashboard() {
 
                 {/* Demote Admin Modal */}
                 {demoteModalAdmin && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
                                     <LuTriangleAlert className="w-5 h-5" />
@@ -4642,7 +4635,7 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            <div className="p-3 bg-gray-50 rounded-xl mb-4 text-xs space-y-1">
+                            <div className="p-3 bg-warmwhite/60 rounded-md mb-4 text-xs space-y-1 border border-gray-200">
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Target User:</span>
                                     <span className="font-semibold text-charcoal">{demoteModalAdmin.fullName}</span>
@@ -4653,13 +4646,13 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4 text-xs text-amber-800 flex items-start gap-2">
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mb-4 text-xs text-amber-800 flex items-start gap-2">
                                 <LuInfo className="w-4 h-4 flex-shrink-0 mt-0.5" />
                                 <span>This action will strip all administrator privileges, change the user&apos;s role to JobSeeker, and terminate their active administrative sessions.</span>
                             </div>
 
                             {demoteError && (
-                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl mb-4 text-xs text-rose-700">
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-md mb-4 text-xs text-rose-700">
                                     {demoteError}
                                 </div>
                             )}
@@ -4669,7 +4662,7 @@ export default function AdminDashboard() {
                                     type="button"
                                     disabled={demoteLoading}
                                     onClick={() => { setDemoteModalAdmin(null); setDemoteError(''); }}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -4677,7 +4670,7 @@ export default function AdminDashboard() {
                                     type="button"
                                     disabled={demoteLoading}
                                     onClick={handleConfirmDemote}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-md shadow-sm transition-colors flex items-center gap-1.5"
                                 >
                                     {demoteLoading ? (
                                         <>
@@ -4699,7 +4692,7 @@ export default function AdminDashboard() {
                 {/* Report Status Modal */}
                 {reportStatusModal && (
                     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                        <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg border border-gray-200 space-y-4">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                                 <h3 className="font-bold text-charcoal">Update Report Status (#{reportStatusModal.id})</h3>
                                 <button onClick={() => setReportStatusModal(null)} className="text-gray-400 hover:text-gray-600">
@@ -4711,7 +4704,7 @@ export default function AdminDashboard() {
                                 <select
                                     value={reportNewStatus}
                                     onChange={(e) => setReportNewStatus(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 >
                                     <option value="Pending">Pending</option>
                                     <option value="Reviewed">Reviewed</option>
@@ -4728,12 +4721,12 @@ export default function AdminDashboard() {
                                     onChange={(e) => setReportAdminNote(e.target.value.slice(0, 500))}
                                     placeholder="Enter administrative notes for resolution or internal tracking..."
                                     rows={3}
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 />
                                 <div className="text-right text-[11px] text-gray-400">{reportAdminNote.length} / 500</div>
                             </div>
                             {reportNewStatus === 'Resolved' && (
-                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 flex items-start gap-2">
+                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700 flex items-start gap-2">
                                     <LuInfo className="w-4 h-4 shrink-0 mt-0.5" />
                                     <span>Setting status to <strong>Resolved</strong> will automatically dispatch a notification to the reporter.</span>
                                 </div>
@@ -4741,14 +4734,14 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
                                 <button
                                     onClick={() => setReportStatusModal(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveReportStatus}
                                     disabled={reportActionLoading === reportStatusModal.id}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-lg shadow-sm disabled:opacity-50"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-md shadow-sm disabled:opacity-50"
                                 >
                                     {reportActionLoading === reportStatusModal.id ? 'Saving...' : 'Save Status'}
                                 </button>
@@ -4760,7 +4753,7 @@ export default function AdminDashboard() {
                 {/* Report Direct Action Modal */}
                 {reportDirectActionModal && (
                     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                        <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg border border-gray-200 space-y-4">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                                 <h3 className="font-bold text-charcoal">
                                     Direct Action on Report #{reportDirectActionModal.id}
@@ -4771,7 +4764,7 @@ export default function AdminDashboard() {
                             </div>
 
                             {reportDirectActionModal.type === 'Job' && (
-                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-800">
                                     <strong>Action: Close Job Posting</strong>
                                     <p className="mt-1">This will immediately set the job status to Closed (ClosedByAdmin=true) and notify the employer.</p>
                                 </div>
@@ -4783,7 +4776,7 @@ export default function AdminDashboard() {
                                     <select
                                         value={reportDirectAction}
                                         onChange={(e) => setReportDirectAction(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                        className="w-full border border-gray-300 rounded-md p-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange/50"
                                     >
                                         <option value="HideReview">Hide Review</option>
                                         <option value="DeleteReview">Delete Review Permanently</option>
@@ -4800,7 +4793,7 @@ export default function AdminDashboard() {
                                     onChange={(e) => setReportDirectReason(e.target.value.slice(0, 500))}
                                     placeholder="Enter the reason for this action..."
                                     rows={3}
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 />
                                 <div className="text-right text-[11px] text-gray-400">{reportDirectReason.length} / 500</div>
                             </div>
@@ -4808,14 +4801,14 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
                                 <button
                                     onClick={() => setReportDirectActionModal(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleExecuteReportAction}
                                     disabled={reportActionLoading === reportDirectActionModal.id || !reportDirectReason.trim()}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-md shadow-sm disabled:opacity-50"
                                 >
                                     {reportActionLoading === reportDirectActionModal.id ? 'Processing...' : 'Execute Action'}
                                 </button>
@@ -4827,7 +4820,7 @@ export default function AdminDashboard() {
                 {/* Review Moderate Modal */}
                 {reviewModerateModal && (
                     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                        <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg border border-gray-200 space-y-4">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                                 <h3 className="font-bold text-charcoal">
                                     {reviewModerateModal.action} Review (#{reviewModerateModal.id})
@@ -4848,20 +4841,20 @@ export default function AdminDashboard() {
                                     onChange={(e) => setReviewModerateReason(e.target.value)}
                                     placeholder="Enter detailed reason for moderating this review..."
                                     rows={3}
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 />
                             </div>
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
                                 <button
                                     onClick={() => setReviewModerateModal(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleModerateReview}
                                     disabled={reviewModerateLoading || !reviewModerateReason.trim()}
-                                    className={`px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-sm disabled:opacity-50 ${
+                                    className={`px-4 py-2 text-xs font-semibold text-white rounded-md shadow-sm disabled:opacity-50 ${
                                         reviewModerateModal.action === 'Delete' ? 'bg-rose-600 hover:bg-rose-700' :
                                         reviewModerateModal.action === 'Hide' ? 'bg-amber-600 hover:bg-amber-700' :
                                         'bg-green-600 hover:bg-green-700'
@@ -4877,7 +4870,7 @@ export default function AdminDashboard() {
                 {/* Category Edit/Create Modal */}
                 {catEditModal && (
                     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                        <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg border border-gray-200 space-y-4">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                                 <h3 className="font-bold text-charcoal">
                                     {catEditModal.id ? `Edit Category: ${catEditModal.name}` : 'Create New Category'}
@@ -4888,7 +4881,7 @@ export default function AdminDashboard() {
                             </div>
 
                             {catError && (
-                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-700">
                                     {catError}
                                 </div>
                             )}
@@ -4902,7 +4895,7 @@ export default function AdminDashboard() {
                                     value={catEditModal.name}
                                     onChange={(e) => setCatEditModal({ ...catEditModal, name: e.target.value.slice(0, 100) })}
                                     placeholder="e.g. Information Technology"
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 />
                                 <div className="text-right text-[11px] text-gray-400">{catEditModal.name.length} / 100</div>
                             </div>
@@ -4916,7 +4909,7 @@ export default function AdminDashboard() {
                                     onChange={(e) => setCatEditModal({ ...catEditModal, description: e.target.value.slice(0, 500) })}
                                     placeholder="Brief summary of jobs included under this category..."
                                     rows={3}
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 />
                             </div>
 
@@ -4935,14 +4928,14 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
                                 <button
                                     onClick={() => setCatEditModal(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveCategory}
                                     disabled={catLoading || !catEditModal.name.trim()}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-lg shadow-sm disabled:opacity-50"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-md shadow-sm disabled:opacity-50"
                                 >
                                     {catLoading ? 'Saving...' : 'Save Category'}
                                 </button>
@@ -4954,7 +4947,7 @@ export default function AdminDashboard() {
                 {/* Category Delete Confirm Modal */}
                 {catDeleteConfirm && (
                     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+                        <div className="bg-white rounded-lg max-w-sm w-full p-6 shadow-lg border border-gray-200 space-y-4">
                             <div className="flex items-center gap-3 text-rose-600">
                                 <LuTriangleAlert className="w-6 h-6 shrink-0" />
                                 <h3 className="font-bold text-charcoal">Delete Category</h3>
@@ -4965,14 +4958,14 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
                                 <button
                                     onClick={() => setCatDeleteConfirm(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleDeleteCategory}
                                     disabled={catLoading}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-md shadow-sm disabled:opacity-50"
                                 >
                                     {catLoading ? 'Deleting...' : 'Confirm Delete'}
                                 </button>
@@ -4984,7 +4977,7 @@ export default function AdminDashboard() {
                 {/* Location Edit/Create Modal */}
                 {locEditModal && (
                     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                        <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg border border-gray-200 space-y-4">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                                 <h3 className="font-bold text-charcoal">
                                     {locEditModal.id ? `Edit Location: ${locEditModal.name}` : 'Create New Location'}
@@ -4995,7 +4988,7 @@ export default function AdminDashboard() {
                             </div>
 
                             {locError && (
-                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-700">
                                     {locError}
                                 </div>
                             )}
@@ -5009,7 +5002,7 @@ export default function AdminDashboard() {
                                     value={locEditModal.name}
                                     onChange={(e) => setLocEditModal({ ...locEditModal, name: e.target.value.slice(0, 100) })}
                                     placeholder="e.g. Colombo"
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 />
                             </div>
 
@@ -5022,7 +5015,7 @@ export default function AdminDashboard() {
                                     value={locEditModal.stateOrProvince}
                                     onChange={(e) => setLocEditModal({ ...locEditModal, stateOrProvince: e.target.value.slice(0, 100) })}
                                     placeholder="e.g. Western Province"
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 />
                             </div>
 
@@ -5035,7 +5028,7 @@ export default function AdminDashboard() {
                                     value={locEditModal.country}
                                     onChange={(e) => setLocEditModal({ ...locEditModal, country: e.target.value.slice(0, 100) })}
                                     placeholder="e.g. Sri Lanka"
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
+                                    className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/50"
                                 />
                             </div>
 
@@ -5054,14 +5047,14 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
                                 <button
                                     onClick={() => setLocEditModal(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveLocation}
                                     disabled={locLoading || !locEditModal.name.trim()}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-lg shadow-sm disabled:opacity-50"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-orange hover:bg-orange/90 rounded-md shadow-sm disabled:opacity-50"
                                 >
                                     {locLoading ? 'Saving...' : 'Save Location'}
                                 </button>
@@ -5073,7 +5066,7 @@ export default function AdminDashboard() {
                 {/* Location Delete Confirm Modal */}
                 {locDeleteConfirm && (
                     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+                        <div className="bg-white rounded-lg max-w-sm w-full p-6 shadow-lg border border-gray-200 space-y-4">
                             <div className="flex items-center gap-3 text-rose-600">
                                 <LuTriangleAlert className="w-6 h-6 shrink-0" />
                                 <h3 className="font-bold text-charcoal">Delete Location</h3>
@@ -5084,14 +5077,14 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
                                 <button
                                     onClick={() => setLocDeleteConfirm(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleDeleteLocation}
                                     disabled={locLoading}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-md shadow-sm disabled:opacity-50"
                                 >
                                     {locLoading ? 'Deleting...' : 'Confirm Delete'}
                                 </button>
@@ -5103,7 +5096,7 @@ export default function AdminDashboard() {
                 {/* Maintenance Mode Confirmation Modal */}
                 {maintenanceConfirmOpen && (
                     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+                        <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg border border-gray-200 space-y-4">
                             <div className="flex items-center gap-3 text-amber-600">
                                 <LuTriangleAlert className="w-6 h-6 shrink-0" />
                                 <h3 className="font-bold text-charcoal">Enable Maintenance Mode?</h3>
@@ -5114,7 +5107,7 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
                                 <button
                                     onClick={() => setMaintenanceConfirmOpen(false)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md"
                                 >
                                     Cancel
                                 </button>
@@ -5124,7 +5117,7 @@ export default function AdminDashboard() {
                                         handleSaveSettings(true);
                                     }}
                                     disabled={settingsSaving}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm disabled:opacity-50"
+                                    className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-md shadow-sm disabled:opacity-50"
                                 >
                                     {settingsSaving ? 'Enabling...' : 'Confirm Enable'}
                                 </button>
