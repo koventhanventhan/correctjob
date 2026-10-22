@@ -201,7 +201,8 @@ export default function JobDetailClient({ initialJob }: JobDetailClientProps) {
         job.status === 'Closed' || 
         job.status === 'Expired' || 
         job.status === 'Rejected' || 
-        (job.expiresAt && new Date(job.expiresAt) < new Date());
+        job.isExpired === true ||
+        (job.deadline && new Date(job.deadline) < new Date());
 
     return (
         <div className="min-h-screen bg-warmwhite py-8">
@@ -330,7 +331,7 @@ export default function JobDetailClient({ initialJob }: JobDetailClientProps) {
                                         disabled
                                         className="bg-gray-300 text-gray-500 cursor-not-allowed px-7 py-2 rounded-md font-semibold text-center flex items-center justify-center shadow-xs min-h-[40px]"
                                     >
-                                        Closed
+                                        {job.status === 'Closed' ? 'Closed' : 'Expired'}
                                     </button>
                                 ) : isApplied ? (
                                     <button 
@@ -349,9 +350,18 @@ export default function JobDetailClient({ initialJob }: JobDetailClientProps) {
                                 )
                             ) : (
                                 !user && (
-                                    <Link href="/login" className="bg-orange text-white px-7 py-2 rounded-md font-semibold hover:bg-orange/90 text-center flex items-center justify-center shadow-xs min-h-[40px]">
-                                        Sign in to Apply
-                                    </Link>
+                                    isClosedOrExpired ? (
+                                        <button 
+                                            disabled
+                                            className="bg-gray-300 text-gray-500 cursor-not-allowed px-7 py-2 rounded-md font-semibold text-center flex items-center justify-center shadow-xs min-h-[40px]"
+                                        >
+                                            {job.status === 'Closed' ? 'Closed' : 'Expired'}
+                                        </button>
+                                    ) : (
+                                        <Link href="/login" className="bg-orange text-white px-7 py-2 rounded-md font-semibold hover:bg-orange/90 text-center flex items-center justify-center shadow-xs min-h-[40px]">
+                                            Sign in to Apply
+                                        </Link>
+                                    )
                                 )
                             )}
                         </div>
@@ -412,12 +422,12 @@ export default function JobDetailClient({ initialJob }: JobDetailClientProps) {
                                         <p className="text-charcoal font-medium mt-0.5">{job.company.industry}</p>
                                     </div>
                                 )}
-                                {job.company?.websiteUrl && (
+                                {(job.company?.website || job.company?.websiteUrl) && (
                                     <div>
                                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Website</span>
                                         <p className="mt-0.5">
                                             <a 
-                                                href={job.company.websiteUrl} 
+                                                href={job.company.website || job.company.websiteUrl} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 className="text-orange hover:underline text-sm inline-flex items-center gap-1 font-medium"

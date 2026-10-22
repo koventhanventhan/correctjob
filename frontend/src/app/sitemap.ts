@@ -2,7 +2,12 @@ import type { MetadataRoute } from 'next';
 import { getSiteUrl } from '@/utils/siteUrl';
 import { fetchServer } from '@/utils/apiServer';
 
-export const revalidate = 3600; // Cache sitemap for 1 hour
+// Revalidate sitemap regularly (60s) so newly published or expired jobs refresh quickly
+export const revalidate = 60;
+
+// Persistent cache across requests during runtime to prevent empty sitemaps if API temporarily fails
+let cachedJobRoutes: MetadataRoute.Sitemap = [];
+let cachedCompanyRoutes: MetadataRoute.Sitemap = [];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
@@ -65,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // Fetch published, active jobs (up to 50k max)
-  const jobRoutes: MetadataRoute.Sitemap = [];
+  let jobRoutes: MetadataRoute.Sitemap = [];
   try {
     let currentPage = 1;
     const pageSize = 100;
@@ -75,20 +80,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     while (totalItems < maxItems) {
       const res = await fetchServer<any>(
-        `/jobs?page=${currentPage}&pageSize=${pageSize}&sortBy=newest`
+        `/jobs?page=${currentPage}&pageSize=${pageSize}&sortBy=newest`,
+        { next: { revalidate: 60 } }
       );
       const jobs = res?.data || [];
       if (!Array.isArray(jobs) || jobs.length === 0) break;
 
       for (const job of jobs) {
-        // Exclude closed or expired jobs
-        const isClosed =
+        // Exclude closed or expired jobs using real API field job.deadline (expiresAt does not exist)
+        const isClosedOrExpired =
           job.status === 'Closed' ||
           job.status === 'Expired' ||
           job.status === 'Rejected' ||
-          (job.expiresAt && new Date(job.expiresAt) < now);
+          job.isExpired === true ||
+          (job.deadline && new Date(job.deadline) < now);
 
-        if (!isClosed) {
+        if (!isClosedOrExpired && job.id) {
           jobRoutes.push({
             url: `${siteUrl}/jobs/${job.id}`,
             lastModified: new Date(job.updatedAt || job.createdAt || now),
@@ -99,22 +106,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
 
-      const totalPages = res?.pagination?.totalPages || 1;
+      const totalPages = res?.totalPages || res?.pagination?.totalPages || 1;
       if (currentPage >= totalPages) break;
       currentPage++;
     }
-  } catch {
-    // If jobs fetch fails, continue with other routes
+
+    if (jobRoutes.length > 0) {
+      cachedJobRoutes = jobRoutes;
+    }
+  } catch (err) {
+    // If API is down or fails, fallback to previous cached sitemap so build / request succeeds
+    console.warn('[sitemap] Failed to fetch jobs for sitemap, falling back to cached routes:', err);
+    if (cachedJobRoutes.length > 0) {
+      jobRoutes = cachedJobRoutes;
+    }
   }
 
   // Fetch approved companies
-  const companyRoutes: MetadataRoute.Sitemap = [];
+  let companyRoutes: MetadataRoute.Sitemap = [];
   try {
-    const res = await fetchServer<any>('/companies?pageSize=100');
-    const companies = res?.data || [];
-    if (Array.isArray(companies)) {
+    let companyPage = 1;
+    const companyPageSize = 100;
+
+    while (companyPage <= 10) {
+      const res = await fetchServer<any>(
+        `/companies?page=${companyPage}&pageSize=${companyPageSize}`,
+        { next: { revalidate: 60 } }
+      );
+      const companies = res?.data || [];
+      if (!Array.isArray(companies) || companies.length === 0) break;
+
       for (const company of companies) {
-        if (company.isApproved !== false) {
+        // Only include approved companies with a valid ID
+        if (company.isApproved !== false && company.id) {
           companyRoutes.push({
             url: `${siteUrl}/companies/${company.id}`,
             lastModified: new Date(company.updatedAt || company.createdAt || new Date()),
@@ -123,9 +147,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           });
         }
       }
+
+      const totalCount = res?.totalCount || 0;
+      if (companyPage * companyPageSize >= totalCount) break;
+      companyPage++;
     }
-  } catch {
-    // If company fetch fails, continue
+
+    if (companyRoutes.length > 0) {
+      cachedCompanyRoutes = companyRoutes;
+    }
+  } catch (err) {
+    console.warn('[sitemap] Failed to fetch companies for sitemap, falling back to cached routes:', err);
+    if (cachedCompanyRoutes.length > 0) {
+      companyRoutes = cachedCompanyRoutes;
+    }
   }
 
   return [...staticRoutes, ...jobRoutes, ...companyRoutes];

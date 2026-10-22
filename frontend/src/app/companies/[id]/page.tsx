@@ -30,7 +30,12 @@ export async function generateMetadata({
   }
 
   const siteUrl = getSiteUrl();
-  const title = `${company.companyName} Jobs & Profile`;
+  const fullTitle = `${company.companyName} Jobs & Profile`.trim();
+  const maxTitleLength = 46; // 46 + 14 (' | HireConnect') = 60
+  const title =
+    fullTitle.length > maxTitleLength
+      ? `${fullTitle.slice(0, maxTitleLength - 3).trim()}...`
+      : fullTitle;
   const rawDesc = stripHtml(company.description || '');
   let description = rawDesc;
   if (!description || description.length < 120) {

@@ -46,7 +46,25 @@ namespace HireConnect.API.Services
             var now = DateTime.UtcNow;
             var threeDaysFromNow = now.AddDays(3);
 
-            // Find Published jobs whose deadline is within 3 days and not yet expired
+            // 1. Mark Published jobs whose deadline has passed as Status = "Expired" (no audit/notification)
+            var expiredJobs = await context.Jobs
+                .Where(j => j.Status == "Published" &&
+                            j.Deadline.HasValue &&
+                            j.Deadline.Value <= now)
+                .ToListAsync(stoppingToken);
+
+            foreach (var job in expiredJobs)
+            {
+                job.Status = "Expired";
+                _logger.LogInformation("Job {JobId} deadline passed ({Deadline}); status updated to Expired", job.Id, job.Deadline);
+            }
+
+            if (expiredJobs.Count > 0)
+            {
+                await context.SaveChangesAsync(stoppingToken);
+            }
+
+            // 2. Find Published jobs whose deadline is within 3 days and not yet expired (alerts)
             var expiringJobs = await context.Jobs
                 .Include(j => j.Company)
                 .Where(j => j.Status == "Published" &&

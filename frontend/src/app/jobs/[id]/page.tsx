@@ -32,7 +32,8 @@ function isJobClosed(job: any): boolean {
     job.status === 'Closed' ||
     job.status === 'Expired' ||
     job.status === 'Rejected' ||
-    (job.expiresAt && new Date(job.expiresAt) < new Date())
+    job.isExpired === true ||
+    (job.deadline && new Date(job.deadline) < new Date())
   );
 }
 
@@ -51,7 +52,15 @@ export async function generateMetadata({
 
   const siteUrl = getSiteUrl();
   const companyName = job.company?.companyName || 'HireConnect Employer';
-  const title = `${job.title} at ${companyName}`;
+
+  // Root template appends " | HireConnect" (14 chars). Max title tag length is 60 chars.
+  // 60 - 14 = 46 max chars for the inner title string. Truncate if exceeds 46 chars.
+  const fullTitle = `${job.title} at ${companyName}`.trim();
+  const maxTitleLength = 46;
+  const title =
+    fullTitle.length > maxTitleLength
+      ? `${fullTitle.slice(0, maxTitleLength - 3).trim()}...`
+      : fullTitle;
 
   const plainDesc = stripHtml(job.description || '');
   let description = plainDesc;
@@ -73,6 +82,7 @@ export async function generateMetadata({
     alternates: {
       canonical: `/jobs/${id}`,
     },
+    // Expired or closed jobs receive noindex so search engines drop stale postings
     robots: closed
       ? { index: false, follow: true }
       : { index: true, follow: true },
@@ -97,6 +107,7 @@ export default async function JobDetailPage({ params }: JobPageProps) {
   const { id } = await params;
   const job = await fetchServer<any>(`/jobs/${id}`);
 
+  // If job is not found or API returns 403 Forbidden (draft / unapproved company), render 404
   if (!job) {
     notFound();
   }
@@ -106,10 +117,8 @@ export default async function JobDetailPage({ params }: JobPageProps) {
   const logoUrl = job.company?.logoUrl
     ? getFileUrl(job.company.logoUrl)
     : `${siteUrl}/og-default.png`;
-  const isRemote =
-    job.location?.toLowerCase().includes('remote') ||
-    job.jobType?.toLowerCase().includes('remote');
 
+  // Real API fields: job.publishedAt, job.deadline, job.isRemote, job.company.website
   const jobPostingSchema: Record<string, any> = {
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
@@ -121,7 +130,7 @@ export default async function JobDetailPage({ params }: JobPageProps) {
       '@type': 'Organization',
       name: companyName,
       logo: logoUrl,
-      sameAs: job.company?.websiteUrl || undefined,
+      sameAs: job.company?.website || undefined,
     },
     jobLocation: {
       '@type': 'Place',
@@ -139,19 +148,23 @@ export default async function JobDetailPage({ params }: JobPageProps) {
     },
   };
 
-  if (job.applicationDeadline || job.expiresAt) {
-    jobPostingSchema.validThrough = job.applicationDeadline || job.expiresAt;
+  // validThrough: uses real API field job.deadline
+  if (job.deadline) {
+    jobPostingSchema.validThrough = job.deadline;
   }
 
-  if (isRemote) {
+  // isRemote: uses real API boolean field job.isRemote
+  if (
+    job.isRemote ||
+    job.location?.toLowerCase().includes('remote') ||
+    job.jobType?.toLowerCase().includes('remote')
+  ) {
     jobPostingSchema.jobLocationType = 'TELECOMMUTE';
   }
 
+  // Salary: All salaries on HireConnect default to monthly compensation ("/ month" in UI).
+  // Schema.org unitText is therefore set to "MONTH" for standard monthly payroll in Sri Lanka.
   if (job.salaryMin || job.salaryMax) {
-    const period = (job.salaryPeriod || 'MONTHLY').toUpperCase();
-    const unitText =
-      period === 'HOURLY' ? 'HOUR' : period === 'YEARLY' ? 'YEAR' : 'MONTH';
-
     jobPostingSchema.baseSalary = {
       '@type': 'MonetaryAmount',
       currency: 'LKR',
@@ -159,7 +172,7 @@ export default async function JobDetailPage({ params }: JobPageProps) {
         '@type': 'QuantitativeValue',
         minValue: job.salaryMin || job.salaryMax,
         maxValue: job.salaryMax || job.salaryMin,
-        unitText,
+        unitText: 'MONTH',
       },
     };
   }

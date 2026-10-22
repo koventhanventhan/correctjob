@@ -53,7 +53,14 @@ namespace HireConnect.API.Controllers
             if (seeker == null) return BadRequest("Please complete your profile first.");
 
             var job = await _context.Jobs.Include(j => j.Company).FirstOrDefaultAsync(j => j.Id == model.JobId);
-            if (job == null || job.Status != "Published") return NotFound("Job not found or not open for applications.");
+            if (job == null) return NotFound("Job not found.");
+
+            if (job.Status == "Expired" || (job.Deadline.HasValue && job.Deadline.Value < DateTime.UtcNow))
+            {
+                return BadRequest(new { message = "This job has expired." });
+            }
+
+            if (job.Status != "Published") return NotFound("Job not found or not open for applications.");
 
             // Prevent duplicate applications
             var hasAlreadyApplied = await _context.Applications.AnyAsync(a => a.JobId == model.JobId && a.SeekerId == seeker.Id);

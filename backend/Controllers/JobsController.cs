@@ -50,13 +50,14 @@ namespace HireConnect.API.Controllers
             
             if (!isAdmin)
             {
+                var now = DateTime.UtcNow;
                 if (isEmployer)
                 {
-                    query = query.Where(j => (j.Status == "Published" && j.Company.IsApproved) || j.Company.EmployerId == userId);
+                    query = query.Where(j => (j.Status == "Published" && j.Company.IsApproved && (!j.Deadline.HasValue || j.Deadline.Value >= now)) || j.Company.EmployerId == userId);
                 }
                 else
                 {
-                    query = query.Where(j => j.Status == "Published" && j.Company.IsApproved);
+                    query = query.Where(j => j.Status == "Published" && j.Company.IsApproved && (!j.Deadline.HasValue || j.Deadline.Value >= now));
                 }
             }
 
@@ -175,6 +176,7 @@ namespace HireConnect.API.Controllers
                     IsPaid = j.IsPaid,
                     ClosedByAdmin = j.ClosedByAdmin,
                     PublishedAt = j.PublishedAt,
+                    IsExpired = j.Status == "Expired" || (j.Deadline.HasValue && j.Deadline.Value < DateTime.UtcNow),
                     Company = j.Company == null ? null : new JobCompanyDto
                     {
                         Id = j.Company.Id,
@@ -230,7 +232,9 @@ namespace HireConnect.API.Controllers
 
             if (!isAdmin)
             {
-                if (!isOwnJob && (job.Status != "Published" || !job.Company.IsApproved))
+                bool isPubliclyVisible = (job.Status == "Published" || job.Status == "Expired" || job.Status == "Closed") && 
+                                         job.Company != null && job.Company.IsApproved;
+                if (!isOwnJob && !isPubliclyVisible)
                 {
                     return Forbid();
                 }
@@ -238,6 +242,7 @@ namespace HireConnect.API.Controllers
 
             var viewsCount = await _context.JobViews.CountAsync(v => v.JobId == job.Id);
             var applicantsCount = await _context.Applications.CountAsync(a => a.JobId == job.Id);
+            bool isExpired = job.Status == "Expired" || (job.Deadline.HasValue && job.Deadline.Value < DateTime.UtcNow);
 
             var dto = new JobResponseDto
             {
@@ -261,6 +266,7 @@ namespace HireConnect.API.Controllers
                 IsPaid = job.IsPaid,
                 ClosedByAdmin = job.ClosedByAdmin,
                 PublishedAt = job.PublishedAt,
+                IsExpired = isExpired,
                 ViewsCount = viewsCount,
                 ApplicantsCount = applicantsCount,
                 Company = job.Company == null ? null : new JobCompanyDto
@@ -297,14 +303,54 @@ namespace HireConnect.API.Controllers
             return Ok(dto);
         }
 
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (int count, DateTime windowStart)> _viewRateLimits = new();
+
         [HttpPost("{id}/view")]
         public async Task<IActionResult> TrackJobView(int id)
         {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var now = DateTime.UtcNow;
+
+            // IP Rate Limit: 60 requests per minute
+            var rate = _viewRateLimits.AddOrUpdate(
+                ip,
+                _ => (1, now),
+                (_, val) => (now - val.windowStart).TotalMinutes >= 1 ? (1, now) : (val.count + 1, val.windowStart)
+            );
+
+            if (rate.count > 60)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests, new { message = "Rate limit exceeded. Maximum 60 views per minute." });
+            }
+
+            // Cleanup stale rate limit entries periodically
+            if (_viewRateLimits.Count > 1000)
+            {
+                foreach (var key in _viewRateLimits.Keys)
+                {
+                    if (_viewRateLimits.TryGetValue(key, out var entry) && (now - entry.windowStart).TotalMinutes >= 2)
+                    {
+                        _viewRateLimits.TryRemove(key, out _);
+                    }
+                }
+            }
+
             var job = await _context.Jobs
                 .Include(j => j.Company)
                 .FirstOrDefaultAsync(j => j.Id == id);
 
             if (job == null) return NotFound();
+
+            // Count view ONLY if Job Status is Published, Company is Approved, and job is NOT expired
+            bool isCountable = job.Status == "Published" &&
+                               job.Company != null &&
+                               job.Company.IsApproved &&
+                               (!job.Deadline.HasValue || job.Deadline.Value >= now);
+
+            if (!isCountable)
+            {
+                return NoContent(); // 204 No Content (no count)
+            }
 
             var isEmployer = User.IsInRole("Employer");
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -349,7 +395,6 @@ namespace HireConnect.API.Controllers
                 }
                 else
                 {
-                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                     var ipHash = ComputeIpHash(ip);
 
                     alreadyViewed = await _context.JobViews.AnyAsync(v => 
@@ -1329,6 +1374,7 @@ namespace HireConnect.API.Controllers
                 IsPaid = job.IsPaid,
                 ClosedByAdmin = job.ClosedByAdmin,
                 PublishedAt = job.PublishedAt,
+                IsExpired = job.Status == "Expired" || (job.Deadline.HasValue && job.Deadline.Value < DateTime.UtcNow),
                 ViewsCount = job.Views?.Count ?? 0,
                 ApplicantsCount = job.Applications?.Count ?? 0,
                 Company = job.Company == null ? null : new JobCompanyDto
@@ -1481,6 +1527,7 @@ namespace HireConnect.API.Controllers
         public bool IsPaid { get; set; }
         public bool ClosedByAdmin { get; set; }
         public DateTime? PublishedAt { get; set; }
+        public bool IsExpired { get; set; }
         public int ViewsCount { get; set; }
         public int ApplicantsCount { get; set; }
         public JobCompanyDto? Company { get; set; }
