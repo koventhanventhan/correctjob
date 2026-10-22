@@ -159,15 +159,15 @@ export default function ManageJobsPage() {
     const minDateStr = minDateTomorrow.toISOString().split('T')[0];
 
     return (
-        <div className="max-w-6xl mx-auto p-4 sm:p-6 my-6 sm:my-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-charcoal">Manage Jobs</h1>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h1 className="text-2xl sm:text-3xl font-display font-bold text-charcoal">Manage Jobs</h1>
+                    <p className="text-sm text-gray-600 mt-1">
                         Track views, manage applicants, filter by status, close or reopen job opportunities.
                     </p>
                 </div>
-                <Link href="/employer/post-job" className="bg-orange text-white px-4 py-2 rounded-lg font-medium hover:bg-orange/90 transition-colors shadow-sm text-sm">
+                <Link href="/employer/post-job" className="bg-orange text-white px-4 py-2 rounded-md font-semibold hover:bg-orange/90 transition-colors shadow-sm text-sm">
                     Post New Job
                 </Link>
             </div>
@@ -342,7 +342,7 @@ export default function ManageJobsPage() {
                                                     type="button"
                                                     onClick={() => handleDuplicateJob(job.id, job.title)}
                                                     disabled={duplicatingId === job.id}
-                                                    className="text-purple-600 hover:text-purple-800 font-semibold px-2 py-1 rounded hover:bg-purple-50 transition-colors disabled:opacity-50"
+                                                    className="text-orange hover:text-orange/80 font-semibold px-2 py-1 rounded hover:bg-orange/10 transition-colors disabled:opacity-50"
                                                     title="Copy this job post"
                                                 >
                                                     {duplicatingId === job.id ? 'Copying...' : 'Copy'}
@@ -359,8 +359,8 @@ export default function ManageJobsPage() {
 
             {/* Reopen Modal for Expired Deadlines */}
             {reopenModalJob && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-100">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                    <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 border border-gray-200 animate-in fade-in zoom-in-95">
                         <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
                             <h3 className="text-lg font-bold text-charcoal">Reopen Job Post</h3>
                             <button

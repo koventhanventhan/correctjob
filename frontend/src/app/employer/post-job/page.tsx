@@ -239,7 +239,7 @@ export default function PostJobPage() {
 
     if (!hasCompany) {
         return (
-            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-xl shadow-sm my-8 text-center border border-gray-200">
+            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-lg shadow-sm my-8 text-center border border-gray-200">
                 <h1 className="text-2xl font-bold mb-4 text-red-600">Company Profile Required</h1>
                 <p className="mb-4 text-gray-600">You must create a company profile before you can post jobs.</p>
                 <button onClick={() => router.push('/employer/company-profile')} className="bg-orange text-white px-5 py-2.5 rounded-lg font-medium hover:bg-orange/90 transition-colors shadow-sm">
@@ -251,7 +251,7 @@ export default function PostJobPage() {
 
     if (!isApproved) {
         return (
-            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-xl shadow-sm my-8 text-center border border-gray-200">
+            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-lg shadow-sm my-8 text-center border border-gray-200">
                 <h1 className="text-2xl font-bold mb-4 text-amber-600">Pending Approval</h1>
                 <p className="text-gray-600">Your company profile is currently pending admin approval. You can post jobs once it is approved.</p>
             </div>
@@ -260,7 +260,7 @@ export default function PostJobPage() {
 
     if (!isVerified) {
         return (
-            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-xl shadow-sm my-8 text-center border border-gray-200">
+            <div className="max-w-3xl mx-auto p-6 bg-warmwhite rounded-lg shadow-sm my-8 text-center border border-gray-200">
                 <h1 className="text-2xl font-bold mb-4 text-red-600">Identity Verification Required</h1>
                 <p className="mb-4 text-gray-600">You must verify your identity before you can post jobs.</p>
                 <button onClick={() => router.push('/employer/verification')} className="bg-orange text-white px-5 py-2.5 rounded-lg font-medium hover:bg-orange/90 transition-colors shadow-sm">
@@ -277,7 +277,7 @@ export default function PostJobPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-charcoal">Post a New Job</h1>
-                    <p className="text-sm text-gray-500 mt-1">Create an engaging job post to attract top talent on Seek.</p>
+                    <p className="text-sm text-gray-500 mt-1">Create an engaging job post to attract top talent on HireConnect.</p>
                 </div>
                 <button
                     type="button"
@@ -292,7 +292,7 @@ export default function PostJobPage() {
                 </button>
             </div>
             
-            <form onSubmit={handlePublishAndPay} className="bg-warmwhite rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+            <form onSubmit={handlePublishAndPay} className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
                 {/* Job Title */}
                 <div>
                     <label className="block text-sm font-medium text-charcoal mb-1">Job Title *</label>
@@ -645,8 +645,8 @@ export default function PostJobPage() {
 
             {/* Job Preview Modal */}
             {showPreview && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-100 p-6 sm:p-8">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+                    <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 p-6 sm:p-8">
                         <div className="flex justify-between items-start pb-4 border-b border-gray-100 mb-6">
                             <div>
                                 <span className="text-xs font-semibold px-2.5 py-1 bg-peach text-orange rounded-full uppercase tracking-wider">
@@ -723,7 +723,7 @@ export default function PostJobPage() {
 
                             {/* Screening Questions in Preview */}
                             {screeningQuestions.length > 0 && (
-                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <h3 className="font-bold text-sm text-charcoal mb-3">
                                         Application Screening Questions ({screeningQuestions.length})
                                     </h3>

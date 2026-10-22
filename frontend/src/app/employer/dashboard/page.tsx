@@ -87,7 +87,7 @@ export default function EmployerDashboard() {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h1 className="text-3xl font-display font-bold text-charcoal">Employer Dashboard</h1>
+                        <h1 className="text-2xl md:text-3xl font-display font-bold text-charcoal">Employer Dashboard</h1>
                         <p className="text-sm text-gray-600 mt-1">
                             Monitor job performance, views, applications, and conversion statistics in real-time.
                         </p>
@@ -95,14 +95,14 @@ export default function EmployerDashboard() {
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <Link
                             href="/employer/settings"
-                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl shadow-xs transition"
+                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-md shadow-sm transition"
                         >
                             <LuSettings className="w-4 h-4 text-gray-500" />
                             Settings
                         </Link>
                         <Link
                             href="/employer/post-job"
-                            className="inline-flex items-center justify-center gap-1.5 px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-orange hover:bg-orange/90 rounded-xl shadow-xs transition"
+                            className="inline-flex items-center justify-center gap-1.5 px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-orange hover:bg-orange/90 rounded-md shadow-sm transition"
                         >
                             <LuCirclePlus className="w-4 h-4" />
                             Post New Job
@@ -113,83 +113,83 @@ export default function EmployerDashboard() {
                 {/* Key Metrics Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     {/* Card 1: Total Jobs */}
-                    <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-200/80 transition-all hover:shadow-md">
+                    <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all hover:border-orange">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Jobs</p>
-                                <p className="text-2xl font-extrabold text-charcoal mt-1.5">{totalJobs}</p>
+                                <p className="text-2xl font-display font-bold text-charcoal mt-1.5">{totalJobs}</p>
                                 <p className="text-xs text-emerald-600 font-medium mt-1">
                                     {activeJobs} published & active
                                 </p>
                             </div>
-                            <div className="w-12 h-12 bg-orange/10 text-orange rounded-2xl flex items-center justify-center shrink-0">
-                                <LuBriefcase className="w-6 h-6" />
+                            <div className="w-10 h-10 bg-orange/10 text-orange rounded-md flex items-center justify-center shrink-0">
+                                <LuBriefcase className="w-5 h-5" />
                             </div>
                         </div>
                     </div>
 
                     {/* Card 2: Total Views */}
-                    <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-200/80 transition-all hover:shadow-md">
+                    <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all hover:border-orange">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Job Views</p>
-                                <p className="text-2xl font-extrabold text-charcoal mt-1.5">
+                                <p className="text-2xl font-display font-bold text-charcoal mt-1.5">
                                     {totalViews.toLocaleString()}
                                 </p>
                                 <p className="text-xs text-gray-500 font-medium mt-1">
                                     Across all posted jobs
                                 </p>
                             </div>
-                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
-                                <LuEye className="w-6 h-6" />
+                            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-md flex items-center justify-center shrink-0">
+                                <LuEye className="w-5 h-5" />
                             </div>
                         </div>
                     </div>
 
                     {/* Card 3: Total Applications */}
-                    <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-200/80 transition-all hover:shadow-md">
+                    <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all hover:border-orange">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Applications</p>
-                                <p className="text-2xl font-extrabold text-charcoal mt-1.5">
+                                <p className="text-2xl font-display font-bold text-charcoal mt-1.5">
                                     {totalApplications.toLocaleString()}
                                 </p>
                                 <p className="text-xs text-gray-500 font-medium mt-1">
                                     Candidates applied
                                 </p>
                             </div>
-                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-                                <LuFileText className="w-6 h-6" />
+                            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-md flex items-center justify-center shrink-0">
+                                <LuFileText className="w-5 h-5" />
                             </div>
                         </div>
                     </div>
 
                     {/* Card 4: Conversion Rate */}
-                    <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-200/80 transition-all hover:shadow-md">
+                    <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all hover:border-orange">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Conversion Rate</p>
-                                <p className="text-2xl font-extrabold text-charcoal mt-1.5">
+                                <p className="text-2xl font-display font-bold text-charcoal mt-1.5">
                                     {overallConversion}%
                                 </p>
                                 <p className="text-xs text-gray-500 font-medium mt-1">
                                     Applications per view
                                 </p>
                             </div>
-                            <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shrink-0">
-                                <LuPercent className="w-6 h-6" />
+                            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-md flex items-center justify-center shrink-0">
+                                <LuPercent className="w-5 h-5" />
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* 30-Day Trend Line Chart */}
-                <div className="bg-white rounded-2xl shadow-xs border border-gray-200/80 p-6">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
                         <div>
                             <div className="flex items-center gap-2">
                                 <LuTrendingUp className="w-5 h-5 text-orange" />
-                                <h2 className="text-lg font-bold text-charcoal">30-Day Activity Trend</h2>
+                                <h2 className="text-lg font-display font-bold text-charcoal">30-Day Activity Trend</h2>
                             </div>
                             <p className="text-xs text-gray-500 mt-0.5">
                                 Daily views and job application trends over the last 30 days
@@ -208,17 +208,17 @@ export default function EmployerDashboard() {
                 </div>
 
                 {/* Job Performance & Conversion Breakdown Table */}
-                <div className="bg-white rounded-2xl shadow-xs border border-gray-200/80 overflow-hidden">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-lg font-bold text-charcoal">Job Performance & Conversion</h3>
+                            <h2 className="text-lg font-display font-bold text-charcoal">Job Performance & Conversion</h2>
                             <p className="text-xs text-gray-500 mt-0.5">
                                 Detailed breakdown of views, applications, and conversion rates per job posting.
                             </p>
                         </div>
                         <Link
                             href="/employer/manage-jobs"
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-orange hover:text-orange/80 transition"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-orange hover:underline transition"
                         >
                             <span>Manage all jobs</span>
                             <LuArrowUpRight className="w-3.5 h-3.5" />

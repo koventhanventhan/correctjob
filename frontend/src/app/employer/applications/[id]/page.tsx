@@ -483,7 +483,7 @@ export default function JobApplicationsPage() {
             </div>
 
             {/* Status Filter Tabs */}
-            <div className="bg-warmwhite rounded-xl shadow-sm border border-gray-200 p-2 mb-6">
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-2 mb-6">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                     {STATUS_TABS.map(tab => {
                         const count = statusCounts[tab.key] || 0;
@@ -512,7 +512,7 @@ export default function JobApplicationsPage() {
             </div>
 
             {/* Filter, Search & Sort Control Bar */}
-            <div className="bg-warmwhite rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div className="bg-warmwhite rounded-lg shadow-sm border border-gray-200 p-4 mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                 {/* Search Input */}
                 <div className="relative flex-1">
                     <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -563,7 +563,7 @@ export default function JobApplicationsPage() {
 
             {/* Bulk Actions Floating Toolbar */}
             {selectedIds.length > 0 && (
-                <div className="sticky top-4 z-30 mb-6 bg-charcoal text-white rounded-xl shadow-lg p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+                <div className="sticky top-4 z-30 mb-6 bg-charcoal text-white rounded-lg shadow-lg p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
                     <div className="flex items-center gap-3">
                         <span className="text-xs font-semibold px-2 py-1 rounded bg-orange text-white">
                             {selectedIds.length} candidate{selectedIds.length !== 1 ? 's' : ''} selected
@@ -616,7 +616,7 @@ export default function JobApplicationsPage() {
 
             {/* Candidate List (Cards) */}
             {filteredApplications.length === 0 ? (
-                <div className="bg-warmwhite rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+                <div className="bg-warmwhite rounded-lg border border-gray-200 p-12 text-center shadow-sm">
                     <p className="text-gray-500 text-sm mb-2">No applications match your filter or search query.</p>
                     <button
                         type="button"
@@ -638,7 +638,7 @@ export default function JobApplicationsPage() {
                         return (
                             <div 
                                 key={app.id}
-                                className={`bg-warmwhite rounded-xl border transition-all duration-200 shadow-sm ${
+                                className={`bg-warmwhite rounded-lg border transition-all duration-200 shadow-sm ${
                                     isSelected 
                                         ? 'border-orange ring-1 ring-orange/30' 
                                         : 'border-gray-200 hover:border-gray-300'
@@ -717,9 +717,9 @@ export default function JobApplicationsPage() {
                                         <div className="flex flex-col items-end gap-2 shrink-0">
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                                                 app.status === 'Applied' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                                                app.status === 'Viewed' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                                app.status === 'Shortlisted' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                                                app.status === 'Interview' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                                                app.status === 'Viewed' ? 'bg-gray-100 text-gray-700 border border-gray-200' :
+                                                app.status === 'Shortlisted' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                                app.status === 'Interview' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                                                 app.status === 'Hired' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                                                 app.status === 'Rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
                                                 'bg-gray-100 text-gray-600 border border-gray-200'
@@ -774,7 +774,7 @@ export default function JobApplicationsPage() {
                                             )}
 
                                             {app.answers && app.answers.length > 0 && (
-                                                <span className="text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg">
+                                                <span className="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md">
                                                     {app.answers.length} screening answer{app.answers.length !== 1 ? 's' : ''}
                                                 </span>
                                             )}
@@ -794,7 +794,7 @@ export default function JobApplicationsPage() {
                                     {isExpanded && (
                                         <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 animate-fadeIn">
                                             {/* Prominent Candidate Messaging Action */}
-                                            <div className="bg-gradient-to-r from-orange/10 via-peach/30 to-amber-50 border border-orange/30 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                                            <div className="bg-orange/5 border border-orange/20 rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 rounded-full bg-orange/20 text-orange flex items-center justify-center shrink-0">
                                                         <LuMessageCircle className="w-5 h-5 text-orange" />

@@ -222,7 +222,7 @@ export default function CandidatesSearchPage() {
         <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2">
                             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange/10 text-orange">
@@ -243,7 +243,7 @@ export default function CandidatesSearchPage() {
                     <div className="flex items-center gap-3">
                         <Link
                             href="/employer/manage-jobs"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-charcoal transition-all"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-charcoal transition-colors"
                         >
                             <LuBriefcase className="w-4 h-4 text-gray-400" />
                             Manage Jobs
@@ -253,7 +253,7 @@ export default function CandidatesSearchPage() {
 
                 {/* Unverified Company Alert */}
                 {isUnverifiedCompany && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 sm:p-8 text-center space-y-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 sm:p-8 text-center space-y-4">
                         <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-600">
                             <LuCircleAlert className="w-6 h-6" />
                         </div>
@@ -264,7 +264,7 @@ export default function CandidatesSearchPage() {
                         <div>
                             <Link
                                 href="/employer/verification"
-                                className="inline-flex items-center gap-2 bg-orange text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-orange/90 transition-all"
+                                className="inline-flex items-center gap-2 bg-orange text-white px-5 py-2.5 rounded-md text-sm font-semibold shadow-sm hover:bg-orange/90 transition-colors"
                             >
                                 <LuShieldCheck className="w-4 h-4" /> Go to Company Verification
                             </Link>
@@ -275,7 +275,7 @@ export default function CandidatesSearchPage() {
                 {!isUnverifiedCompany && (
                     <>
                         {/* Search & Filter Bar */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-5 space-y-4">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 {/* Keyword */}
                                 <div className="relative">
@@ -288,7 +288,7 @@ export default function CandidatesSearchPage() {
                                             setPage(1);
                                         }}
                                         placeholder="Search title, skills, bio..."
-                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                     />
                                 </div>
 
@@ -303,7 +303,7 @@ export default function CandidatesSearchPage() {
                                             setPage(1);
                                         }}
                                         placeholder="City, State, or Remote..."
-                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                     />
                                 </div>
 
@@ -318,7 +318,7 @@ export default function CandidatesSearchPage() {
                                             setPage(1);
                                         }}
                                         placeholder="Language (e.g. English, Tamil)..."
-                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                     />
                                 </div>
                             </div>
@@ -339,12 +339,12 @@ export default function CandidatesSearchPage() {
                                                 }
                                             }}
                                             placeholder="Type a skill & press Add..."
-                                            className="flex-1 px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                            className="flex-1 px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                         />
                                         <button
                                             type="button"
                                             onClick={handleAddSkill}
-                                            className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-charcoal rounded-xl text-xs font-semibold transition"
+                                            className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-charcoal rounded-md text-xs font-semibold transition"
                                         >
                                             Add Skill
                                         </button>
@@ -382,7 +382,7 @@ export default function CandidatesSearchPage() {
                                             setPage(1);
                                         }}
                                         placeholder="Min Yrs"
-                                        className="w-1/2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                        className="w-1/2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                     />
                                     <span className="text-gray-400 text-xs">-</span>
                                     <input
@@ -395,7 +395,7 @@ export default function CandidatesSearchPage() {
                                             setPage(1);
                                         }}
                                         placeholder="Max Yrs"
-                                        className="w-1/2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                        className="w-1/2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                     />
                                 </div>
 
@@ -407,7 +407,7 @@ export default function CandidatesSearchPage() {
                                             setSortBy(e.target.value);
                                             setPage(1);
                                         }}
-                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                     >
                                         <option value="recent">Recently Active</option>
                                         <option value="experience_desc">Experience: High to Low</option>
@@ -430,23 +430,23 @@ export default function CandidatesSearchPage() {
 
                         {/* Candidates Grid / List */}
                         {isLoading ? (
-                            <div className="bg-white rounded-2xl p-12 text-center text-gray-400 shadow-sm border border-gray-200/80">
+                            <div className="bg-white rounded-lg p-12 text-center text-gray-400 shadow-sm border border-gray-200">
                                 <div className="w-8 h-8 border-2 border-orange border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                                 <p className="text-sm font-medium">Loading candidate talent...</p>
                             </div>
                         ) : isError ? (
-                            <div className="bg-white rounded-2xl p-12 text-center text-red-500 shadow-sm border border-gray-200/80 space-y-3">
+                            <div className="bg-white rounded-lg p-12 text-center text-red-500 shadow-sm border border-gray-200 space-y-3">
                                 <LuCircleAlert className="w-10 h-10 mx-auto opacity-70" />
                                 <p className="text-sm font-semibold">Unable to fetch candidates.</p>
                                 <button
                                     onClick={() => refetch()}
-                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-charcoal rounded-xl text-xs font-semibold transition"
+                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-charcoal rounded-md text-xs font-semibold transition-colors"
                                 >
                                     Retry
                                 </button>
                             </div>
                         ) : !candidatesData?.candidates || candidatesData.candidates.length === 0 ? (
-                            <div className="bg-white rounded-2xl p-12 text-center text-gray-400 shadow-sm border border-gray-200/80 space-y-3">
+                            <div className="bg-white rounded-lg p-12 text-center text-gray-400 shadow-sm border border-gray-200 space-y-3">
                                 <LuBriefcase className="w-12 h-12 mx-auto text-gray-300" />
                                 <h3 className="text-base font-bold text-charcoal">No candidates matched your search</h3>
                                 <p className="text-xs text-gray-500 max-w-sm mx-auto">
@@ -458,13 +458,13 @@ export default function CandidatesSearchPage() {
                                 {candidatesData.candidates.map((candidate: Candidate) => (
                                     <div
                                         key={candidate.id}
-                                        className="bg-white rounded-2xl shadow-sm border border-gray-200/80 hover:border-orange/40 hover:shadow-md transition-all duration-200 p-5 flex flex-col justify-between"
+                                        className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-orange/60 hover:shadow-md transition-all duration-200 p-5 flex flex-col justify-between"
                                     >
                                         <div className="space-y-3">
                                             {/* Candidate Header */}
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-orange to-amber-500 flex items-center justify-center text-white font-bold text-sm shadow-xs shrink-0">
+                                                    <div className="w-11 h-11 rounded-full bg-orange flex items-center justify-center text-white font-bold text-sm shadow-xs shrink-0">
                                                         {candidate.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
                                                     </div>
                                                     <div>
@@ -530,7 +530,7 @@ export default function CandidatesSearchPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => openDetailModal(candidate)}
-                                                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-700 hover:text-charcoal hover:bg-gray-100 transition"
+                                                className="px-3.5 py-2 rounded-md text-xs font-semibold text-gray-700 hover:text-charcoal hover:bg-gray-100 transition-colors"
                                             >
                                                 View Profile
                                             </button>
@@ -538,7 +538,7 @@ export default function CandidatesSearchPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenInvite(candidate)}
-                                                className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs transition"
+                                                className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 text-white px-4 py-2 rounded-md text-xs font-semibold shadow-xs transition-colors"
                                             >
                                                 <LuSend className="w-3.5 h-3.5" />
                                                 Invite to Apply
@@ -556,18 +556,18 @@ export default function CandidatesSearchPage() {
                                     type="button"
                                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                                     disabled={page <= 1}
-                                    className="p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition"
+                                    className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors"
                                 >
                                     <LuChevronLeft className="w-4 h-4" />
                                 </button>
-                                <span className="text-xs font-semibold text-gray-600 px-3 py-2 bg-white rounded-xl border border-gray-200">
+                                <span className="text-xs font-semibold text-gray-600 px-3 py-2 bg-white rounded-md border border-gray-200">
                                     Page {page} of {candidatesData.totalPages}
                                 </span>
                                 <button
                                     type="button"
                                     onClick={() => setPage((p) => Math.min(candidatesData.totalPages, p + 1))}
                                     disabled={page >= candidatesData.totalPages}
-                                    className="p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition"
+                                    className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors"
                                 >
                                     <LuChevronRight className="w-4 h-4" />
                                 </button>
@@ -579,12 +579,12 @@ export default function CandidatesSearchPage() {
 
             {/* Candidate Detail Modal */}
             {isDetailOpen && selectedCandidate && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-lg border border-gray-200 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                         {/* Modal Header */}
-                        <div className="p-6 border-b border-gray-100 flex items-start justify-between bg-gradient-to-b from-gray-50/80 to-white">
+                        <div className="p-6 border-b border-gray-200 flex items-start justify-between bg-warmwhite">
                             <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange to-amber-500 flex items-center justify-center text-white font-bold text-base shadow-sm shrink-0">
+                                <div className="w-12 h-12 rounded-full bg-orange flex items-center justify-center text-white font-bold text-base shadow-sm shrink-0">
                                     {selectedCandidate.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
                                 </div>
                                 <div>
@@ -609,7 +609,7 @@ export default function CandidatesSearchPage() {
                             <button
                                 type="button"
                                 onClick={() => setIsDetailOpen(false)}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-charcoal hover:bg-gray-100 transition"
+                                className="p-1.5 rounded-md text-gray-400 hover:text-charcoal hover:bg-gray-100 transition-colors"
                             >
                                 <LuX className="w-5 h-5" />
                             </button>
@@ -619,7 +619,7 @@ export default function CandidatesSearchPage() {
                         <div className="p-6 overflow-y-auto space-y-6">
                             {/* Contact Reveal Shield / Revealed Info */}
                             {selectedCandidate.contactRevealed && selectedCandidate.contactInfo ? (
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-2">
                                     <div className="flex items-center gap-2 text-emerald-800 text-xs font-bold">
                                         <LuCheck className="w-4 h-4 text-emerald-600" />
                                         Candidate Accepted Your Invitation - Contact Details Revealed
@@ -640,7 +640,7 @@ export default function CandidatesSearchPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="bg-amber-50/70 border border-amber-200/70 rounded-xl p-3.5 flex items-start gap-3">
+                                <div className="bg-amber-50/70 border border-amber-200/70 rounded-lg p-3.5 flex items-start gap-3">
                                     <LuShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                                     <div className="text-xs text-amber-900 leading-relaxed">
                                         <span className="font-semibold">Privacy Protected:</span> Candidate contact details (email, phone, resume) remain protected. Click <strong>Invite to Apply</strong> to invite this candidate. Contact details are revealed once the candidate accepts!
@@ -765,11 +765,11 @@ export default function CandidatesSearchPage() {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                        <div className="p-4 bg-warmwhite border-t border-gray-200 flex items-center justify-between">
                             <button
                                 type="button"
                                 onClick={() => setIsDetailOpen(false)}
-                                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-200/60 transition"
+                                className="px-4 py-2 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
                             >
                                 Close
                             </button>
@@ -779,7 +779,7 @@ export default function CandidatesSearchPage() {
                                     setIsDetailOpen(false);
                                     handleOpenInvite(selectedCandidate);
                                 }}
-                                className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-xs transition"
+                                className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 text-white px-5 py-2.5 rounded-md text-xs font-semibold shadow-xs transition-colors"
                             >
                                 <LuSend className="w-3.5 h-3.5" />
                                 Invite to Apply
@@ -791,10 +791,10 @@ export default function CandidatesSearchPage() {
 
             {/* Invite to Apply Modal */}
             {isInviteOpen && inviteCandidateTarget && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-lg border border-gray-200 max-w-md w-full overflow-hidden">
                         {/* Header */}
-                        <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-b from-gray-50/80 to-white">
+                        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-warmwhite">
                             <div>
                                 <h3 className="text-base font-bold text-charcoal">Invite Candidate</h3>
                                 <p className="text-xs text-gray-500 mt-0.5">
@@ -804,7 +804,7 @@ export default function CandidatesSearchPage() {
                             <button
                                 type="button"
                                 onClick={() => setIsInviteOpen(false)}
-                                className="p-1 rounded-lg text-gray-400 hover:text-charcoal hover:bg-gray-100 transition"
+                                className="p-1 rounded-md text-gray-400 hover:text-charcoal hover:bg-gray-100 transition-colors"
                             >
                                 <LuX className="w-5 h-5" />
                             </button>
@@ -813,14 +813,14 @@ export default function CandidatesSearchPage() {
                         {/* Form */}
                         <form onSubmit={handleSendInvite} className="p-5 space-y-4">
                             {inviteError && (
-                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2">
                                     <LuCircleAlert className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                     <span>{inviteError}</span>
                                 </div>
                             )}
 
                             {inviteSuccess && (
-                                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+                                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center gap-2">
                                     <LuCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                                     <span>{inviteSuccess}</span>
                                 </div>
@@ -832,7 +832,7 @@ export default function CandidatesSearchPage() {
                                     Select Published Job <span className="text-red-500">*</span>
                                 </label>
                                 {publishedJobs.length === 0 ? (
-                                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
                                         No published jobs found. Please post and publish a job first before inviting candidates.
                                     </div>
                                 ) : (
@@ -840,7 +840,7 @@ export default function CandidatesSearchPage() {
                                         value={selectedJobId}
                                         onChange={(e) => setSelectedJobId(Number(e.target.value))}
                                         required
-                                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-xs sm:text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                     >
                                         <option value="">-- Choose a job --</option>
                                         {publishedJobs.map((job) => (
@@ -863,14 +863,14 @@ export default function CandidatesSearchPage() {
                                     onChange={(e) => setInviteMessage(e.target.value)}
                                     maxLength={500}
                                     placeholder="Hi! We noticed your profile and think your skills would be a great match for our role..."
-                                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
+                                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-xs sm:text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition"
                                 />
                                 <p className="text-[11px] text-gray-400 text-right">
                                     {inviteMessage.length}/500
                                 </p>
                             </div>
 
-                            <div className="text-[11px] text-gray-500 bg-gray-50 p-3 rounded-xl border border-gray-100 leading-relaxed">
+                            <div className="text-[11px] text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200 leading-relaxed">
                                 • Candidate receives a notification to review and accept.<br />
                                 • Upon candidate acceptance, contact details will be shared.<br />
                                 • Rate limit: maximum 20 invitations per day.
@@ -881,14 +881,14 @@ export default function CandidatesSearchPage() {
                                 <button
                                     type="button"
                                     onClick={() => setIsInviteOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition"
+                                    className="px-4 py-2 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={inviteMutation.isPending || publishedJobs.length === 0}
-                                    className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-xs transition"
+                                    className="inline-flex items-center gap-1.5 bg-orange hover:bg-orange/90 disabled:opacity-50 text-white px-5 py-2 rounded-md text-xs font-semibold shadow-xs transition-colors"
                                 >
                                     {inviteMutation.isPending ? (
                                         <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />

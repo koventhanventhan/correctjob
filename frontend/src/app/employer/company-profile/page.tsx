@@ -231,18 +231,18 @@ export default function CompanyProfilePage() {
 
                 {/* Media Branding (Logo & Banner) */}
                 {companyId && (
-                    <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-200 space-y-6">
+                    <div className="bg-white rounded-lg p-5 sm:p-6 shadow-sm border border-gray-200 space-y-6">
                         <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
                             <LuImage className="w-5 h-5 text-orange" />
-                            <h2 className="text-lg font-bold text-charcoal">Branding & Media</h2>
+                            <h2 className="text-lg font-display font-bold text-charcoal">Branding & Media</h2>
                         </div>
 
                         {/* Banner Preview & Upload */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
                                 Company Banner (1200 x 300 recommended, max 5MB)
                             </label>
-                            <div className="relative h-40 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center group">
+                            <div className="relative h-40 sm:h-48 w-full rounded-lg overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center group">
                                 {bannerUrl ? (
                                     <img 
                                         src={getFileUrl(bannerUrl)} 
@@ -260,7 +260,7 @@ export default function CompanyProfilePage() {
                                         type="button"
                                         onClick={() => bannerInputRef.current?.click()}
                                         disabled={uploadingBanner}
-                                        className="px-4 py-2 bg-white text-charcoal text-xs font-semibold rounded-lg shadow-sm hover:bg-gray-100 flex items-center gap-1.5 transition-colors"
+                                        className="px-4 py-2 bg-white text-charcoal text-xs font-semibold rounded-md shadow-sm hover:bg-gray-100 flex items-center gap-1.5 transition-colors"
                                     >
                                         <LuUpload className="w-3.5 h-3.5" />
                                         {uploadingBanner ? 'Uploading...' : (bannerUrl ? 'Change Banner' : 'Upload Banner')}
@@ -278,11 +278,11 @@ export default function CompanyProfilePage() {
 
                         {/* Logo Preview & Upload */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
                                 Company Logo (Square, max 2MB)
                             </label>
                             <div className="flex items-center gap-4">
-                                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-2 border-gray-200 bg-gray-50 p-2 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-lg border-2 border-gray-200 bg-gray-50 p-2 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
                                     {logoUrl ? (
                                         <img 
                                             src={getFileUrl(logoUrl)} 
@@ -298,7 +298,7 @@ export default function CompanyProfilePage() {
                                         type="button"
                                         onClick={() => logoInputRef.current?.click()}
                                         disabled={uploadingLogo}
-                                        className="px-3.5 py-1.5 bg-orange text-white text-xs font-semibold rounded-lg hover:bg-orange/90 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                        className="px-3.5 py-1.5 bg-orange text-white text-xs font-semibold rounded-md hover:bg-orange/90 transition-colors flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
                                     >
                                         <LuUpload className="w-3.5 h-3.5" />
                                         {uploadingLogo ? 'Uploading...' : (logoUrl ? 'Change Logo' : 'Upload Logo')}
@@ -318,11 +318,11 @@ export default function CompanyProfilePage() {
                 )}
 
                 {/* Company Information Form */}
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-200 space-y-6">
+                <form onSubmit={handleSubmit} className="bg-white rounded-lg p-5 sm:p-6 shadow-sm border border-gray-200 space-y-6">
                     
                     <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
                         <LuBuilding className="w-5 h-5 text-orange" />
-                        <h2 className="text-lg font-bold text-charcoal">Company Details</h2>
+                        <h2 className="text-lg font-display font-bold text-charcoal">Company Details</h2>
                     </div>
 
                     <div>

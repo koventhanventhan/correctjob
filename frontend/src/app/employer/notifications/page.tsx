@@ -130,7 +130,7 @@ export default function EmployerNotificationsPage() {
 
     return (
         <div className="min-h-screen bg-warmwhite py-8">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
@@ -147,7 +147,7 @@ export default function EmployerNotificationsPage() {
                             type="button"
                             onClick={() => markAllAsReadMutation.mutate()}
                             disabled={markAllAsReadMutation.isPending}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-xs sm:text-sm font-semibold text-charcoal rounded-xl shadow-xs transition disabled:opacity-50 self-start sm:self-auto"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-xs sm:text-sm font-semibold text-charcoal rounded-md shadow-sm transition disabled:opacity-50 self-start sm:self-auto"
                         >
                             <LuCheck className="w-4 h-4 text-emerald-600" />
                             <span>Mark all as read</span>
@@ -156,7 +156,7 @@ export default function EmployerNotificationsPage() {
                 </div>
 
                 {/* Notification List Card */}
-                <div className="bg-white rounded-2xl shadow-xs border border-gray-200/80 overflow-hidden">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     {isLoading ? (
                         <div className="p-16 text-center text-gray-400">
                             <div className="w-6 h-6 border-2 border-orange border-t-transparent rounded-full animate-spin mx-auto mb-2" />
@@ -165,7 +165,7 @@ export default function EmployerNotificationsPage() {
                     ) : notifications.length === 0 ? (
                         <div className="p-16 text-center text-gray-500">
                             <LuBell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="font-bold text-charcoal text-base">You are all caught up!</p>
+                            <h2 className="font-bold text-charcoal text-base">You are all caught up!</h2>
                             <p className="text-xs text-gray-500 mt-1">No notifications at the moment.</p>
                         </div>
                     ) : (
